@@ -72,7 +72,6 @@ Parameter::Parameter() {
   size_init_cells = 25;
   sizex = 200;
   sizey = 200;
-  divisions = 0;
   mcs = 10000;
   rseed = -1;
   subfield = 1.0;
@@ -80,6 +79,9 @@ Parameter::Parameter() {
   storage_stride = 10;
   graphics = true;
   store = false;
+  genomefile=strdup("");
+  mu=0.05;
+  mustd=0.1;
   datadir = strdup("data_film");
   datafile = strdup("data_cellcount.txt");
   save_text_file_period = 100;
@@ -116,7 +118,7 @@ Parameter::Parameter() {
   init_k_ext_C = 0.;
   init_k_ext_0t =0.;
   init_k_ext_Pt =0.;
-  
+
   init_weight_for_chemotaxis=0.;
   init_k_chem_0 = 0.5;
   init_k_chem_A = 0.;
@@ -155,6 +157,8 @@ void Parameter::CleanUp(void) {
      free(secr_rate);
   if (datadir)
      free(datadir);
+  if (genomefile)
+     free(genomefile);
   if (backupdir)
      free(backupdir);
   if (backupfile)
@@ -305,7 +309,7 @@ int Parameter::ReadArguments(int argc, char *argv[])
         i--;
       }
     }else if( 0==strcmp(argv[i],"-casize") ){
-      i++; 
+      i++;
       if(i==argc){
         cerr<<"Something odd in casize?"<<endl;
         return 1;  //check if end of arguments, exit with error in case
@@ -399,13 +403,13 @@ int Parameter::ReadArguments(int argc, char *argv[])
       free(datafile);
       free(datadir);
       free(backupdir);
-      
+
       string maybepath_and_name(argv[i]);
       size_t botDirPos = maybepath_and_name.find_last_of("/");
-      string dir(""); 
+      string dir("");
       string name;
       if(botDirPos != std::string::npos){
-        // then there is a character '/' in name, which means that 
+        // then there is a character '/' in name, which means that
         // we are going to save data in some path, hence
         // we have to split where this is happening
         dir = maybepath_and_name.substr(0, botDirPos+1);
@@ -413,28 +417,28 @@ int Parameter::ReadArguments(int argc, char *argv[])
       }else{
         name = maybepath_and_name;
       }
-      
+
       string name_outfile = dir; //will this contain the last '/''
       name_outfile.append("data_");
       name_outfile.append(name);
       name_outfile.append(".txt");
-      
+
       string name_moviedir = dir;
       name_moviedir.append("movie_");
       name_moviedir.append(name);
-      
+
       string name_backupdir = dir;
       name_backupdir.append("backup_");
       name_backupdir.append(name);
-      
+
       std::cerr << "New value for output filename: "<< name_outfile<< '\n';
       std::cerr << "New value for name_moviedir: "<< name_moviedir<< '\n';
       std::cerr << "New value for name_backupdir: "<< name_backupdir<< '\n';
-      
+
       datafile = (char *)malloc( 50+strlen(argv[i])*sizeof(char) ); //strlen(argv[i]) is ok because argv[i] is null terminated
-      datadir = (char *)malloc( 50+strlen(argv[i])*sizeof(char) ); 
+      datadir = (char *)malloc( 50+strlen(argv[i])*sizeof(char) );
       backupdir = (char *)malloc( 50+strlen(argv[i])*sizeof(char) );
-      datafile = strdup(name_outfile.c_str()); 
+      datafile = strdup(name_outfile.c_str());
       datadir = strdup(name_moviedir.c_str());
       backupdir = strdup(name_backupdir.c_str());
       // this took a while to code :P
@@ -491,7 +495,6 @@ void Parameter::Read(const char *filename) {
   size_init_cells = igetpar(fp, "size_init_cells", 10, true);
   sizex = igetpar(fp, "sizex", 200, true);
   sizey = igetpar(fp, "sizey", 200, true);
-  divisions = igetpar(fp, "divisions", 0, true);
   mcs = igetpar(fp, "mcs", 10000, true);
   rseed = igetpar(fp, "rseed", -1, true);
   subfield = fgetpar(fp, "subfield", 1.0, true);
@@ -499,6 +502,9 @@ void Parameter::Read(const char *filename) {
   storage_stride = igetpar(fp, "storage_stride", 10, true);
   graphics = bgetpar(fp, "graphics", true, true);
   store = bgetpar(fp, "store", false, true);
+  genomefile = sgetpar(fp, "genomefile", "", true);
+  mu = fgetpar(fp, "mu", 0., true);
+  mustd = fgetpar(fp, "mustd", 0., true);
   datadir = sgetpar(fp, "datadir", "data_film", true);
   datafile = sgetpar(fp,"datafile" , "data_cellcount.txt",true);
   save_text_file_period = igetpar(fp, "save_text_file_period", 100, true);
@@ -733,7 +739,6 @@ void Parameter::Write(ostream &os) const {
   os << " size_init_cells = " << size_init_cells << endl;
   os << " sizex = " << sizex << endl;
   os << " sizey = " << sizey << endl;
-  os << " divisions = " << divisions << endl;
   os << " mcs = " << mcs << endl;
   os << " rseed = " << rseed << endl;
   os << " subfield = " << subfield << endl;
@@ -741,6 +746,11 @@ void Parameter::Write(ostream &os) const {
   os << " storage_stride = " << storage_stride << endl;
   os << " graphics = " << sbool(graphics) << endl;
   os << " store = " << sbool(store) << endl;
+  if (genomefile){
+      os << " genomefile = " << genomefile << endl;
+  }
+  os << " mu = " << mu << endl;
+  os << " mustd = " << mustd << endl;
   os << " initial_food_amount = "<< initial_food_amount << endl;
   os << " food_influx_location = "<< food_influx_location <<endl;
   os << " foodinflux = " << foodinflux << endl;
@@ -787,7 +797,7 @@ void Parameter::Write(ostream &os) const {
   os << " evolreg = " << evolreg <<endl;
   os<< " zero_persistence_past_theline = " << zero_persistence_past_theline << endl;
   os<< " season_experiment = " << season_experiment << endl;
-  os<< " season_duration = " << season_duration << endl;  
+  os<< " season_duration = " << season_duration << endl;
   os<< " init_k_ext_0t = " << init_k_ext_0t << endl;
   os<< " init_k_ext_Pt = " << init_k_ext_Pt << endl;
   os<< " init_cell_config = "<< init_cell_config << endl;

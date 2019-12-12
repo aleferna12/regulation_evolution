@@ -94,6 +94,9 @@ void Cell::CellBirth(Cell &mother_cell) {
   target_length = mother_cell.target_length;
   half_div_area = mother_cell.half_div_area;
 
+  genome=src.genome;
+  genome.MutateGenome();
+
   // Do not add moments here, they are going to be calculated from scratch
   // and are initialised to zero in ConstructorBody(), called right before this
   meanx=mother_cell.meanx;
@@ -157,7 +160,7 @@ void Cell::CellBirth(Cell &mother_cell) {
   jlock = mother_cell.jlock;
   jkey = mother_cell.jkey;
   vJ = mother_cell.vJ;
-  
+
   time_since_birth=0;
   mother_cell.SetTimeSinceBirth(0);
 }
@@ -202,7 +205,9 @@ void Cell::ConstructorBody(int settau,int setrecycledsigma) {
   //  ReadKeyLockFromFile(par.keylock_list_filename)
   //}
 
-
+  //create the genome: use parameters for size. This is a randomly generated genome.
+  //genome.InitGenome(par.innodes, par.regnodes, par.outnodes);
+  //let's do this separately.
   tau=settau;
   area=0;
   target_area=0;
@@ -231,7 +236,7 @@ void Cell::ConstructorBody(int settau,int setrecycledsigma) {
   k_ext_C = par.init_k_ext_C;
   k_ext_0t = par.init_k_ext_0t;
   k_ext_Pt = par.init_k_ext_Pt;
-  
+
 
   weight_for_chemotaxis=0.;
   k_chem_0=par.init_k_chem_0;
@@ -251,9 +256,9 @@ void Cell::ConstructorBody(int settau,int setrecycledsigma) {
 
   chemvecx=0.;
   chemvecy=0.;
-  
+
   time_since_birth=0;
-  
+
   persdur=0;
   perstime=0;
   if(par.n_chem){

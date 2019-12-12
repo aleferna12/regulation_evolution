@@ -115,11 +115,11 @@ public:
   void UpdateCellParameters(int Time);
   int CheckWhoMadeitLinear(void);
   int CheckWhoMadeitRadial(void);
-  
+
   double FitnessFunction(int particles, double meanx, double meany);
   void ReproduceEndOfSeason(void);
   void RemoveCellsUntilPopIs(int popsize);
-  
+
   void RemoveWhoDidNotMakeIt(void);
   void ReproduceWhoMadeIt(void);
   void ReproduceWhoMadeIt2(void); //with particles dependent reproduction

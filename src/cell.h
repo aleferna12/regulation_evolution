@@ -28,6 +28,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <math.h>
 #include <map>
 #include "random.h"
+#include "genome.h"
 
 #define PREY 1
 #define PREDATOR 2
@@ -86,6 +87,9 @@ public:
     date_of_birth=src.date_of_birth;
     //cerr<<"this?: "<<date_of_birth<<endl;
     colour_of_birth=src.colour_of_birth;
+
+    genome=src.genome;
+
     tau=src.tau;
     alive=src.alive;
     v[0]=src.v[0];
@@ -180,6 +184,8 @@ public:
     half_div_area=src.half_div_area;
     date_of_birth = src.date_of_birth;
 
+    genome=src.genome;
+
     v[0]=src.v[0];
     v[1]=src.v[1];
     n_copies=src.n_copies;
@@ -244,7 +250,7 @@ public:
     chem = new double[par.n_chem];
     for (int ch=0;ch<par.n_chem;ch++)
       chem[ch]=src.chem[ch];
-    
+
     time_since_birth=src.time_since_birth;
 
     return *this;
@@ -498,19 +504,19 @@ public:
   inline double GetExtProtExpress_Fraction(void){
     return extprotexpress_fraction;
   }
-  
+
   // Now I am not using the same function any more,
   // write custom function
   double Calculate_ExtProtExpr_Fraction(void){
-    double extfr = k_ext_0 + 
-                   k_ext_P * particles + 
-                   k_ext_0t * time_since_birth + 
+    double extfr = k_ext_0 +
+                   k_ext_P * particles +
+                   k_ext_0t * time_since_birth +
                    k_ext_Pt * particles * time_since_birth;
     if(extfr > 1.) extfr=1.;
     else if (extfr < 0.) extfr=0.;
     return extfr;
   }
-  
+
   // inline void MutateMaintenanceFraction(void){
   //   maintenance_fraction += (RANDOM() -0.5)/20.;
   //   if(maintenance_fraction<0) maintenance_fraction= -maintenance_fraction;
@@ -689,6 +695,20 @@ al. 2000). The current version of TST does not include such functionality.
     return J[t2][t1]=J[t1][t2]=val;
   }
 
+
+  //deal with the genome:
+  inline void ReadGenomeFromFile(char *filename){
+    genome.ReadFromFile(filename);
+  }
+  inline void WriteGenomeToFile(char *filename){
+    genome.WriteToFile(filename);
+  }
+  inline void CreateRandomGenome(int in, int reg, int out){
+    genome.InitGenome(in, reg, out);
+  }
+  inline void UpdateGenes(const vector<double> input){
+    genome.UpdateGeneExpression(input);
+  }
 
   // Deal with gradient measurements:
 
@@ -1090,7 +1110,7 @@ private:
   inline int GetTimeSinceBirth(void){
     return time_since_birth;
   }
-  
+
   //! Called whenever a cell is constructed, from constructor
   void ConstructorBody(int settau=1,int setrecycledsigma=-1);
 
@@ -1105,6 +1125,8 @@ protected:
   bool alive;
   int sigma; // cell identity, 0 if medium
   int tau; // Cell type, when dynamicJ's are not used
+
+  Genome genome;
 
   double meanx;
   double meany;
@@ -1215,7 +1237,7 @@ protected:
   long int sum_xx;
   long int sum_yy;
   long int sum_xy;
-  
+
   int time_since_birth;
 
   const Dish *owner; // pointer to owner of cell

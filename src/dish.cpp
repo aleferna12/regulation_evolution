@@ -184,10 +184,10 @@ int Dish::CalculateJfromKeyLock( vector<int> key1, vector<int> lock1, vector<int
   // with 0 you should get high J val (low adh)
   //This is a arbitrary function 3+40*exp(-0.01*x^2)
   //add 0.5 before truncation to int makes it apprx to closest integer
-  
+
   int Jfromkeylock =(int)( 52. - 48. * ((double)score) /(2.*par.key_lock_length) );
   // int Jfromkeylock = 3 + (int)(0.5+ 40.*exp( -pow( (score/double(par.key_lock_length)) , 2.) ));
-  
+
 
   /*
   cout<<"CalculateJfromKeyLock: I got:"<<endl<< "key1: ";
@@ -557,11 +557,11 @@ void Dish::FoodPlot(Graphics *g)
   // cpm->sigma[x][y] returns sigma, which I can use to indicise the vector of cells... can I? yes_
   double maxfood = 1.+ par.gradscale*((double)par.sizey/100.);
   double food_to_index_convfact = 28./maxfood;
-  
+
   // suspend=true suspends calling of DrawScene
   for(int x=1;x<par.sizex-1;x++)
     for(int y=1;y<par.sizey-1;y++)
-      
+
       if(Food->Sigma(x,y) != 0){
         if(CPM->Sigma(x,y)==0){
           // Make the pixel four times as large
@@ -585,7 +585,7 @@ void Dish::Plot(Graphics *g, int colour) {
     if (CPM){
       CPM->Plot(g, colour);
     }
-    
+
     // return;
 
 
@@ -606,7 +606,7 @@ void Dish::Plot(Graphics *g, int colour) {
         else if(y2<0) y2=0;
         //now we have to wrap this
         // do we really? we could just truncate vectors up to the max size..
-        g->Line(x1,y1,x2, y2, 1); //notice that Line just calls Point for drawing, 
+        g->Line(x1,y1,x2, y2, 1); //notice that Line just calls Point for drawing,
                                   // so it does not intrinsically suffer from x,y inversion
       }
     }
@@ -653,7 +653,7 @@ void Dish::Plot(Graphics *g, int colour) {
     }
     //std::cerr << "minx,maxx " << minx <<" "<< maxx<< '\n';
     //std::cerr << "miny,maxy " << miny <<" "<< maxy<< '\n';
-    
+
     // return;
     // DO NOT DRAW THE LINE - it's ugly and you should add grad isoclines later in Python
     // Draw the_line, but only if it's inside the field
@@ -1194,7 +1194,7 @@ void Dish::UpdateCellParameters(int Time)
         //c->extprotexpress_fraction = c-> CalculateMaintenance_or_ExtProtExpr_Fraction(c->k_ext_0,c->k_ext_A,c->k_ext_P,c->k_ext_C);
         // double time_in_season = Time%par.season_duration;
         c->extprotexpress_fraction = c->Calculate_ExtProtExpr_Fraction();
-        
+
         //same function for regulation of chemotaxis
         c->weight_for_chemotaxis =  1.; //c-> CalculateMaintenance_or_ExtProtExpr_Fraction(c->k_chem_0,c->k_chem_A,c->k_chem_P,c->k_chem_C);
 
@@ -1223,18 +1223,18 @@ int Dish::CheckWhoMadeitRadial(void){
   //get info where the peak is
   int peakx = Food->GetPeakx();
   int peaky = Food->GetPeaky();
-  
+
   //find if cells in some area around the peak are already in the list
   for(auto &c:cell){
     if( ! c.AliveP() ) continue;
     double distx = c.meanx - peakx;
     double disty = c.meany - peaky;
     double dist_from_peak = hypot(distx,disty);
-    
+
     //cerr<< "Sigma: "<< c.Sigma()<<". Dist = "<<dist_from_peak<< ", mu = "<<c.mu<< endl;
-    
+
     //cerr<< "Sigma: "<< c.Sigma()<<". Dist = "<<dist_from_peak<< ", persdur = "<<c.persdur<<", perstime = "<<c.perstime<< endl;
-    
+
     if( dist_from_peak <= par.the_line ){
       who_made_it.insert( c.Sigma() ); //if already there it will not be duplicated in the set
       if( par.zero_persistence_past_theline ) {
@@ -1362,23 +1362,23 @@ double Dish::FitnessFunction(int particles, double meanx, double meany)
   //get info where the peak is
   int peakx = Food->GetPeakx();
   int peaky = Food->GetPeaky();
-  
+
   double dx = meanx - peakx;
   double dy = meany - peaky;
   double dist = hypot( dx,dy );
-  
+
   double epsilon = 0.05;
   double h_food = 10;
   double h_dist = par.the_line;
-  
+
   double fitness_food = ( particles + epsilon*h_food/(1.-2.*epsilon)  )/(particles + h_food/(1.-2.*epsilon)); //looks weird, it's not (if you plot it)
   double fitness_distance = 1. / ( 1. + pow( dist/h_dist , 2.) );
   // std::cerr << "particles: "<< particles <<", fitness food = " <<fitness_food<<", distance: "<<dist<<", fitness distance" << fitness_distance<<", tot = "<<fitness_food*fitness_distance<<'\n';
   return fitness_food*fitness_distance;
-  
+
 }
 
-//Based on ReproduceWhoMadeIt3, this reproduces all cells, 
+//Based on ReproduceWhoMadeIt3, this reproduces all cells,
 // with fitness dependent on food and distance from target
 void Dish::ReproduceEndOfSeason(void)
 {
@@ -1388,13 +1388,13 @@ void Dish::ReproduceEndOfSeason(void)
   vector<int> sigma_newcells;
   std::vector<double> fitness(cell.size(), 0.); //as many as there are cells (dead or alive), all with value 0.
   double tot_fitness = 0.;
-  
+
   for(auto &c : cell){
     if(c.AliveP() && c.Sigma()>0){
       double cell_fitness = FitnessFunction( c.particles, c.getXpos(), c.getYpos());
       fitness[ c.Sigma() ] = cell_fitness;
       tot_fitness += cell_fitness;
-      
+
       c.mu = 0.;  //also the other mu? yes-
       c.chemmu = 0.;
     }
@@ -1422,20 +1422,20 @@ void Dish::ReproduceEndOfSeason(void)
     }
     sigma_of_cells_that_will_divide.push_back(which_sig);
   }
-  
+
   // std::cerr << "These are the sigmas of the cells alive now, before cell division" << '\n';
-  // for(auto c: cell) 
+  // for(auto c: cell)
   //   if(c.AliveP()) std::cerr << c.Sigma()<<" ";
   // std::cerr << " " << '\n';
   // std::cerr << "These are the sigmas of the cells dead now, before cell division" << '\n';
-  // for(auto c: cell) 
+  // for(auto c: cell)
   //   if(!c.AliveP()) std::cerr << c.Sigma()<<" ";
   // std::cerr << " " << '\n';
-  // 
+  //
   // std::cerr << "These are the cells that will divide" << '\n';
   // for(auto sig:sigma_of_cells_that_will_divide) std::cerr << sig<<" ";
   // std::cerr << " " << '\n';
-  
+
   //At this point we should orchestrate actual cell division:
   // some cells replicate 10 times, other zero: the idea is that we let cells divide
   // if they are bigger than a certain amount, if not, we run amoeabeamove until they have expanded enough
@@ -1470,7 +1470,7 @@ void Dish::ReproduceEndOfSeason(void)
       // where it contains as value the sigma of the daughter cell
       MutateCells(sigma_newcells);
       UpdateVectorJ(sigma_newcells);
-      
+
       // std::cerr << "\nThese are the sigmas of new born cells"<<endl;
       // for(auto x: sigma_newcells) std::cerr << x <<" ";
       // std::cerr << " " << '\n';
@@ -1479,13 +1479,13 @@ void Dish::ReproduceEndOfSeason(void)
       std::fill(which_cells.begin(), which_cells.end(), false);
       //vector has to be resized because new cells are born
       which_cells.resize(cell.size(),false);
-      
+
       // std::cerr << "\nNow the vector which cells has to be resized to cell.size() and all zeroed. check:"<<endl;
       // for(auto x: which_cells) std::cerr << x <<" ";
       // std::cerr << " " << '\n';
       // if(which_cells.size() == cell.size()) std::cerr << "The two vectors have the same size" << '\n';
       // exit(1);
-    } 
+    }
     //reset target area
 
     //just for checking
@@ -1495,17 +1495,17 @@ void Dish::ReproduceEndOfSeason(void)
     //reset target area, because cell division changes
     // for(auto sig: sigma_of_cells_that_will_divide){
     //     cell[sig].SetTargetArea(par.target_area); // for good measure
-    // 
+    //
     // }
     //return;
-    
-    
+
+
     //do a bunch of AmoebaeMove2
     for(int i=0;i<5;i++) CPM->AmoebaeMove2(PDEfield); // let them expand a little
     //copy new_sigma_of_cells_that_will_divide into old one
     // std::cerr << "After AmoebaeMove2 there are so many alive cells: "<<CountCells() << '\n';
-    
-    
+
+
     sigma_of_cells_that_will_divide = new_sigma_of_cells_that_will_divide;
     new_sigma_of_cells_that_will_divide.clear();
 
@@ -1516,7 +1516,7 @@ void Dish::ReproduceEndOfSeason(void)
     // std::cerr << "new_sigma_of_bla... should be empty "<<endl;
     // for(auto x: new_sigma_of_cells_that_will_divide) std::cerr << x <<" ";
     // std::cerr << " " << '\n';
-    
+
 
     // return;
   }
@@ -1528,8 +1528,8 @@ void Dish::ReproduceEndOfSeason(void)
     if(c->AliveP()){
       // c->SetTargetArea(par.target_area);
       c->particles = 0;
-      
-      c->mu = par.startmu;  
+
+      c->mu = par.startmu;
       c->chemmu = par.init_chemmu; //this is the reason why I can't evolve chemmu
       c->time_since_birth=0;
       if(par.zero_persistence_past_theline ) c->setPersDur(par.persduration); //de-zero persistence so they can move again
@@ -1547,7 +1547,7 @@ void Dish::RemoveCellsUntilPopIs(int popsize)
   int current_popsize=0;
   std::vector<int> alivesigma;
   for(const auto c: cell){
-    if(c.Sigma()>0 && c.AliveP()){ 
+    if(c.Sigma()>0 && c.AliveP()){
       current_popsize++;
       alivesigma.push_back(c.Sigma());
     }
@@ -1555,14 +1555,14 @@ void Dish::RemoveCellsUntilPopIs(int popsize)
   // std::cerr << "going to remove cells until I get popsize = "<<popsize << '\n';
   while(current_popsize>popsize){
     // std::cerr << "current_popsize (faulty) = " << current_popsize << '\n';
-    
+
     int rn = current_popsize*RANDOM();
     int sigtorm = alivesigma[rn];
     // std::cerr << "sig to rm = " << sigtorm << '\n';
     // std::cerr << "sig.back() that takes its place = "<< alivesigma.back() << '\n';
     alivesigma[rn] = alivesigma[current_popsize-1];
     current_popsize--; //so that next time rn interval is reduced
-    
+
     cell[sigtorm].SetTargetArea(0);
     cell[sigtorm].Apoptose(); //set alive to false
     CPM->RemoveCell(&cell[sigtorm] ,par.min_area_for_life,cell[sigtorm].meanx,cell[sigtorm].meany);
@@ -1973,7 +1973,7 @@ int Dish::SaveData(int Time)
     //                                                            icell->k_ext_A,
     //                                                            icell->k_ext_P,
     //                                                            icell->k_ext_C) << " ";
-    
+
     ofs << icell->Calculate_ExtProtExpr_Fraction() << " ";
     ofs << icell->k_ext_0 << " ";
     ofs << icell->k_ext_A << " ";
@@ -1993,7 +1993,7 @@ int Dish::SaveData(int Time)
     ofs << icell->k_chem_A << " ";
     ofs << icell->k_chem_P << " ";
     ofs << icell->k_chem_C << " ";
-    
+
     // YOU SHOULD KEEP THIS AT THE LAST, because it's not constant
     for( auto i: icell->neighbours){
       int thisj=icell->getVJ()[ i.first ];

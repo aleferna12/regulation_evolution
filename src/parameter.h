@@ -68,7 +68,6 @@ class Parameter {
   int size_init_cells;
   int sizex;
   int sizey;
-  int divisions;
   int mcs;
   int rseed;
   double subfield;
@@ -76,6 +75,10 @@ class Parameter {
   int storage_stride;
   bool graphics;
   bool store;
+  char * genomefile;
+  int nr_regnodes;
+  double mu;
+  double mustd;
   char * datadir;
   char * datafile;
   int save_text_file_period;
@@ -127,11 +130,11 @@ class Parameter {
   bool evolreg; //do regulation parameters evolve?
   bool is_there_food; // is there food?
   bool zero_persistence_past_theline; // set persdur to zero after line is crossed
-  
+
   bool season_experiment;
   int season_duration;
   int init_cell_config;
-  
+
   struct key_lock_pair{
     int tau;
     vector<int> key;

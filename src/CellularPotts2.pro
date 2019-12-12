@@ -1,6 +1,6 @@
-TEMPLATE = app 
+TEMPLATE = app
 GRAPHICS = x11
-CONFIG += console 
+CONFIG += console
 CONFIG += release   #default +
 CONFIG -= debug     #default -
 CONFIG -= app_bundle
@@ -12,17 +12,17 @@ CONFIG -= app_bundle
 # QMAKE_CFLAGS -= -O1
 # QMAKE_CFLAGS -= -O
 # QMAKE_CFLAGS *= -m64 -O3
-# 
+#
 # QMAKE_CXXFLAGS -= -O2
 # QMAKE_CXXFLAGS -= -O1
 # QMAKE_CXXFLAGS -= -O
 # QMAKE_CXXFLAGS *= -m64 -O3
-# 
+#
 # QMAKE_LFLAGS *= -m64 -O3
 
 # QMAKE_CXXFLAGS_RELEASE -= -O
 # QMAKE_CXXFLAGS_RELEASE -= -O1
-# QMAKE_CXXFLAGS_RELEASE -= -O2 
+# QMAKE_CXXFLAGS_RELEASE -= -O2
 # QMAKE_CXXFLAGS_RELEASE *= -O3
 
 # the following removes specific warnings
@@ -43,6 +43,8 @@ message( $$TARGET )
 # Input
 HEADERS += ca.h \
 	   hull.h \
+		       gene.h \
+					 genome.h \
            cell.h \
            conrec.h \
            dish.h \
@@ -59,9 +61,11 @@ HEADERS += ca.h \
            sticky.h \
        	   crash.h \
        	   warning.h \
-          
+
 SOURCES += ca.cpp \
 	   hull.cpp \
+		       gene.cpp \
+					 genome.cpp \
            cell.cpp \
            conrec.cpp \
            dish.cpp \
@@ -75,12 +79,12 @@ SOURCES += ca.cpp \
            random.cpp \
            crash.cpp \
            warning.cpp \
-          
+
 SOURCES += $$MAINFILE
-       
+
 #QMAKE_CXXFLAGS_RELEASE += -fexceptions
 #QMAKE_CXXFLAGS_DEBUG += -fexceptions
-#QMAKE_LFLAGS_RELEASE += -O4 
+#QMAKE_LFLAGS_RELEASE += -O4
 #QMAKE_CXXFLAGS_RELEASE += -O4
 
 contains( GRAPHICS, qt ) {
@@ -88,11 +92,11 @@ contains( GRAPHICS, qt ) {
    SOURCES += qtgraph.cpp
    HEADERS += qtgraph.h
    QMAKE_CXXFLAGS_RELEASE += -DQTGRAPHICS
-   QMAKE_CXXFLAGS_DEBUG += -DQTGRAPHICS 
+   QMAKE_CXXFLAGS_DEBUG += -DQTGRAPHICS
    QT += qt3support
    #unix {
    #   system(rm $$TARGET.o)
-   #} 
+   #}
    win32 {
      QMAKE_LFLAGS += -L "\"C:\Program Files\GnuWin32\lib\"" -lpng -lz
      QMAKE_CXXFLAGS += -I "\"C:\Program Files\GnuWin32\include\""
@@ -105,10 +109,10 @@ contains( GRAPHICS, qt3 ) {
    SOURCES += qt3graph.cpp
    HEADERS += qt3graph.h
    QMAKE_CXXFLAGS_RELEASE += -DQTGRAPHICS
-   QMAKE_CXXFLAGS_DEBUG += -DQTGRAPHICS 
+   QMAKE_CXXFLAGS_DEBUG += -DQTGRAPHICS
    #unix {
    #   system(rm $$TARGET.o)
-   #} 
+   #}
    win32 {
      QMAKE_LFLAGS += -L "C:\Program Files\GnuWin32\lib" -lpng -lz
      QMAKE_CXXFLAGS += -I "C:\Program Files\GnuWin32\include"
@@ -123,7 +127,7 @@ contains( GRAPHICS, x11 ) {
    SOURCES += x11graph.cpp
    HEADERS += x11graph.h
    QMAKE_CXXFLAGS_RELEASE += -DX11GRAPHICS
-   QMAKE_CXXFLAGS_DEBUG += -DX11GRAPHICS 
+   QMAKE_CXXFLAGS_DEBUG += -DX11GRAPHICS
    #unix {
    #   system(rm $$TARGET.o)
    #}
@@ -134,4 +138,4 @@ contains( GRAPHICS, x11 ) {
 
 
 #The following line was inserted by qt3to4
-QT +=  
+QT +=

@@ -1,4 +1,4 @@
-/* 
+/*
 Copyright 1996-2006 Roeland Merks
 
 This file is part of Tissue Simulation Toolkit.
@@ -20,7 +20,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 
 */
 
-//This version of random.h of Tissue Simulation Toolkit 
+//This version of random.h of Tissue Simulation Toolkit
 // uses c++11 <random> module, a giant step into modernity :P
 
 #ifndef _RND_HH_
@@ -46,11 +46,12 @@ extern std::binomial_distribution<int> my_binomial_dist;
 
 int Seed(int seed);
 double RANDOM();
+double RANDNORMAL(double mean, double stdev);
 long RandomNumber(long max);
 void AskSeed();
 int Randomize(void);
 
-int BinomialDeviate(int N, double p); //returns a random number from binomial distr. 
+int BinomialDeviate(int N, double p); //returns a random number from binomial distr.
                                       // with parameters N,p
 
 

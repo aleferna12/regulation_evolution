@@ -1,4 +1,4 @@
-/* 
+/*
 
 Copyright 1996-2006 Roeland Merks
 
@@ -31,6 +31,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 std::mt19937_64 my_rng {};
 std::uniform_real_distribution<double> my_unif_real_dist(0., 1.); //Define distribution
 std::binomial_distribution<int> my_binomial_dist;
+std::normal_distribution<double> d;
 
 int Seed(int seed)
 {
@@ -49,6 +50,13 @@ double RANDOM(void)
 {
   return my_unif_real_dist(my_rng);
 }
+
+double RANDNORMAL(double mean, double stdev)
+{
+  std::normal_distribution<double> d(mean,stdev);
+  return d(my_rng);
+}
+
 
 int BinomialDeviate(int N, double p)
 {
@@ -85,13 +93,13 @@ void AskSeed(void)
  **/
 
 int Randomize(void) {
-  
+
   // Set the seed according to the local time
   struct timeb t;
   int seed;
-  
+
   ftime(&t);
-  
+
   seed=abs((int)((t.time*t.millitm)%655337));
   Seed(seed);
   fprintf(stderr,"Random seed is %d\n",seed);
@@ -104,7 +112,7 @@ int Randomize(void) {
 // Now using c++11 <random>
 //everything commented below is not used
 // static int idum = -1;
-// 
+//
 // /*! \return A random double between 0 and 1
 // **/
 // double RANDOM(void)
@@ -115,7 +123,7 @@ int Randomize(void) {
 //   static int iff=0;
 //   long mj,mk;
 //   int i,ii,k;
-// 
+//
 //   if (idum < 0 || iff == 0) {
 //     iff=1;
 //     mj=MSEED-(idum < 0 ? -idum : idum);
@@ -168,6 +176,3 @@ int Randomize(void) {
 //     return seed;
 //   }
 // }
-
-
-

@@ -57,14 +57,14 @@ using namespace std;
 
 INIT {
   try {
-    
+
     // Define initial distribution of cells
     //CPM->GrowInCells(par.n_init_cells,par.size_init_cells,par.subfield);
 
     // THIS IS JUST FOR EXPERIMENTS
     //CPM->PlaceOneCellsAtXY(par.sizex/2,par.sizey/2., par.size_init_cells, 1);
     //CPM->PlaceOneCellsAtXY(par.sizex/4,par.sizey/4, par.size_init_cells, 2);
-    
+
     if (! strlen(par.backupfile)) {
 
       //THIS IS TO USE FOR NORMAL INITIALISATION
@@ -86,19 +86,17 @@ INIT {
       InitContactLength();  // see dish.cpp - you don't need dish->InitContactLength because this part IS in dish
       //cerr<<"Hello bla 2.5"<<endl;
       InitMaintenanceFraction();
-      // If we have only one big cell and divide it a few times
-      // we start with a nice initial clump of cells.
-      //
-      //The behavior can be changed in the parameter file using
-      //parameters n_init_cells, size_init_cells and divisions
-      for(int howmanydivisions=0;howmanydivisions<par.divisions;howmanydivisions++){
-        vector<int> sigma_newcells = CPM->DivideCells();
-        UpdateVectorJ(sigma_newcells);
-        cerr<<"dividing again: "<<howmanydivisions<<endl;
+
+      for(auto &c: cell) {
+        c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
+        //creates a cell's genome, either randomly or from file
+        if (strlen(par.genomefile)){
+          c.ReadGenomeFromFile(par.genomefile);
+        }
+        else{
+          c.CreateRandomGenome();
+        }
       }
-
-      for(auto &c: cell) c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
-
       // for(auto &c: cell) c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
 
       //PrintContactList();
@@ -220,7 +218,7 @@ TIMESTEP {
    // }
 
 
-    
+
     // if(i>100){
      dish->CellMigration();//updates persistence time and targetvectors
     // }
@@ -271,7 +269,7 @@ TIMESTEP {
        }
       }else{
         //not evolutionary simulation
-        if( ((strcmp(par.food_influx_location,"boundarygradient") == 0) && dish->CheckWhoMadeitLinear() ) || 
+        if( ((strcmp(par.food_influx_location,"boundarygradient") == 0) && dish->CheckWhoMadeitLinear() ) ||
             ((strcmp(par.food_influx_location,"specified_experiment") == 0) && dish->CheckWhoMadeitRadial() )){
           //for printing switching times
           //write switching time to file
@@ -284,8 +282,8 @@ TIMESTEP {
         }
       }
     }
-      
-      
+
+
     //BY THE WAY THIS IS HOW YOU CALLED CELL FROM HERE
     //cout<<i<<" "<<dish->getCell(1).getXpos()<<" "<<dish->getCell(1).getYpos()<<endl;
 
@@ -341,7 +339,7 @@ TIMESTEP {
         sprintf(fname,"%s/tau%09d.png",par.datadir,i);
         // BeginScene(); //this is an empty function for X11
         ClearImage(); //
-        
+
         //test
         // Point(1, 2*10,2*par.sizey/2);
         // Point(1, 2*10+1,2*par.sizey/2);
@@ -399,7 +397,7 @@ int main(int argc, char *argv[]) {
     QTimer g;
     //QApplication a2(argc, argv);
 #endif
-    
+
     par.Read(argv[1]); // Read parameters from file
 
     //command line arguments overwrite whatever is in the parameter file
