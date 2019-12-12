@@ -94,8 +94,8 @@ void Cell::CellBirth(Cell &mother_cell) {
   target_length = mother_cell.target_length;
   half_div_area = mother_cell.half_div_area;
 
-  genome=src.genome;
-  genome.MutateGenome();
+  genome=mother_cell.genome;
+  //genome.MutateGenome();
 
   // Do not add moments here, they are going to be calculated from scratch
   // and are initialised to zero in ConstructorBody(), called right before this

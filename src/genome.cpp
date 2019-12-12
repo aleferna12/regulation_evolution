@@ -1,4 +1,4 @@
-#include "genome.hh"
+#include "genome.h"
 
 //default constructor required for init in other class
 Genome::Genome()
@@ -138,7 +138,7 @@ void Genome::WriteToFile(char *filename)
   //first read the nr of nodes
   ofs << innr <<" "<< regnr <<" "<< outnr<<endl;
   for(auto i: inputscale){
-    ofs<<i<<" "<<;
+    ofs<<i<<" ";
   }
   ofs<<endl;
   //now write all the interaction strengths
@@ -160,6 +160,8 @@ void Genome::WriteToFile(char *filename)
     }
     ofs<<endl;
   }
+  ofs.flush();
+  ofs.close();
 }
 
 void Genome::UpdateGeneExpression(const vector<double> &input)
@@ -240,42 +242,49 @@ void Genome::MutateGenome(double mu, double mustd)
 
 //prints a dot format network to standard output.
 //madness, I know...
-void Genome::OutputGenome(void)
+void Genome::PrintGenome(char *filename)
 {
 
-  cout<< "digraph G { "<<endl;
-  cout<< "layout=\"dot\""<<endl;
+  std::ofstream ofs;
 
-  cout<<"node [fontname=\"arial\",fontsize=18,style=filled];"<<endl;
-  cout<<"bgcolor=\"#FFFFFF\";"<<endl;
+  ofs.open( filename , std::ofstream::out);
+
+  ofs<< "digraph G { "<<endl;
+  ofs<< "layout=\"dot\""<<endl;
+
+  ofs<<"node [fontname=\"arial\",fontsize=18,style=filled];"<<endl;
+  ofs<<"bgcolor=\"#FFFFFF\";"<<endl;
 
   int count;
   for (auto n: regnodes){
-    cout << n.genenr<<" [label=\""<<n.genenr<<", "<<n.threshold<<"\"];"<<endl;
+    ofs << n.genenr<<" [label=\""<<n.genenr<<", "<<n.threshold<<"\"];"<<endl;
     count=0;
     for (const auto w: n.w_innode) {
-      cout << count <<"-> "<<n.genenr<<"[label=\" "<<w<<"\"];"<<endl;
+      ofs << count <<"-> "<<n.genenr<<"[label=\" "<<w<<"\"];"<<endl;
       count++;
     }
     count=0;
     for (const auto w: n.w_regnode) {
-      cout << count+innr <<"-> "<<n.genenr<<"[label=\" "<<w<<"\"];"<<endl;
+      ofs << count+innr <<"-> "<<n.genenr<<"[label=\" "<<w<<"\"];"<<endl;
       count++;
     }
   }
-  cout <<" "<<endl;
+  ofs <<" "<<endl;
   for (auto n: outputnodes){
-    cout << n.genenr<<" [label=\""<<n.genenr<<", "<<n.threshold<<"\"];"<<endl;
+    ofs << n.genenr<<" [label=\""<<n.genenr<<", "<<n.threshold<<"\"];"<<endl;
     count=0;
     for (const auto w: n.w_regnode) {
-      cout << count+innr <<"-> "<<n.genenr<<"[label=\" "<<w<<"\"];"<<endl;
+      ofs << count+innr <<"-> "<<n.genenr<<"[label=\" "<<w<<"\"];"<<endl;
       count++;
     }
   }
 
-  cout<<"}"<<endl;
-  cout<<""<<endl;
-  cout<<""<<endl;
+  ofs<<"}"<<endl;
+  ofs<<""<<endl;
+  ofs<<""<<endl;
+
+  ofs.flush();
+  ofs.close();
 }
 
 void Genome::OutputGeneState(void)

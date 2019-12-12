@@ -1,8 +1,7 @@
 #ifndef GeneHeader
 #define GeneHeader
 
-#include "header.hh"
-
+#include <vector>
 
 class Gene
 {
@@ -14,8 +13,8 @@ class Gene
   int NewBool; //for updating purposes
   double threshold; //at which value of inputs is this gene "on"
 
-  vector <double> w_innode; //input weights coming from input nodes
-  vector <double> w_regnode; //input weights coming from regulation nodes
+  std::vector <double> w_innode; //input weights coming from input nodes
+  std::vector <double> w_regnode; //input weights coming from regulation nodes
 
   Gene(int type, int nr, int innr, int regnr);
   ~Gene();

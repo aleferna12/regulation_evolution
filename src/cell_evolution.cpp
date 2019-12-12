@@ -94,7 +94,7 @@ INIT {
           c.ReadGenomeFromFile(par.genomefile);
         }
         else{
-          c.CreateRandomGenome();
+          c.CreateRandomGenome(2, par.nr_regnodes, 1);
         }
       }
       // for(auto &c: cell) c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area

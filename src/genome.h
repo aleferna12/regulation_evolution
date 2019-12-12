@@ -1,8 +1,15 @@
 #ifndef GenomeHeader
 #define GenomeHeader
 
-#include "header.hh"
-#include "gene.hh"
+#include <cstdio>
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <string.h>
+#include <sstream>
+#include "gene.h"
+
+using namespace std;
 
 class Genome
 {
@@ -30,6 +37,8 @@ class Genome
   //read and write genome
   void ReadFromFile(char* filename);
   void WriteToFile(char* filename);
+  void PrintGenome(char * filename); //makes a dot plot
+  void OutputGeneState(void);
 
   //genomic functions
   void UpdateGeneExpression(const vector<double> &input);
@@ -37,8 +46,7 @@ class Genome
   void MutateGenome(double mu, double mustd);
 
   //output functions
-  void OutputGenome(void);
-  void OutputGeneState(void);
+
 
 };
 

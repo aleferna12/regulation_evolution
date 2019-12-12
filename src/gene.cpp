@@ -1,4 +1,4 @@
-#include "gene.hh"
+#include "gene.h"
 #include "random.h"
 
 Gene::Gene(int type, int nr, int innr, int regnr)
