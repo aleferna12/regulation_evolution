@@ -93,25 +93,7 @@ void Dish::InitKeyLock(void)
       exit(1);
     }
   }
-  //cout << "here 2"<<endl;
-  /*
 
-  if(  init_keyprey.size()     != key_lock_length ||
-       init_lockprey.size()    != key_lock_length ||
-       init_keypredator.size() != key_lock_length ||
-       init_lockpredator.size()!= key_lock_length
-    ){
-    cerr<<"Dish::InitKeyLock(): error. Initial key and lock vectors are not of size par.key_lock_length = "<<par.key_lock_length<<endl;
-    exit(1);
-  }*/
-
-  //cerr<<"Checking that prey and predator works: "<<PREY<<" "<<PREDATOR<<endl;
-  //exit(1);
-//   for(auto c:cell)
-//     cerr<<c.tau<<endl;
-//   exit(1);
-//
-  //cout << "here 1"<<endl;
   vector<Cell>::iterator c;
   for(c=cell.begin(), ++c; c!=cell.end(); ++c){
     int current_tau=c->getTau();
@@ -137,13 +119,7 @@ void Dish::InitKeyLock(void)
       cerr<<"Dish::InitKeyLock(): error. Are there more than two types? got tau = " << c->getTau()<<endl;
       exit(1);
     }
-//     for(auto bla: c->getJkey())
-//       cerr<<bla<<" ";
-//     cerr<<endl;
-//     for(auto bla: c->getJlock())
-//       cerr<<bla<<" ";
-//     cerr<<endl;
-//
+
   }
 
   //exit(1);

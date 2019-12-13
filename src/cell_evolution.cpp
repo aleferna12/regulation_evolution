@@ -74,19 +74,20 @@ INIT {
 
       // Assign a random type to each of the cells, i.e. PREYS and PREDATORS
       CPM->SetRandomTypes();
-      //cerr<<"Hello bla 0"<<endl;
+      cout << "done setting types"<<endl;
       //Initialise key-lock pairs - we do it after types, because we need the information
-     InitKeyLock();
-     // cerr<<"Hello bla 1"<<endl;
+      InitKeyLock();
+      cout << "done setting keylock"<<endl;
       //Initialise vector of J values for each cell
-     InitVectorJ();
-      //cerr<<"Hello bla 2"<<endl;
+      InitVectorJ();
+      cout << "done setting J values"<<endl;
       //Initialise the contactlength bookkeeping now that the cells are placed
       // at this stage, cells are only surrounded by medium
       InitContactLength();  // see dish.cpp - you don't need dish->InitContactLength because this part IS in dish
-      //cerr<<"Hello bla 2.5"<<endl;
+      cout << "done setting contact length"<<endl;
       InitMaintenanceFraction();
 
+      cout << "Going to initialise genome"<<endl;
       for(auto &c: cell) {
         c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
         //creates a cell's genome, either randomly or from file
@@ -97,32 +98,17 @@ INIT {
           c.CreateRandomGenome(2, par.nr_regnodes, 1);
         }
       }
-      // for(auto &c: cell) c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
+      cout << "Done initialising genome"<<endl;
 
-      //PrintContactList();
-
-        //Set function pointer for food update, depending on parameters
-        Food->InitIncreaseVal(CPM); //a pointer to CPM is an argument to InitIncreaseVal
+      //Set function pointer for food update, depending on parameters
+      Food->InitIncreaseVal(CPM); //a pointer to CPM is an argument to InitIncreaseVal
                                      // but NOT to IncreaseVal if it points to IncreaseValEverywhere
 
-      // Initialises food plane
-      // for(int i=0;i<par.sizex;i++)
-      //   for(int j=0;j<par.sizey;j++)
-      //     Food->addtoValue(i,j,par.initial_food_amount);  //add initial amount of food for preys
-
+      // Initialises food plane (now the gradient plane)
       Food->IncreaseVal(*(Food));
-      //cout<<"Hello bla 3"<<endl;
-      // exit(1);
-      for(int init_time=0;init_time<10;init_time++){
-      //   // cerr<<"Init Time: "<<init_time<<endl;
-      //   // for(auto c: cell){
-      //   //   if(c.AliveP()){
-      //   //     printf(" Sigma %d, weight_for_chemotaxis: %.15f\n", c.Sigma(), cell[c.Sigma()].weight_for_chemotaxis);
-      //   //   }
-      //   //   else
-      //   //     printf(" Cell with sigma %d is dead\n", c.Sigma());
-      //   // }
 
+      //run CPM for some time without persistent motion
+      for(int init_time=0;init_time<10;init_time++){
         CPM->AmoebaeMove2(PDEfield);  //this changes neighs
       }
       InitCellMigration();
@@ -141,20 +127,6 @@ INIT {
     std::cerr << error << "\n";
     exit(1);
   }
-
-
-
-  // std::cerr << "howmany cells? "<< cell.size() << '\n';
-  // for(auto c: cell){
-  //   if(c.AliveP()){
-  //     printf("Sigma %d, weight_for_chemotaxis: %.15f\n", c.Sigma(), cell[c.Sigma()].weight_for_chemotaxis);
-  //   }
-  //   else
-  //     printf("Cell with sigma %d is dead\n", c.Sigma());
-  // }
-  // std::cerr << "How can it be that weight_for_chemotaxis is different between here and inside the function?" << '\n';
-  // it isn't, but there is something weird-
-  // exit(1);
 }
 
 TIMESTEP {
@@ -164,73 +136,19 @@ TIMESTEP {
     static Info *info=new Info(*dish, *this);
     static int i=par.starttime; //starttime is set in Dish. Not the prettiest solution, but let's hope it works.
 
-    //cout << "running... "<< i<<endl;
     if( !(i%100000) ) cerr<<"TIME: "<<i<<endl;
 
-//     cerr<<"target areas before step"<<endl;
-//     for(auto c: cell){
-//       cerr<<c.TargetArea()<<endl;
-//     }
+    dish->CellsEat2();
 
+    dish->UpdateCellParameters(i); // SCALED//this changes neighs (via DivideCells)
 
-    //cerr<<"TIME: "<<i<<endl;
-    //if(i==50) exit(1);
-    //add food to plane
-    //if(!(i%10))
-    //if(!(i%par.scaling_cell_to_ca_time))
-    //{
-      //dish->Food->IncreaseValIfEmpty(dish->CPM);
+    dish->CellMigration();//updates persistence time and targetvectors
 
-    // TIME SCALING IS DONE INSIDE FUNCTIONS
-  //  cout <<"hello1"<<endl;
-
-    // **************************************************** //
-    // WE NOW CHANGE FOOD BELOW - SEE FUNCTION CheckWhoMadeit
-    // dish->Food->IncreaseVal(*(dish->Food)); // SCALED
-    // *************************************************** //
-
-
-//       // testing //
-//
-//       // Initialises food plane
-//       for(int i=0;i<par.sizex;i++)
-//         for(int j=0;j<par.sizey;j++)
-//           if
-//       exit(1);
-//
-//       //   testing    //
-//
-      // dish->CellsEat(); // SCALED // HERE MAX PARTICLES IS DEFINED, should be a parameter
-
-
-      dish->CellsEat2();
-
-
-
-      //dish->Predate(); //ALREADY SCALED //this does not changes neighs, only target areas!!!
-
-      dish->UpdateCellParameters(i); // SCALED//this changes neighs (via DivideCells)
-      //dish->CellGrowthAndDivision2(); // SCALED//this changes neighs (via DivideCells)
-
-      //Recalculate the all vs. all J table.
-      //this can be optimised by having some intelligent return flags from dish->CellGrowthAndDivision2();
-      // for now it's every one vs everyone all the times.
-   // }
-
-
-
-    // if(i>100){
-     dish->CellMigration();//updates persistence time and targetvectors
-    // }
-
-    //dish->CPM->AmoebaeMove(dish->PDEfield);  //this changes neighs
     dish->CPM->AmoebaeMove2(dish->PDEfield);  //this changes neighs
-    //cout <<"hello2"<<endl;
-    //cerr<<"Hello 1"<<endl;
+
     dish->UpdateNeighDuration();
 
-    //dish->Food->IncreaseVal(*(dish->Food));
-
+    //Change the season and do evolution
     if( i%25 == 0){
       if(par.evolsim){
         if(par.season_experiment){
@@ -284,18 +202,6 @@ TIMESTEP {
     }
 
 
-    //BY THE WAY THIS IS HOW YOU CALLED CELL FROM HERE
-    //cout<<i<<" "<<dish->getCell(1).getXpos()<<" "<<dish->getCell(1).getYpos()<<endl;
-
-    // if( i%25 == 0){
-    //   cerr<<"by time: "<<i<<" there are so many cells: "<<dish->CountCells()<<endl;
-    // }
-
-    // if(i%1000==0 ) {
-    //   cerr<<"Time: "<<i<<endl;
-    //   dish->PrintCellParticles();
-    // }
-
     // TO SCREEN
     // UNUSED
     if (par.graphics && !(i%par.storage_stride)) {
@@ -316,7 +222,6 @@ TIMESTEP {
       EndScene();
       info->Menu();
     }
-//cout <<"hello4"<<endl;
     // TO FILE FOR MOVIE
     if (par.store && !(i%par.storage_stride)) {
       if(par.readcolortable){
@@ -340,18 +245,11 @@ TIMESTEP {
         // BeginScene(); //this is an empty function for X11
         ClearImage(); //
 
-        //test
-        // Point(1, 2*10,2*par.sizey/2);
-        // Point(1, 2*10+1,2*par.sizey/2);
-        // Point(1, 2*10,2*par.sizey/2+1);
-        // Point(1, 2*10+1,2*par.sizey/2+1);
         dish->Plot(this,0); // this is g //everything contained here
         EndScene();
         Write(fname);
       }
     }
-  //  cout <<"hello5"<<endl;
-    //exit(1);
     // TO FILE FOR TEXT
     if( !(i%par.save_text_file_period) ){
       int popsize=dish->SaveData(i); //saves data to text
@@ -360,7 +258,6 @@ TIMESTEP {
         exit(0);
       }
     }
-  //  cout <<"hello2"<<endl;
     // TO FILE FOR BACKUP
     if( !(i%par.save_backup_period) ){
       dish->MakeBackup(i); //saves all permanent data
@@ -373,7 +270,6 @@ TIMESTEP {
     exit(1);
   }
 
-  // exit(1);
 }
 
 int PDE::MapColour(double val) {

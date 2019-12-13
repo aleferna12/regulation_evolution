@@ -42,7 +42,7 @@ void Genome::InitGenome(int in, int reg, int out)
 
 Genome::~Genome()
 {
- cout<<"destructed"<<endl;
+ //cout<<"destructed"<<endl;
 }
 
 Genome::Genome(const Genome &Parent)
