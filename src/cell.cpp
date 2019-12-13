@@ -134,26 +134,6 @@ void Cell::CellBirth(Cell &mother_cell) {
   growth=mother_cell.growth;
   eatprob=mother_cell.eatprob;
 
-  maintenance_fraction = mother_cell.maintenance_fraction; //must be copied for first time step of life
-  k_mf_0 = mother_cell.k_mf_0;
-  k_mf_A = mother_cell.k_mf_A;
-  k_mf_P = mother_cell.k_mf_P;
-  k_mf_C = mother_cell.k_mf_C;
-
-  extprotexpress_fraction = mother_cell.extprotexpress_fraction;
-  k_ext_0 = mother_cell.k_ext_0;
-  k_ext_A = mother_cell.k_ext_A;
-  k_ext_P = mother_cell.k_ext_P;
-  k_ext_C = mother_cell.k_ext_C;
-  k_ext_0t= mother_cell.k_ext_0t;
-  k_ext_Pt= mother_cell.k_ext_Pt;
-
-
-  weight_for_chemotaxis = mother_cell.weight_for_chemotaxis;
-  k_chem_0=mother_cell.k_chem_0;
-  k_chem_A=mother_cell.k_chem_A;
-  k_chem_P=mother_cell.k_chem_P;
-  k_chem_C=mother_cell.k_chem_C;
 
   clearNeighbours(); //neighbours will be reassigned during the division function
 
@@ -223,29 +203,6 @@ void Cell::ConstructorBody(int settau,int setrecycledsigma) {
   eatprob=0.;
   growth=par.growth;
 
-  maintenance_fraction = 1;
-  k_mf_0 = par.init_k_mf_0;
-  k_mf_A = par.init_k_mf_A;
-  k_mf_P = par.init_k_mf_P;
-  k_mf_C = par.init_k_mf_C;
-
-  extprotexpress_fraction = 1;
-  k_ext_0 = par.init_k_ext_0;
-  k_ext_A = par.init_k_ext_A;
-  k_ext_P = par.init_k_ext_P;
-  k_ext_C = par.init_k_ext_C;
-  k_ext_0t = par.init_k_ext_0t;
-  k_ext_Pt = par.init_k_ext_Pt;
-
-
-  weight_for_chemotaxis=0.;
-  k_chem_0=par.init_k_chem_0;
-  k_chem_A=par.init_k_chem_A;
-  k_chem_P=par.init_k_chem_P;
-  k_chem_C=par.init_k_chem_C;
-
-  //  growth_threshold=par.dthres;
-  growth_threshold=0;
   v[0]=0.; v[1]=0.;
   n_copies=0;
   mu=0.0;
@@ -502,52 +459,4 @@ int Cell::MutateKeyAndLock(void)
 //
   return nmut;
 
-}
-
-//returns a number between 0 and 1 which is either the maintenance_fraction
-// or the fraction of expressed surface proteins (for adhesion)
-double Cell::CalculateMaintenance_or_ExtProtExpr_Fraction(double k0, double kA,double kP,double kC)
-{
-  double fraction=k0;
-  // std::cerr << "k0,kA,kP,kC = "<<k0<<" "<<kA<<" "<<kP<<" "<<kC  << '\n';
-
-  // std::cerr << "k0 = "<<fraction << '\n';
-  fraction += kA * area / (double)half_div_area;
-
-  // std::cerr << "k0+kA*A = "<<fraction  << '\n';
-
-  fraction += kP * particles / 50.; // <-a reasonable scaling factor :P
-
-  // std::cerr << "k0+kA*P+kP*P = "<<fraction  << '\n';
-
-
-  //next bit averages over non zero contacts:
-  // I should get the Jvalues from the sigma in contact with this cell
-  // and the length
-  // should get a normalised number in [0,1] when I divided by a reasonble scaling factor: 43 :P
-  double contlen_total=0.;
-  double sum_J_times_contlen=0.;
-  for(auto nei:neighbours){
-    int sigma_nei = nei.first; // sigma of cell in contact
-    if(sigma_nei==0) continue;
-
-    int contlen_nei = nei.second.first; // contact length
-    contlen_total += contlen_nei;
-    sum_J_times_contlen += vJ[sigma_nei]*contlen_nei; //
-  }
-
-  //no contribution from contacts if this cell is in contact with no one
-  double toadd_avrgJ = (contlen_total>0)? sum_J_times_contlen/(double)(contlen_total*43.): 0.;
-  fraction += kC * toadd_avrgJ;
-
-  // std::cerr << "k0+kA*P+kP*P+kC*C = "<<fraction  << '\n';
-
-
-  if(fraction<0.) fraction=0.;
-  if(fraction>1.) fraction=1.;
-
-  // std::cerr << "Final = "<<fraction  << '\n';
-
-
-  return fraction;
 }

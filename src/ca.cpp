@@ -172,24 +172,24 @@ int CellularPotts::SetNextSigma(int sig) {
   //the plane has a 1 px boundary on all size, therefore we place the pixels
   //within that
   static int xcount=1, ycount=1;
-  
+
   if(xcount>=sizex-1 ||ycount>=sizey-1){
     return 1;
   }
-  
+
   sigma[xcount][ycount]=sig;
   if (sig){
     (*cell)[sig].area++;
     (*cell)[sig].AddSiteToMoments(xcount, ycount);
   }
-    
+
   ycount++;
   if(ycount==sizey-1){
     ycount=1;
     xcount++;
   }
   return 0;
-  
+
 }
 
 void CellularPotts::IndexShuffle() {
@@ -697,18 +697,19 @@ double CellularPotts::Adhesion_Energy(int sigma1, int sigma2)
   if(! (sigma1 && sigma2) )
     return Jval;
 
-  double fr1 = (*cell)[sigma1].GetExtProtExpress_Fraction();
-  double fr2 = (*cell)[sigma2].GetExtProtExpress_Fraction();
-  double minfr = (fr1<fr2)?fr1:fr2;
+  //double fr1 = (*cell)[sigma1].GetExtProtExpress_Fraction();
+  //double fr2 = (*cell)[sigma2].GetExtProtExpress_Fraction();
+  //double minfr = (fr1<fr2)?fr1:fr2;
   // minfr is in [0,1],
   // I want to map it so that if minfr=0, I return 43, and if minfr=1 I return Jval
   // very simple function would be linear:
   // a line between (0,43) and (1,Jval) looks like:
   // y - 43 = (Jval-43)/(1-0) * (minfr1 - 0) ; i.e.
   // y = 43 + minfr*(Jval-43)
-  double  Jtoreturn = 43. - minfr*(43. - Jval);
-  // cerr << "s1,s2="<<sigma1<<" "<< sigma2 <<", max jval = "<< Jval <<", minfr = "<< minfr<<endl;
-  // cerr << "Returning J = "<< Jtoreturn << '\n';
+
+//  double  Jtoreturn = 43. - minfr*(43. - Jval);
+  double Jtoreturn=Jval;
+
   return Jtoreturn;
 }
 
@@ -1417,64 +1418,64 @@ int **CellularPotts::SearchNandPlot(Graphics *g, bool get_neighbours)
 
 
 // void CellularPotts::ReadZygotePicture(void) {
-// 
-// 
-// 
+//
+//
+//
 //   int pix,cells,i,j,c,p,checkx,checky;
 //   char **pixelmap;
 //   char pixel[3];
-// 
+//
 //   sscanf(ZYGXPM(ZYGOTE)[0],"%d %d %d %d",&checkx,&checky,&cells,&pix);
-// 
+//
 //   if ((checkx>sizex)||(checky>sizey)) {
 //     std::cerr <<  "ReadZygote: The included xpm picture is smaller than the grid!\n";
 //     std::cerr << "\n Please adjust either the grid size or the picture size.\n";
 //     std::cerr << sizex << "," << sizey << "," << checkx << "," << checky << "\n";
 //     exit(1);
 //   }
-// 
+//
 //   pixelmap=(char **)malloc(cells*sizeof(char *));
 //   if (pixelmap==NULL) MemoryWarning();
-// 
+//
 //   pixelmap[0]=(char *)malloc(cells*3*sizeof(char));
 //   if (pixelmap[0]==NULL) MemoryWarning();
-// 
+//
 //   for(i=1;i<cells;i++)
 //     pixelmap[i]=pixelmap[i-1]+3;
-// 
+//
 //   for (i=0;i<cells;i++) {
 //     for (j=0;j<pix;j++)
 //       pixelmap[i][j]=ZYGXPM(ZYGOTE)[i+1][j];
 //     pixelmap[i][pix]='\0';
 //   }
-// 
+//
 //   for (i=0;i<sizex*sizey;i++) sigma[0][i]=0;
 //   fprintf(stderr,"[%d %d]\n",checkx,checky);
-// 
+//
 //   int offs_x, offs_y;
 //   offs_x=(sizex-checkx)/2;
 //   offs_y=(sizey-checky)/2;
-// 
+//
 //   for (i=0;i<checkx;i++)
 //     for (j=0;j<checky;j++) {
 //       for (p=0;p<pix;p++)
 //         pixel[p]=ZYGXPM(ZYGOTE)[cells+1+j][i*pix+p];
-// 
+//
 //       pixel[pix]='\0';
-// 
+//
 //       for (c=0;c<cells;c++) {
 // 	if (!(strcmp(pixelmap[c],pixel))) {
 // 	  if ( (sigma[offs_x+i][offs_y+j]=c) ) {
-// 
+//
 // 	    // if c is _NOT_ medium (then c=0)
 // 	    // assign pixel values from "sigmamax"
 // 	    sigma[offs_x+i][offs_y+j]+=(Cell::MaxSigma()-1);
 // 	  }
 // 	}
-// 
+//
 //       }
 //     }
-// 
+//
 //   free(pixelmap[0]);
 //   free(pixelmap);
 // }
@@ -1664,7 +1665,7 @@ Dir *CellularPotts::FindCellDirections3(void) const
 
         double tmpx=x; //because we may change them if wrapped
         double tmpy=y;
-        
+
         double meanx = (*cell)[isigma].meanx;
         double meany = (*cell)[isigma].meany;
 
@@ -1713,7 +1714,7 @@ Dir *CellularPotts::FindCellDirections3(void) const
   //     ( sxy syy )
   // We diagonalise this and find eigenvalues lb1 and lb2
   //recalculate the means while we're at it
-  
+
 
   double small_number = 0.0000001;
   double large_enough_number = 1./small_number;
@@ -2238,10 +2239,10 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 //   int sigmaneigh;
 //   // for the cell directions
 //   Dir *celldir=0;
-// 
+//
 //   // Allocate space for divisionflags
 //   vector<int> divflags( cell->size()*2 + 5 ); // automatically initialised to zero
-// 
+//
 //   //curious: here it also complains when which_cells contains as many cells as the whole cell vector
 //   //but further down, it will just divide all cells if which_cells is empty...
 //   // the comment above really is not true
@@ -2254,7 +2255,7 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 //     celldir=FindCellDirections3(); //find cell directions here
 //     //celldir=FindCellDirections2();  // notice that this is called once, the first time any cell is divided
 //     //celldir=FindCellDirections(); BUGGY in two ways: doesn't handle division plane across boundaries at all, it misplaces the normal one as well.
-// 
+//
 //     for (int i=1;i<sizex-1;i++) for (int j=1;j<sizey-1;j++)
 //       if (sigma[i][j]>0) // i.e. not medium and not border state (-1)
 //       {
@@ -2263,7 +2264,7 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 //         // the pointer will be lost...
 //         Cell *motherp=&((*cell)[sigma[i][j]]); //mother points to the cell holding this pixel
 //         Cell *daughterp;
-// 
+//
 //         // Divide if NOT medium and if DIV bit set or divide_always is set
 //         // if which_cells is given, di+nx>0 && i+nx[k]<sizex-1 divide only if the cell
 //         // is marked in which_cells.
@@ -2272,7 +2273,7 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 //           //if first time we get this mother then divflags at pos mother_sigma is 0
 //           if( !(divflags[ motherp->Sigma() ]) ){
 //             // add daughter cell, copying states of mother
-// 
+//
 //             //we first check if we can recycle some position already exisiting in the vector
 //             //such position would come from a cell that has previously apoptosed
 //             vector<Cell>::iterator c;
@@ -2297,7 +2298,7 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 //               // renew pointer to mother (because after push_back memory might be relocated)
 //               motherp=&((*cell)[sigma[i][j]]);
 //             }
-// 
+//
 //             divflags[ motherp->Sigma() ]=daughterp->Sigma(); //daughtersigma is set to newest sigma in ConstructorBody of Cell
 //             delete daughterp;
 //             // array may be relocated after "push_back"
@@ -2308,7 +2309,7 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 //           }else{
 //             daughterp=&( (*cell)[ divflags[motherp->Sigma()] ] );
 //           }
-// 
+//
 //           // if site is below the minor axis of the cell: sigma of new cell
 //           // to properly choose this we have to check where this pixel is
 //           int checki=i;
@@ -2317,7 +2318,7 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 //             //Check if this pixel is closer to mean pos when wrapped, we wrap it
 //             double meanx=celldir[motherp->sigma].meanx;
 //             double meany=celldir[motherp->sigma].meany;
-// 
+//
 //             if( (checki-meanx)>0 && (checki-meanx)>(meanx-(checki-(par.sizex-2))) ) {
 //               checki-=(par.sizex-2);
 //               //cerr<<"celldiv passb1"<<endl;
@@ -2339,12 +2340,12 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 //             motherp->DecrementArea();
 //             motherp->DecrementTargetArea();
 //             motherp->RemoveSiteFromMoments(i,j);
-// 
+//
 //             sigma[i][j]=daughterp->Sigma();  // WHERE is daughterp->Sigma() defined?
 //             daughterp->IncrementArea();
 //             daughterp->IncrementTargetArea();
 //             daughterp->AddSiteToMoments(i,j);
-// 
+//
 //             //go through neighbourhood to update contacts
 //             // to new daughter contacts we now pass duration from mother
 //             // sigma[i][j] is daughter, sigmaneigh can be daughter, mother, medium, someone else
@@ -2363,8 +2364,8 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 //                   continue;
 //                 }
 //               }
-// 
-// 
+//
+//
 //               sigmaneigh = sigma[ neix ][ neiy ];
 //               //if sigmaneigh is not sigma, we update the contact of daughter cell with it,
 //               //and the contact of that cell with daughter (provided it is not medium)
@@ -2375,7 +2376,7 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 //                 //take duration from mother iff sigmaneigh is not mother
 //                 if(sigmaneigh!=motherp->Sigma() && sigmaneigh!=MEDIUM)
 //                   (*cell)[sigma[i][j]].SetNeighbourDurationFromMother(sigmaneigh, motherp->returnDuration(sigmaneigh) );
-// 
+//
 //                 //cerr<<"Hello 0.2"<<endl;
 //                 //also cell to which sigmaneigh belongs must be updated, if it is not medium
 //                 if(sigmaneigh){
@@ -2412,7 +2413,7 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 //   }
 //   if (celldir)
 //     delete[] (celldir);
-// 
+//
 //   return divflags;
 // }
 
@@ -2806,15 +2807,15 @@ int CellularPotts::PlaceCellsRandomly(int n, int cellsize)
 }
 
 // Places cells at regular distance from one another:
-// For square cells of size s, the spatial occupation is sqrt(s). 
-// Since we have to place n of them, we use a square of space of size sqrt(n)*(sqrt(s) + a_little_bit), 
-// centered at the center of grid, which means that the upper left corner of the first cell is at 
+// For square cells of size s, the spatial occupation is sqrt(s).
+// Since we have to place n of them, we use a square of space of size sqrt(n)*(sqrt(s) + a_little_bit),
+// centered at the center of grid, which means that the upper left corner of the first cell is at
 // x=(sizex-sqrt(n)*(sqrt(s) + a_little_bit))/2
 int CellularPotts::PlaceCellsOrderly(int n_cells,int size_cells)
 {
     int count=0;
     int a_little_bit=2;
-    
+
     int smaller_dimension=( par.sizex < par.sizey)?par.sizex:par.sizey;
     int sqrt_n_cells = 1+sqrt(n_cells);
     //to avoid having 49 cells when you want 50, I'm rounding sqrt(n_cells) to +1
@@ -2822,27 +2823,27 @@ int CellularPotts::PlaceCellsOrderly(int n_cells,int size_cells)
       std::cerr << "PlaceCellsOrderly(): Error. Too many cells or too large size?" << '\n';
       exit(1);
     }
-    
+
     // int begin = (smaller_dimension-  sqrt(n_cells)*(sqrt(size_cells) + a_little_bit))/2;
     // int end = (smaller_dimension +  sqrt(n_cells)*(sqrt(size_cells) + a_little_bit))/2;
-    
+
     int beginx = (par.sizex -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
     int endx =   (par.sizex +  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
     int beginy = (par.sizey -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
     int endy =   (par.sizey +  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
-    
-    
+
+
     int step = ( sqrt(size_cells) + a_little_bit );
-    
+
     int avrg_area=0;
-    
+
     // each x,y point denotes the upper left corner of a cell
     // with i,j we run through the cell
     // for different initial conditions we will have oders of putting the cells
     //this is quite extendable
     vector<int> v_order_x;
     vector<int> v_order_y;
-    
+
     switch( par.init_cell_config ){
       case 0: {
         for(int x = beginx ; x < endx ; x += step ) v_order_x.push_back( x );
@@ -2868,7 +2869,7 @@ int CellularPotts::PlaceCellsOrderly(int n_cells,int size_cells)
         std::cerr << "PlaceCellsOrderly(): Error. Got an unusable value for par.init_config" << '\n';
         exit(1);
     }
-    
+
     for(auto x: v_order_x){
       for(auto y: v_order_y){
     // for(int x = beginx ; x < endx ; x += step ){
@@ -2894,8 +2895,8 @@ int CellularPotts::PlaceCellsOrderly(int n_cells,int size_cells)
       }
       if(count == n_cells) break;
     }
-    
-    
+
+
     cerr<<"Placed "<<count<<" cells out of "<<n_cells<<" requested; avrg area = "<< avrg_area/(double)count<<endl;
     //exit(1);
     return count;

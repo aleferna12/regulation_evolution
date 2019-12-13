@@ -298,14 +298,6 @@ void Dish::UpdateVectorJ(vector<int> sigma_to_update)
 //   exit(1);
 }
 
-//Initialise init_maintenance_fraction from parameters.h
-void Dish::InitMaintenanceFraction()
-{
-  vector<Cell>::iterator c;
-  for(c=cell.begin(); c!=cell.end(); ++c){
-    c->maintenance_fraction = par.init_maintenance_fraction;
-  }
-}
 
 // sigma_newcells is an int vector as lognas there are cells,
 // it is zero everywhere, except at the positions of a mother cell's sigma,
@@ -319,7 +311,7 @@ void Dish::MutateCells(vector<int> sigma_to_update)
       //cerr<<"hello from before mutation"<<endl;
       if(par.evolreg == true){
         //cell[upd_sigma].MutateMaintenanceFractionParameters();
-        cell[upd_sigma].MutateExtProtFractionParameters();
+      //  cell[upd_sigma].MutateExtProtFractionParameters();
         //cell[upd_sigma].MutateChemotaxisParameters();
       }
     }
@@ -701,10 +693,6 @@ void Dish::CellGrowthAndDivision(void) {
 	c!=cell.end();
 	c++) {
 
-    if ( (c->Area()-c->TargetArea())>c->GrowthThreshold() ) {
-      c->IncrementTargetArea();
-
-    }
 
     if ( (c->TargetArea() > 2 * mem_area ) ) {
       which_cells[c->Sigma()]=true;
@@ -987,35 +975,13 @@ void Dish::CellGrowthAndDivision2(void)
 
         double particles_metabolised = 0.;
         double particles_for_movement = 0.;
-        //in this version, maintenance_fraction is a function of evolvable parameters:
-        // m = k0 + Area * kA/Division area + particles * kP/50 + <J contact>/length
-        // and bounded inside [0,1]
-        c->maintenance_fraction =1.;//c->CalculateMaintenance_or_ExtProtExpr_Fraction(c->k_mf_0,c->k_mf_A,c->k_mf_P,c->k_mf_C);
-
-        //Next, also Js should be a function of that, bounded between [reasonably high, actual J values]
-        // this is just a number that is going to be multiplied to the J values of this cell...
-        // ... how? maybe directly in amoebamove? (it'd be easier than updating all J values for this guy
-        // and for all those in contact with this guy)
-
-        //same function, be careful which parameters you pass
-        c->extprotexpress_fraction = c-> CalculateMaintenance_or_ExtProtExpr_Fraction(c->k_ext_0,c->k_ext_A,c->k_ext_P,c->k_ext_C);
-        // if (c->extprotexpress_fraction<0. || c->extprotexpress_fraction>1.) {
-        //  std::cerr <<"Sigma: "<<c->Sigma()<< ", extprotexpress_fraction: "<< c->extprotexpress_fraction << '\n';
-        // }
-
-        //same function for regulation of chemotaxis
-        c->weight_for_chemotaxis =  c-> CalculateMaintenance_or_ExtProtExpr_Fraction(c->k_chem_0,c->k_chem_A,c->k_chem_P,c->k_chem_C);
-        // if (c->weight_for_chemotaxis<0. || c->weight_for_chemotaxis>1.) {
-          // std::cerr <<"Sigma: "<<c->Sigma()<< ", weight_for_chemotaxis: "<< c->weight_for_chemotaxis << '\n';
-
-        // }
 
         if(area){
           // particles_metabolised are those particles that are used for maintenance
           // only a fraction should be used for this
-          //the other should be used for movement
-          particles_metabolised = c->maintenance_fraction* c->particles/(double)par.scaling_cell_to_ca_time;
-          particles_for_movement = (1. - c->maintenance_fraction) * c->particles/(double)par.scaling_cell_to_ca_time;
+          //the other should be used for movement !!used to be regulated by maintenance_fraction.
+          particles_metabolised =  0.5*c->particles/(double)par.scaling_cell_to_ca_time;
+          particles_for_movement = 0.5 * c->particles/(double)par.scaling_cell_to_ca_time;
 
           //newar+= c->growth*particles_metabolised/double(area);
           newar+= c->growth*particles_metabolised;
@@ -1142,42 +1108,44 @@ void Dish::CellGrowthAndDivision2(void)
 //Function that checks and changes cell parameters
 void Dish::UpdateCellParameters(int Time)
 {
-   //cout<<"Hello beginning CellGrowthAndDivision2 "<<endl;
-  vector<bool> which_cells(cell.size()); //which cells will divide
-  vector<int> sigma_newcells;
-
     vector<Cell>::iterator c; //iterator to go over all Cells
-    int area;
-    double newar;
-    int newarint;
-    int celldivisions=0;
+    vector <double> inputs(2, 0.);
+    vector<int> output;
+    const int targetincrease=(int)((double)par.target_area/(double)par.divdur);
 
     for( c=cell.begin(), ++c; c!=cell.end(); ++c){
       if( c->AliveP() ){
+
         c->time_since_birth++;
 
-        //in this version, maintenance_fraction is a function of evolvable parameters:
-        // m = k0 + Area * kA/Division area + particles * kP/50 + <J contact>/length
-        // and bounded inside [0,1]
-        c->maintenance_fraction =1.;//c->CalculateMaintenance_or_ExtProtExpr_Fraction(c->k_mf_0,c->k_mf_A,c->k_mf_P,c->k_mf_C);
+        //update the network withing each cell, if it is the right time
+        if(!((Time+c->gextiming)%par.gex_scaling)){
+          //calculate inputs
+          inputs[0]=(double)c->grad_conc;
+          inputs[1]=(double)c->returnBoundaryLength(0.);
+          c->UpdateGenes(inputs);
 
-        //Next, also Js should be a function of that, bounded between [reasonably high, actual J values]
-        // this is just a number that is going to be multiplied to the J values of this cell...
-        // ... how? maybe directly in amoebamove? (it'd be easier than updating all J values for this guy
-        // and for all those in contact with this guy)
+          //what is the state of the output node of the cell?
+          c->GetGeneOutput(output);
+          if(c->dividecounter>par.divtime+par.divdur){
+            //divide
+            c->dividecounter=0;
+          }
+          else if(output[0]==1 || c->dividecounter>par.divtime){
+            //when you've initiated division, grow and stop moving
+            if(c->dividecounter>par.divtime){
+              c->SetTargetArea(c->target_area+targetincrease);
+              c->setMu(0.);
+            }
+            //the division counter is updated when your output says so or when you've already initiated division
+            c->dividecounter++;
+          }else {
+            c->dividecounter=0;
+            c->setMu(par.startmu);
+          }
+        }
 
-        //same function, be careful which parameters you pass
-        //c->extprotexpress_fraction = c-> CalculateMaintenance_or_ExtProtExpr_Fraction(c->k_ext_0,c->k_ext_A,c->k_ext_P,c->k_ext_C);
-        // double time_in_season = Time%par.season_duration;
-        c->extprotexpress_fraction = c->Calculate_ExtProtExpr_Fraction();
 
-        //same function for regulation of chemotaxis
-        c->weight_for_chemotaxis =  1.; //c-> CalculateMaintenance_or_ExtProtExpr_Fraction(c->k_chem_0,c->k_chem_A,c->k_chem_P,c->k_chem_C);
-
-        //c->mu = par.startmu;
-        //c->chemmu = par.init_chemmu;
-
-        //std::cerr << "Cell with sigma = "<<c->Sigma()<<" has particles: "<<c->particles << '\n';
       }
       //check area:if cell is too small (whether alive or not) we remove its sigma
       // notice that this keeps the cell in the cell array, it only removes its sigma from the field
@@ -1933,43 +1901,6 @@ int Dish::SaveData(int Time)
     //ofs << icell->getXvec()<<" "<< icell->getYvec()<<" ";
     ofs << icell->particles << " ";
 
-    //recalculated here because just-born cells do not have defined values
-    // for maintenance_fraction or extprotexpress_fraction
-    ofs << icell->CalculateMaintenance_or_ExtProtExpr_Fraction(icell->k_mf_0,
-                                                               icell->k_mf_A,
-                                                               icell->k_mf_P,
-                                                               icell->k_mf_C) << " ";
-
-    ofs << icell->k_mf_0 << " ";
-    ofs << icell->k_mf_A << " ";
-    ofs << icell->k_mf_P << " ";
-    ofs << icell->k_mf_C << " ";
-
-    // ofs << icell->CalculateMaintenance_or_ExtProtExpr_Fraction(icell->k_ext_0,
-    //                                                            icell->k_ext_A,
-    //                                                            icell->k_ext_P,
-    //                                                            icell->k_ext_C) << " ";
-
-    ofs << icell->Calculate_ExtProtExpr_Fraction() << " ";
-    ofs << icell->k_ext_0 << " ";
-    ofs << icell->k_ext_A << " ";
-    ofs << icell->k_ext_P << " ";
-    ofs << icell->k_ext_C << " ";
-    ofs << icell->k_ext_0t << " ";
-    ofs << icell->k_ext_Pt << " ";
-    // std::cerr << "Writing extprot pars: " << icell->k_ext_0 <<" "<< icell->k_ext_A <<" "<< icell->k_ext_P <<" "<< icell->k_ext_C <<" ";
-    // std::cerr << icell->k_ext_0t <<" "<< icell->k_ext_Pt <<" " << icell->Calculate_ExtProtExpr_Fraction() << '\n';
-
-
-    ofs << icell->CalculateMaintenance_or_ExtProtExpr_Fraction(icell->k_chem_0,
-                                                               icell->k_chem_A,
-                                                               icell->k_chem_P,
-                                                               icell->k_chem_C) << " ";
-    ofs << icell->k_chem_0 << " ";
-    ofs << icell->k_chem_A << " ";
-    ofs << icell->k_chem_P << " ";
-    ofs << icell->k_chem_C << " ";
-
     // YOU SHOULD KEEP THIS AT THE LAST, because it's not constant
     for( auto i: icell->neighbours){
       int thisj=icell->getVJ()[ i.first ];
@@ -2004,8 +1935,7 @@ void Dish::MakeBackup(int Time){
   for(auto c: cell){
     if(c.sigma==0) continue;
     ofs<<c.sigma<<" "<< c.tau<<" "<< c.alive<<" "<< c.tvecx<<" "<<c.tvecy<<" "<< c.prevx<<" "<< c.prevy<<" "
-    << c.persdur<<" "<<c.perstime<<" "<<c.mu<<" "<<c.chemmu<<" "<<c.chemvecx<<" "<<c.chemvecy<<" "<< c.target_area<<" "<< c.half_div_area<<" "<< c.eatprob<<" "<<c.particles<<" "<< c.growth<<" "
-    <<c.k_mf_0<<" "<<c.k_mf_A<<" "<<c.k_mf_P<<" "<<c.k_mf_C<<" "<<c.k_ext_0<<" "<<c.k_ext_A<<" "<<c.k_ext_P<<" "<<c.k_ext_C<<" ";
+    << c.persdur<<" "<<c.perstime<<" "<<c.mu<<" "<<c.chemmu<<" "<<c.chemvecx<<" "<<c.chemvecy<<" "<< c.target_area<<" "<< c.half_div_area<<" "<< c.eatprob<<" "<<c.particles<<" "<< c.growth<<" ";
     for( auto x: c.jkey ) ofs<<x; //key
     ofs << " ";
     for( auto x: c.jlock ) ofs<<x; //lock
@@ -2088,7 +2018,7 @@ int Dish::ReadBackup(char *filename){
      //read the straightforward cell variables from the line
      strstr>>rc->sigma>>rc->tau>>rc->alive>>rc->tvecx>>rc->tvecy>>rc->prevx>>rc->prevy>>rc->persdur
      >>rc->perstime>>rc->mu>>rc->chemmu>>rc->chemvecx>>rc->chemvecy>>rc->target_area>>rc->half_div_area>>rc->eatprob>>rc->particles>>rc->growth
-     >>rc->k_mf_0>>rc->k_mf_A>>rc->k_mf_P>>rc->k_mf_C>>rc->k_ext_0>>rc->k_ext_A>>rc->k_ext_P>>rc->k_ext_C>>jkey>>jlock;
+     >>jkey>>jlock;
      //read the key and lock into the cell
      for (char& c : jkey){
        rc->jkey.push_back(c - '0');

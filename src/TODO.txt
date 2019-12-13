@@ -1,0 +1,9 @@
+TO DO:
+
+* Allow input scaling to evolve within genome.
+* UpdateCellParameters now contains the updating and output of the gene network. Still needs to incorporate divisions.
+* Change the events at end of season. No more clustered divisions, only death.
+* Add mutation of the genome upon cell division (In MutateCells?)
+* Assign new timing of network updating upon division (gextiming) and upon fresh creation of cells
+* Get the gradient concentration that each cell perceives into their grad_conc par (in CellsEat2)
+* add divtime and divdur parameters to parameter module

@@ -76,7 +76,10 @@ class Parameter {
   bool graphics;
   bool store;
   char * genomefile;
-  int nr_regnodes;
+  int nr_regnodes; //how many regulatory nodes in genomes
+  int gex_scaling; //how many CA steps for each genome step?
+  int divtime; //how many steps does it take before a cell can start dividing?
+  int divdur; //duration once a cell starts division program
   double mu;
   double mustd;
   char * datadir;
@@ -108,24 +111,7 @@ class Parameter {
   char * backupfile;
   int starttime;
   int save_backup_period;
-  double init_maintenance_fraction;
-  double init_k_mf_0;
-  double init_k_mf_A;
-  double init_k_mf_P;
-  double init_k_mf_C;
-  double init_k_ext_0;
-  double init_k_ext_A;
-  double init_k_ext_P;
-  double init_k_ext_C;
-  double init_k_ext_0t;
-  double init_k_ext_Pt;
-  double init_k_chem_0;
-  double init_k_chem_A;
-  double init_k_chem_P;
-  double init_k_chem_C;
-
   int the_line;
-  double init_weight_for_chemotaxis;
   int evolsim;  //will the simulation end after the first time cells arrive at target?
   bool evolreg; //do regulation parameters evolve?
   bool is_there_food; // is there food?

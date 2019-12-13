@@ -300,3 +300,10 @@ int i;
   }
 
 }
+
+void Genome::GetOutput(vector<int> &out)
+{
+  for (auto n: outputnodes){
+    out.push_back(n.Boolstate);
+  }
+}

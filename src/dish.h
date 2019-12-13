@@ -87,8 +87,6 @@ public:
   void PrintContactList(int which=-1);
   void PrintCellParticles(void);
 
-  void InitMaintenanceFraction(void);
-
   int ZygoteArea(void) const;
 
   //! Returns the number of completed Monte Carlo Steps.

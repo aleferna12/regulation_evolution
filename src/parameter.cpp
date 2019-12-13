@@ -103,27 +103,9 @@ Parameter::Parameter() {
   scaling_cell_to_ca_time = 1;
   backupdir=strdup("backup");
   save_backup_period=0;
-  init_maintenance_fraction = 0.85;
   init_chemmu=0.;
   backupfile=strdup("");
   starttime=0;
-  init_k_mf_0 = 0.5;
-  init_k_mf_A = 0.;
-  init_k_mf_P = 0.;
-  init_k_mf_C = 0.;
-
-  init_k_ext_0 = 1.0;
-  init_k_ext_A = 0.;
-  init_k_ext_P = 0.;
-  init_k_ext_C = 0.;
-  init_k_ext_0t =0.;
-  init_k_ext_Pt =0.;
-
-  init_weight_for_chemotaxis=0.;
-  init_k_chem_0 = 0.5;
-  init_k_chem_A = 0.;
-  init_k_chem_P = 0.;
-  init_k_chem_C = 0.;
 
   howmany_makeit_for_nextgen=30;
   popsize=100;
@@ -531,20 +513,6 @@ void Parameter::Read(const char *filename) {
   scaling_cell_to_ca_time = igetpar(fp, "scaling_cell_to_ca_time", 1, true);
   backupdir = sgetpar(fp, "backupdir", "backup", true);
   save_backup_period = igetpar(fp, "save_backup_period", 0, true);
-  init_maintenance_fraction = fgetpar(fp, "init_maintenance_fraction", 1.0, true);
-  init_k_mf_0 = fgetpar(fp, "init_k_mf_0", 0., true);
-  init_k_mf_A = fgetpar(fp, "init_k_mf_A", 0., true);
-  init_k_mf_P = fgetpar(fp, "init_k_mf_P", 0., true);
-  init_k_mf_C = fgetpar(fp, "init_k_mf_C", 0., true);
-  init_k_ext_0 = fgetpar(fp, "init_k_ext_0", 0., true);
-  init_k_ext_A = fgetpar(fp, "init_k_ext_A", 0., true);
-  init_k_ext_P = fgetpar(fp, "init_k_ext_P", 0., true);
-  init_k_ext_C = fgetpar(fp, "init_k_ext_C", 0., true);
-  init_weight_for_chemotaxis = fgetpar(fp, "init_weight_for_chemotaxis", 0., true);
-  init_k_chem_0 = fgetpar(fp, "init_k_chem_0", 0., true);
-  init_k_chem_A = fgetpar(fp, "init_k_chem_A", 0., true);
-  init_k_chem_P = fgetpar(fp, "init_k_chem_P", 0., true);
-  init_k_chem_C = fgetpar(fp, "init_k_chem_C", 0., true);
   howmany_makeit_for_nextgen = igetpar(fp, "howmany_makeit_for_nextgen", 1, true);
   popsize = igetpar(fp, "popsize", 1, true);
   the_line = igetpar(fp, "the_line", 1, true);
@@ -553,8 +521,6 @@ void Parameter::Read(const char *filename) {
   zero_persistence_past_theline = bgetpar(fp,"zero_persistence_past_theline",false, true);
   season_experiment= bgetpar(fp,"season_experiment",false, true);
   season_duration= igetpar(fp, "season_duration", 1, true);
-  init_k_ext_0t = fgetpar(fp, "init_k_ext_0t", 0., true);
-  init_k_ext_Pt = fgetpar(fp, "init_k_ext_Pt", 0., true);
   init_cell_config = igetpar(fp, "init_cell_config", 0, true);
 }
 
@@ -776,20 +742,6 @@ void Parameter::Write(ostream &os) const {
   os << " save_backup_period = " << save_backup_period <<endl;
   if (datadir)
     os << " datadir = " << datadir << endl;
-  //os << " init_maintenance_fraction = " << init_maintenance_fraction << endl;
-  os << " init_k_mf_0 = " << init_k_mf_0 << endl;
-  os << " init_k_mf_A = " << init_k_mf_A << endl;
-  os << " init_k_mf_P = " << init_k_mf_P << endl;
-  os << " init_k_mf_C = " << init_k_mf_C << endl;
-  os << " init_k_ext_0 = " << init_k_ext_0 << endl;
-  os << " init_k_ext_A = " << init_k_ext_A << endl;
-  os << " init_k_ext_P = " << init_k_ext_P << endl;
-  os << " init_k_ext_C = " << init_k_ext_C << endl;
-  os << " init_k_chem_0 = " << init_k_chem_0 << endl;
-  os << " init_k_chem_A = " << init_k_chem_A << endl;
-  os << " init_k_chem_P = " << init_k_chem_P << endl;
-  os << " init_k_chem_C = " << init_k_chem_C << endl;
-  //os << " init_weight_for_chemotaxis = " << init_weight_for_chemotaxis << endl;
   os << " howmany_makeit_for_nextgen = " <<  howmany_makeit_for_nextgen << endl;
   os << " popsize = " << popsize << endl;
   os << " the_line = " << the_line <<endl;
@@ -798,8 +750,6 @@ void Parameter::Write(ostream &os) const {
   os<< " zero_persistence_past_theline = " << zero_persistence_past_theline << endl;
   os<< " season_experiment = " << season_experiment << endl;
   os<< " season_duration = " << season_duration << endl;
-  os<< " init_k_ext_0t = " << init_k_ext_0t << endl;
-  os<< " init_k_ext_Pt = " << init_k_ext_Pt << endl;
   os<< " init_cell_config = "<< init_cell_config << endl;
 }
 

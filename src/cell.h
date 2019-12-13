@@ -80,7 +80,7 @@ public:
     length=src.length;
     target_area = src.target_area;
     target_length=src.target_length;
-    growth_threshold=src.growth_threshold;
+
     mother=src.mother;
     daughter=src.daughter;
     times_divided=src.times_divided;
@@ -119,29 +119,6 @@ public:
     particles=src.particles;
     eatprob=src.eatprob;
     growth=src.growth;
-
-    //this is copied for if there is a first time step
-    // where things depend on it and CellGrowthAndDivision2 is not called yet
-    maintenance_fraction = src.maintenance_fraction;
-    k_mf_0 = src.k_mf_0;
-    k_mf_A = src.k_mf_A;
-    k_mf_P = src.k_mf_P;
-    k_mf_C = src.k_mf_C;
-
-    extprotexpress_fraction = src.extprotexpress_fraction;
-    k_ext_0 = src.k_ext_0;
-    k_ext_A = src.k_ext_A;
-    k_ext_P = src.k_ext_P;
-    k_ext_C = src.k_ext_C;
-    k_ext_0t= src.k_ext_0t;
-    k_ext_Pt = src.k_ext_Pt;
-
-    weight_for_chemotaxis = src.weight_for_chemotaxis;
-    k_chem_0=src.k_chem_0;
-    k_chem_A=src.k_chem_A;
-    k_chem_P=src.k_chem_P;
-    k_chem_C=src.k_chem_C;
-
     jlock = src.jlock;
     jkey = src.jkey;
     vJ = src.vJ;
@@ -221,27 +198,6 @@ public:
     eatprob=src.eatprob;
     growth = src.growth;
     neighbours=src.neighbours;
-
-    maintenance_fraction = src.maintenance_fraction;
-    k_mf_0 = src.k_mf_0;
-    k_mf_A = src.k_mf_A;
-    k_mf_P = src.k_mf_P;
-    k_mf_C = src.k_mf_C;
-
-    extprotexpress_fraction = src.extprotexpress_fraction;
-    k_ext_0 = src.k_ext_0;
-    k_ext_A = src.k_ext_A;
-    k_ext_P = src.k_ext_P;
-    k_ext_C = src.k_ext_C;
-    k_ext_0t= src.k_ext_0t;
-    k_ext_Pt = src.k_ext_Pt;
-
-
-    weight_for_chemotaxis = src.weight_for_chemotaxis;
-    k_chem_0=src.k_chem_0;
-    k_chem_A=src.k_chem_A;
-    k_chem_P=src.k_chem_P;
-    k_chem_C=src.k_chem_C;
 
     jlock = src.jlock;
     jkey = src.jkey;
@@ -497,61 +453,6 @@ public:
     else if(mu>MAXmu) mu=MAXmu-mu;
   }
 
-  //I am using really the same function twice,
-  // no point in writing two functions
-  double CalculateMaintenance_or_ExtProtExpr_Fraction(double k0, double kA , double kP, double kC);
-
-  inline double GetExtProtExpress_Fraction(void){
-    return extprotexpress_fraction;
-  }
-
-  // Now I am not using the same function any more,
-  // write custom function
-  double Calculate_ExtProtExpr_Fraction(void){
-    double extfr = k_ext_0 +
-                   k_ext_P * particles +
-                   k_ext_0t * time_since_birth +
-                   k_ext_Pt * particles * time_since_birth;
-    if(extfr > 1.) extfr=1.;
-    else if (extfr < 0.) extfr=0.;
-    return extfr;
-  }
-
-  // inline void MutateMaintenanceFraction(void){
-  //   maintenance_fraction += (RANDOM() -0.5)/20.;
-  //   if(maintenance_fraction<0) maintenance_fraction= -maintenance_fraction;
-  //   else if(maintenance_fraction>1.) maintenance_fraction=2.-maintenance_fraction;
-  // }
-
-  inline void MutateMaintenanceFractionParameters(void){
-    //if(RANDOM() < par.mut_rate){
-      k_mf_0 += (RANDOM() -0.5)/10.;
-      k_mf_A += (RANDOM() -0.5)/10.;
-      k_mf_P += (RANDOM() -0.5)/10.;
-      k_mf_C += (RANDOM() -0.5)/10.;
-    // }
-  }
-
-  inline void MutateExtProtFractionParameters(void){
-    // if(RANDOM() < par.mut_rate){
-      k_ext_0 += (RANDOM() -0.5)/100.;
-      // k_ext_A += (RANDOM() -0.5)/10.;
-      k_ext_P += (RANDOM() -0.5)/100.;
-      // k_ext_C += (RANDOM() -0.5)/10.;
-      k_ext_0t += (RANDOM() -0.5)/100.; // these have to be a lot finer, I wonder if this is fine enough
-      k_ext_Pt += (RANDOM() -0.5)/100.;
-    // }
-  }
-
-  inline void MutateChemotaxisParameters(void){
-    // if(RANDOM() < par.mut_rate){
-      k_chem_0 += (RANDOM() -0.5)/10.;
-      k_chem_A += (RANDOM() -0.5)/10.;
-      k_chem_P += (RANDOM() -0.5)/10.;
-      k_chem_C += (RANDOM() -0.5)/10.;
-    // }
-  }
-
   //! Set cell type of this Cell.
   inline int getHalfDivArea(void) {
     return half_div_area;
@@ -710,6 +611,9 @@ al. 2000). The current version of TST does not include such functionality.
     genome.UpdateGeneExpression(input);
   }
 
+  inline void GetGeneOutput(vector <int> &out){
+    genome.GetOutput(out);
+  }
   // Deal with gradient measurements:
 
   //! Set the current gradient of the cell to g. Currently not in use.
@@ -778,9 +682,6 @@ private:
     Next lines: diagonal matrix, starting with 1 element (0 0)
     ending with n elements */
   static void ReadStaticJTable(const char *fname);
-
-  // used internally by dish in "CellGrowthAndDivision"
-  inline int GrowthThreshold(void) const { return growth_threshold; }
 
   // used internally by class CellularPotts
   inline void CleanMoments(void) {
@@ -1126,8 +1027,6 @@ protected:
   int sigma; // cell identity, 0 if medium
   int tau; // Cell type, when dynamicJ's are not used
 
-  Genome genome;
-
   double meanx;
   double meany;
   //for Cell migration: target vector
@@ -1160,6 +1059,13 @@ protected:
   // update it everytime a new cell is born
   vector<int> vJ;
 
+  //variables for dealing with genome and its output
+  //mostly controlling when to divide right now
+  Genome genome;
+  int dividecounter; //how long have you had output saying to divide?
+  int grad_conc; //how much gradient do I perceive?
+  int gextiming; //funny variable deciding when to update gex
+
   // this is not used anymore - vJ is dynamically increased
   // Dynamically increased when cells are added to the system
   // unless a static Jtable is used (currently this is the default situation)
@@ -1185,7 +1091,6 @@ protected:
 
   int area;
   int target_area;
-  int growth_threshold;
   int half_div_area;
 
   //food intake
@@ -1194,29 +1099,6 @@ protected:
 
   //food-conversion-to-growth rate
   double growth;
-  //fraction of metabolised particles assigned to maintenance
-  // 1 - maintenance_fraction is given to movement
-  double maintenance_fraction;
-
-  double k_mf_0; //intercept of maintenance_fraction function
-  double k_mf_A; //evolvable factor for area component of maint.fract.
-  double k_mf_P; // as above for particles
-  double k_mf_C; // as above for contacts
-
-  //fraction of surface proteins (i.e. adhesion) actually used
-  double extprotexpress_fraction;
-  double k_ext_0;
-  double k_ext_A;
-  double k_ext_P;
-  double k_ext_C;
-  double k_ext_0t;  // time dependent variables
-  double k_ext_Pt;
-
-  double weight_for_chemotaxis;
-  double k_chem_0;
-  double k_chem_A;
-  double k_chem_P;
-  double k_chem_C;
 
   double v[2];
   int n_copies; // number of expansions of this cell

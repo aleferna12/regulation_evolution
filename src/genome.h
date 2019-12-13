@@ -40,6 +40,7 @@ class Genome
   void PrintGenome(char * filename); //makes a dot plot
   void OutputGeneState(void);
 
+  void GetOutput(vector<int> &out);
   //genomic functions
   void UpdateGeneExpression(const vector<double> &input);
 
