@@ -1,4 +1,5 @@
 #include "genome.h"
+#include "random.h"
 
 //default constructor required for init in other class
 Genome::Genome()
@@ -225,6 +226,12 @@ void Genome::UpdateGeneExpression(const vector<double> &input)
 void Genome::MutateGenome(double mu, double mustd)
 {
   int i,j;
+
+  for(auto &n: inputscale){
+    if(RANDOM()<mu){
+      n+=RANDNORMAL(0., mustd);
+    }
+  }
 
   for (i=0; i<regnodes.size();i++){
     regnodes[i].Mutate(mu, mustd);

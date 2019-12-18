@@ -82,6 +82,11 @@ Parameter::Parameter() {
   genomefile=strdup("");
   mu=0.05;
   mustd=0.1;
+  divtime=50;
+  divdur=10;
+  mindeathprob=0.;
+  maxdeathprob=1.;
+  fitscale=100.;
   datadir = strdup("data_film");
   datafile = strdup("data_cellcount.txt");
   save_text_file_period = 100;
@@ -487,6 +492,11 @@ void Parameter::Read(const char *filename) {
   genomefile = sgetpar(fp, "genomefile", "", true);
   mu = fgetpar(fp, "mu", 0., true);
   mustd = fgetpar(fp, "mustd", 0., true);
+  divtime = igetpar(fp, "divtime", 200, true);
+  divdur = igetpar(fp, "divdur", 50, true);
+  mindeathprob = fgetpar(fp, "mindeathprob", 0., true);
+  maxdeathprob = fgetpar(fp, "maxdeathprob", 1.0, true);
+  fitscale = fgetpar(fp, "fitscale", 100., true);
   datadir = sgetpar(fp, "datadir", "data_film", true);
   datafile = sgetpar(fp,"datafile" , "data_cellcount.txt",true);
   save_text_file_period = igetpar(fp, "save_text_file_period", 100, true);
@@ -717,6 +727,11 @@ void Parameter::Write(ostream &os) const {
   }
   os << " mu = " << mu << endl;
   os << " mustd = " << mustd << endl;
+  os << " divtime= " << divtime << endl;
+  os << " divdur = " << divdur << endl;
+  os << " fitscale = " << fitscale << endl;
+  os << " mindeathprob = " << mindeathprob << endl;
+  os << " maxdeathprob = " << maxdeathprob << endl;
   os << " initial_food_amount = "<< initial_food_amount << endl;
   os << " food_influx_location = "<< food_influx_location <<endl;
   os << " foodinflux = " << foodinflux << endl;

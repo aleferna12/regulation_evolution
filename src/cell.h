@@ -89,6 +89,7 @@ public:
     colour_of_birth=src.colour_of_birth;
 
     genome=src.genome;
+    gextiming=src.gextiming;
 
     tau=src.tau;
     alive=src.alive;
@@ -162,6 +163,7 @@ public:
     date_of_birth = src.date_of_birth;
 
     genome=src.genome;
+    gextiming=src.gextiming;
 
     v[0]=src.v[0];
     v[1]=src.v[1];
@@ -258,10 +260,7 @@ public:
   //! Returns the cell colour.
   inline int Colour(void) const {
 
-    /* if (par.dynamicJ)
-      return colour;
-      else */
-      return tau+1;
+    return tau+1;
 
   };
 
@@ -614,6 +613,10 @@ al. 2000). The current version of TST does not include such functionality.
   inline void GetGeneOutput(vector <int> &out){
     genome.GetOutput(out);
   }
+  inline void MutateGenome(double mu, double mustd){
+    genome.MutateGenome(mu, mustd);
+  }
+
   // Deal with gradient measurements:
 
   //! Set the current gradient of the cell to g. Currently not in use.

@@ -77,11 +77,13 @@ class Parameter {
   bool store;
   char * genomefile;
   int nr_regnodes; //how many regulatory nodes in genomes
-  int gex_scaling; //how many CA steps for each genome step?
   int divtime; //how many steps does it take before a cell can start dividing?
   int divdur; //duration once a cell starts division program
   double mu;
   double mustd;
+  double mindeathprob;
+  double maxdeathprob;
+  double fitscale;
   char * datadir;
   char * datafile;
   int save_text_file_period;

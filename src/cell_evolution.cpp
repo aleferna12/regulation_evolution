@@ -89,6 +89,8 @@ INIT {
       cout << "Going to initialise genome"<<endl;
       for(auto &c: cell) {
         c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
+        //initialise a cell's timing for gex Updating
+        c.gextiming=(int)(RANDOM()*par.scaling_cell_to_ca_time);
         //creates a cell's genome, either randomly or from file
         if (strlen(par.genomefile)){
           c.ReadGenomeFromFile(par.genomefile);
@@ -139,6 +141,7 @@ TIMESTEP {
 
     dish->CellsEat2();
 
+    //This function updates the network and deals with the consequences of the output (motility vs division)
     dish->UpdateCellParameters(i); // SCALED//this changes neighs (via DivideCells)
 
     dish->CellMigration();//updates persistence time and targetvectors
@@ -149,41 +152,20 @@ TIMESTEP {
 
     //Change the season and do evolution
     if( i%25 == 0){
-      if(par.evolsim){
-        if(par.season_experiment){
-          if(i>0 && i%par.season_duration==0){
-            //reproduce people based on fitness criterion
-            //remove random cells until popsize is back to normal
-            //reset food and gradient
-            std::cerr << "Time = "<<i << '\n';
-            std::cerr << "End of season: there are "<< dish->CountCells() <<" cells" << '\n';
-            dish->ReproduceEndOfSeason();
-            std::cerr << "After reproduction there are "<< dish->CountCells() <<" cells" << '\n';
-            dish->RemoveCellsUntilPopIs(par.popsize);
-            std::cerr << "After remove there are "<< dish->CountCells() <<" cells" << '\n';
 
-            dish->Food->IncreaseVal(*(dish->Food)); //this has to be last thing to do here
-            std::cout << "End of season: Gradient switching at time (+/- 25 MCS) = "<< i << '\n';
-          }
-        }else{
-          if( dish->CheckWhoMadeitRadial() ){
-            //reset food
-            // clone them with mutations
-            // wipe out the previous pop
-            // reseed
-            //reset whomadeit vector
-            dish->RemoveWhoDidNotMakeIt(); //remove those that did not makeit
-            dish->ReproduceWhoMadeIt3(); //reproduction
-            dish->ClearWhoMadeItSet(); //zeros the who_made_it set,
-                                     // zero the particles eaten
-            dish->Food->IncreaseVal(*(dish->Food)); //this has to be last thing to do here
-                                                  // because we do some AmoebaeMove2 steps in
-                                                  // ReproduceWhoMadeIt2 to let cells grow a little
-                                                  // but we don't want this to go along the new gradient
-                                                  // which would be unfair.
-           std::cout << "Gradient switching at time (+/- 25 MCS) = "<< i << '\n';
-         }
-       }
+      if(par.evolsim){
+        if(i>0 && i%par.season_duration==0){
+          //reproduce people based on fitness criterion
+          //remove random cells until popsize is back to normal
+          //reset food and gradient
+          std::cerr << "Time = "<<i << '\n';
+          std::cerr << "End of season: there are "<< dish->CountCells() <<" cells" << '\n';
+          dish->SaveNetworks(i);
+          dish->GradientBasedCellKill(par.popsize);
+          std::cerr << "After remove there are "<< dish->CountCells() <<" cells" << '\n';
+          dish->Food->IncreaseVal(*(dish->Food)); //this has to be last thing to do here
+          std::cout << "End of season: Gradient switching at time (+/- 25 MCS) = "<< i << '\n';
+        }
       }else{
         //not evolutionary simulation
         if( ((strcmp(par.food_influx_location,"boundarygradient") == 0) && dish->CheckWhoMadeitLinear() ) ||
@@ -317,6 +299,11 @@ int main(int argc, char *argv[]) {
     //check if directory for movies exists, create it if not, exit otherwise
     DoesDirExistsIfNotMakeit(par.datadir);  //see output.cpp
     DoesDirExistsIfNotMakeit(par.backupdir);  //see output.cpp
+    if(par.evolreg){
+      char fname[300];
+      sprintf(fname,"%s/networks",par.datadir);
+      DoesDirExistsIfNotMakeit(fname);  //see output.cpp
+    }
 
     //check if data file exists, if not exit
     if(FileExistsP(par.datafile)){

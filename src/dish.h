@@ -122,6 +122,8 @@ public:
   void RemoveCellsUntilPopIs(int popsize);
 
   void RemoveWhoDidNotMakeIt(void);
+  void GradientBasedCellKill(int currentsize);
+
   void ReproduceWhoMadeIt(void);
   void ReproduceWhoMadeIt2(void); //with particles dependent reproduction
   void ReproduceWhoMadeIt3(void); //trying to save cells that reproduce a lot
@@ -145,6 +147,7 @@ public:
   int CountPredators(void);
 
   int SaveData(int Time);
+  void SaveNetworks(int Time);
   void MakeBackup(int Time);
   int ReadBackup(char *filename);
   //! \brief Returns the horizontal size of the dish.

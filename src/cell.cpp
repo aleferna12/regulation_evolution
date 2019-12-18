@@ -95,6 +95,7 @@ void Cell::CellBirth(Cell &mother_cell) {
   half_div_area = mother_cell.half_div_area;
 
   genome=mother_cell.genome;
+  gextiming=mother_cell.gextiming;
   //genome.MutateGenome();
 
   // Do not add moments here, they are going to be calculated from scratch
@@ -188,6 +189,7 @@ void Cell::ConstructorBody(int settau,int setrecycledsigma) {
   //create the genome: use parameters for size. This is a randomly generated genome.
   //genome.InitGenome(par.innodes, par.regnodes, par.outnodes);
   //let's do this separately.
+  gextiming=0;
   tau=settau;
   area=0;
   target_area=0;

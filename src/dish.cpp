@@ -287,15 +287,7 @@ void Dish::UpdateVectorJ(vector<int> sigma_to_update)
       }
     }
   }
-  //cerr<<"UpdateVectorJ ends"<<endl;
 
-//   for(auto c: cell){
-//     cerr<<"Cell "<<c.Sigma()<<", tau: "<<c.getTau()<<": " ;
-//     for(auto jval: c.getVJ())
-//       cerr<<jval<<" ";
-//     cerr<<endl;
-//   }
-//   exit(1);
 }
 
 
@@ -307,12 +299,10 @@ void Dish::MutateCells(vector<int> sigma_to_update)
   for(auto upd_sigma: sigma_to_update){
     if(upd_sigma != 0){
       cell[upd_sigma].MutateKeyAndLock();
-      //cell[upd_sigma].MutateMu();
-      //cerr<<"hello from before mutation"<<endl;
+      //assign new gextiming
+      cell[upd_sigma].gextiming=(int)(RANDOM()*par.scaling_cell_to_ca_time);
       if(par.evolreg == true){
-        //cell[upd_sigma].MutateMaintenanceFractionParameters();
-      //  cell[upd_sigma].MutateExtProtFractionParameters();
-        //cell[upd_sigma].MutateChemotaxisParameters();
+        cell[upd_sigma].MutateGenome(par.mu, par.mustd);
       }
     }
   }
@@ -876,6 +866,7 @@ void Dish::CellsEat2(void)
         xv=fsumx[c.sigma]/(double)ftotal[c.sigma]-c.meanx;
         yv=fsumy[c.sigma]/(double)ftotal[c.sigma]-c.meany;
 
+        c.grad_conc=ftotal[c.sigma]; //set the cell gradient amount
         double hyphyp=hypot(xv,yv);
 
         // in a homogeneous medium, gradient is zero
@@ -1111,6 +1102,9 @@ void Dish::UpdateCellParameters(int Time)
     vector<Cell>::iterator c; //iterator to go over all Cells
     vector <double> inputs(2, 0.);
     vector<int> output;
+    vector<bool> which_cells(cell.size());
+    vector<int> sigma_newcells;
+
     const int targetincrease=(int)((double)par.target_area/(double)par.divdur);
 
     for( c=cell.begin(), ++c; c!=cell.end(); ++c){
@@ -1119,7 +1113,7 @@ void Dish::UpdateCellParameters(int Time)
         c->time_since_birth++;
 
         //update the network withing each cell, if it is the right time
-        if(!((Time+c->gextiming)%par.gex_scaling)){
+        if(!((Time+c->gextiming)%par.scaling_cell_to_ca_time)){
           //calculate inputs
           inputs[0]=(double)c->grad_conc;
           inputs[1]=(double)c->returnBoundaryLength(0.);
@@ -1127,21 +1121,31 @@ void Dish::UpdateCellParameters(int Time)
 
           //what is the state of the output node of the cell?
           c->GetGeneOutput(output);
-          if(c->dividecounter>par.divtime+par.divdur){
+          if(c->dividecounter>=par.divtime+par.divdur){
             //divide
+            if(c->Area()>30){
+              which_cells[c->sigma]=TRUE;
+            }
+            //we already set the target area back to normal. We won't run any AmoebaeMove in between this and division
+            //like this both daughter cells will inherit the normal size
+            //and if the cell was too small, it needs to start all over anyway. (Hopefully a rare case)
+            c->SetTargetArea(par.target_area);
             c->dividecounter=0;
           }
           else if(output[0]==1 || c->dividecounter>par.divtime){
             //when you've initiated division, grow and stop moving
+            cerr << "Cell "<<c->Sigma()<<" is now in divide mode"<<endl;
             if(c->dividecounter>par.divtime){
               c->SetTargetArea(c->target_area+targetincrease);
               c->setMu(0.);
+              c->setTau(2); //basically only for color right now...
             }
             //the division counter is updated when your output says so or when you've already initiated division
             c->dividecounter++;
           }else {
             c->dividecounter=0;
             c->setMu(par.startmu);
+            c->setTau(1);
           }
         }
 
@@ -1154,9 +1158,13 @@ void Dish::UpdateCellParameters(int Time)
          c->Apoptose(); //set alive to false
          CPM->RemoveCell(&*c,par.min_area_for_life,c->meanx,c->meany);
       }
-
-
     }
+
+    //divide all cells that are bound to divide
+    sigma_newcells=CPM->DivideCells(which_cells);
+    MutateCells(sigma_newcells);
+    UpdateVectorJ(sigma_newcells);
+
 
 }
 
@@ -1512,6 +1520,65 @@ void Dish::RemoveCellsUntilPopIs(int popsize)
     CPM->RemoveCell(&cell[sigtorm] ,par.min_area_for_life,cell[sigtorm].meanx,cell[sigtorm].meany);
     // std::cerr << "There are now so many cells: "<< CountCells() << '\n';
   }
+}
+
+//death based on distance from the gradient until popsize is restored
+void Dish::GradientBasedCellKill(int popsize)
+{
+  int current_popsize=0;
+  std::vector< pair<int,double> > sig_dist;
+  double distance, rn;
+  double deathprob;
+  //double fitness, totalfit, thisfit;
+  //totalfit=0.;
+  //int removei,removesig;
+
+
+  //determine final distance of those cells that are alive
+  for(auto c: cell){
+    if(c.Sigma()>0 && c.AliveP()){
+      current_popsize++;
+      distance=sqrt((Food->GetPeakx()-c.getXpos())*(Food->GetPeakx()-c.getXpos())+(Food->GetPeaky()-c.getYpos())*(Food->GetPeaky()-c.getYpos()));
+      //fitness=1./(1.+pow(distance,3.)/par.fitscale); //for relative version
+      //totalfit+=fitness; //for relative version
+      //sig_dist.push_back(make_pair(c.Sigma(),totalfit)); //for relative version
+      deathprob=par.mindeathprob+(par.maxdeathprob-par.mindeathprob)*pow(distance,3.)/(par.fitscale+pow(distance,3.));
+      sig_dist.push_back(make_pair(c.Sigma(),deathprob));
+    }
+  }
+
+  //this is a nonrelative version, based on an individually-determined death rate
+  for(auto n :sig_dist){
+    rn = RANDOM();//should be between 0 and 1
+    if(rn<n.second){
+      cell[n.first].SetTargetArea(0);
+      cell[n.first].Apoptose(); //set alive to false
+      CPM->RemoveCell(&cell[n.first] ,par.min_area_for_life,cell[n.first].meanx,cell[n.first].meany);
+    }
+  }
+
+  //now to remove a fixed nr of cells. So fitness is relative.
+  // while(current_popsize>popsize){
+  //
+  //   double rn = totalfit*RANDOM();
+  //   int i=0;
+  //   while (sig_dist[i].second<rn){
+  //     i++;
+  //   }
+  //   thisfit=sig_dist[i].second-sig_dist[i-1].second;
+  //   removei=i;
+  //   removesig=sig_dist[i].first;
+  //   while (i<sig_dist.size()){
+  //     sig_dist[i].second-=thisfit;
+  //     i++;
+  //   }
+  //   sig_dist.erase(sig_dist.begin()+(i-1));
+  //   cell[removesig].SetTargetArea(0);
+  //   cell[removesig].Apoptose(); //set alive to false
+  //   CPM->RemoveCell(&cell[removesig] ,par.min_area_for_life,cell[removesig].meanx,cell[removesig].meany);
+  //   current_popsize--;
+  // }
+
 }
 
 //give cells a target area proportional to how many particles they have (relative to others)
@@ -1917,6 +1984,17 @@ int Dish::SaveData(int Time)
   ofs.flush();
   ofs.close();
   return (prey+pred);
+}
+
+void Dish::SaveNetworks(int Time)
+{
+  char fname[300];
+
+  for (auto c: cell){
+    sprintf(fname,"%s/networks/t%010d_c%04d.txt",par.datadir,Time,c.Sigma());
+    c.WriteGenomeToFile(fname);
+  }
+
 }
 
 void Dish::MakeBackup(int Time){
