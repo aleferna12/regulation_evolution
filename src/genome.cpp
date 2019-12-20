@@ -24,7 +24,7 @@ void Genome::InitGenome(int in, int reg, int out)
 
   //how to scale the input
   for(i=0; i<innr; i++){
-    inputscale.push_back(1.);
+    inputscale.push_back(0.1);
   }
 
   //for (i=0; i<in; i++)
@@ -71,7 +71,7 @@ void Genome::ReadFromFile(char *filename)
   std::ifstream ifs;
   string line;
   int i, nodetype, nodenr;
-  double scale;
+  double scale, thresh;
 
   ifs.open( filename , std::ifstream::in );
 
@@ -102,10 +102,11 @@ void Genome::ReadFromFile(char *filename)
     while (line.length()){
       stringstream strstr(line);
       //read the straightforward cell variables from the line
-      strstr>> nodetype >>nodenr;
+      strstr>> nodetype >>nodenr>>thresh;
 
       //if node is regulatory
       if(nodetype==1){
+        regnodes[nodenr-innr].threshold=thresh;
         for (auto &w: regnodes[nodenr-innr].w_innode) {
           strstr >> w;
         }
@@ -115,6 +116,7 @@ void Genome::ReadFromFile(char *filename)
        }
       //if node is output
       else{
+        outputnodes[nodenr-innr-regnr].threshold=thresh;
         for (auto &w: outputnodes[nodenr-innr-regnr].w_regnode) {
           strstr >> w;
         }
@@ -145,7 +147,7 @@ void Genome::WriteToFile(char *filename)
   //now write all the interaction strengths
 
   for (auto n: regnodes){
-    ofs << "1 "<< n.genenr;
+    ofs << "1 "<< n.genenr<<" "<<n.threshold;
     for (const auto w: n.w_innode) {
       ofs << " "<< w;
     }
@@ -155,7 +157,7 @@ void Genome::WriteToFile(char *filename)
     ofs<<endl;
   }
   for (auto n: outputnodes){
-    ofs << "2 "<< n.genenr;
+    ofs << "2 "<< n.genenr<<" "<<n.threshold;
     for (const auto w: n.w_regnode) {
       ofs << " "<< w;
     }
@@ -173,9 +175,9 @@ void Genome::UpdateGeneExpression(const vector<double> &input)
 
   //transpose input data for normalisation
   for (i=0; i<input.size(); i++){
-    v_input.push_back(inputscale[i]*input[i]);
+    v_input.push_back(inputscale[i]*(double)input[i]);
   }
-
+  //cerr <<"updating..."<<endl;
   //update the regulatory genes
   for (i=0; i<regnodes.size(); i++){
     newval=0.;
@@ -310,7 +312,7 @@ int i;
 
 void Genome::GetOutput(vector<int> &out)
 {
-  for (auto n: outputnodes){
+  for (auto &n: outputnodes){
     out.push_back(n.Boolstate);
   }
 }

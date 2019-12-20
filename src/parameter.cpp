@@ -80,6 +80,7 @@ Parameter::Parameter() {
   graphics = true;
   store = false;
   genomefile=strdup("");
+  nr_regnodes=1;
   mu=0.05;
   mustd=0.1;
   divtime=50;
@@ -490,6 +491,7 @@ void Parameter::Read(const char *filename) {
   graphics = bgetpar(fp, "graphics", true, true);
   store = bgetpar(fp, "store", false, true);
   genomefile = sgetpar(fp, "genomefile", "", true);
+  nr_regnodes = igetpar(fp, "nr_regnodes", 0, true);
   mu = fgetpar(fp, "mu", 0., true);
   mustd = fgetpar(fp, "mustd", 0., true);
   divtime = igetpar(fp, "divtime", 200, true);
@@ -725,6 +727,7 @@ void Parameter::Write(ostream &os) const {
   if (genomefile){
       os << " genomefile = " << genomefile << endl;
   }
+  os << " nr_regnodes = " << nr_regnodes << endl;
   os << " mu = " << mu << endl;
   os << " mustd = " << mustd << endl;
   os << " divtime= " << divtime << endl;

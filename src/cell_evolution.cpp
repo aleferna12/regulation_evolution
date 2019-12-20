@@ -88,15 +88,17 @@ INIT {
 
       cout << "Going to initialise genome"<<endl;
       for(auto &c: cell) {
-        c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
-        //initialise a cell's timing for gex Updating
-        c.gextiming=(int)(RANDOM()*par.scaling_cell_to_ca_time);
-        //creates a cell's genome, either randomly or from file
-        if (strlen(par.genomefile)){
-          c.ReadGenomeFromFile(par.genomefile);
-        }
-        else{
-          c.CreateRandomGenome(2, par.nr_regnodes, 1);
+        if(c.Sigma()){
+          c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
+          //initialise a cell's timing for gex Updating
+          c.setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
+          //  creates a cell's genome, either randomly or from file
+          if (strlen(par.genomefile)){
+            c.ReadGenomeFromFile(par.genomefile);
+          }
+          else{
+            c.CreateRandomGenome(1, par.nr_regnodes, 1);
+          }
         }
       }
       cout << "Done initialising genome"<<endl;

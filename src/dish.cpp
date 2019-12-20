@@ -300,7 +300,7 @@ void Dish::MutateCells(vector<int> sigma_to_update)
     if(upd_sigma != 0){
       cell[upd_sigma].MutateKeyAndLock();
       //assign new gextiming
-      cell[upd_sigma].gextiming=(int)(RANDOM()*par.scaling_cell_to_ca_time);
+      cell[upd_sigma].setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
       if(par.evolreg == true){
         cell[upd_sigma].MutateGenome(par.mu, par.mustd);
       }
@@ -1100,23 +1100,24 @@ void Dish::CellGrowthAndDivision2(void)
 void Dish::UpdateCellParameters(int Time)
 {
     vector<Cell>::iterator c; //iterator to go over all Cells
-    vector <double> inputs(2, 0.);
+    vector <double> inputs(1, 0.); //was inputs(2,0.);
     vector<int> output;
     vector<bool> which_cells(cell.size());
     vector<int> sigma_newcells;
-
-    const int targetincrease=(int)((double)par.target_area/(double)par.divdur);
+    int interval;
 
     for( c=cell.begin(), ++c; c!=cell.end(); ++c){
       if( c->AliveP() ){
 
         c->time_since_birth++;
-
+        interval=Time+c->Gextiming();
         //update the network withing each cell, if it is the right time
-        if(!((Time+c->gextiming)%par.scaling_cell_to_ca_time)){
+        if(!(interval%par.scaling_cell_to_ca_time)){
           //calculate inputs
           inputs[0]=(double)c->grad_conc;
-          inputs[1]=(double)c->returnBoundaryLength(0.);
+          output.clear();
+          // cerr<<c->Sigma()<<" grad is "<<c->grad_conc<<endl;
+          // inputs[1]=(double)c->returnBoundaryLength(0.);
           c->UpdateGenes(inputs);
 
           //what is the state of the output node of the cell?
@@ -1134,9 +1135,9 @@ void Dish::UpdateCellParameters(int Time)
           }
           else if(output[0]==1 || c->dividecounter>par.divtime){
             //when you've initiated division, grow and stop moving
-            cerr << "Cell "<<c->Sigma()<<" is now in divide mode"<<endl;
+            //cerr << "Cell "<<c->Sigma()<<" is now in divide mode"<<endl;
             if(c->dividecounter>par.divtime){
-              c->SetTargetArea(c->target_area+targetincrease);
+              if(c->TargetArea()<par.target_area*2) c->SetTargetArea(c->TargetArea()+1);
               c->setMu(0.);
               c->setTau(2); //basically only for color right now...
             }
@@ -1542,7 +1543,8 @@ void Dish::GradientBasedCellKill(int popsize)
       //fitness=1./(1.+pow(distance,3.)/par.fitscale); //for relative version
       //totalfit+=fitness; //for relative version
       //sig_dist.push_back(make_pair(c.Sigma(),totalfit)); //for relative version
-      deathprob=par.mindeathprob+(par.maxdeathprob-par.mindeathprob)*pow(distance,3.)/(par.fitscale+pow(distance,3.));
+      deathprob=par.mindeathprob+(par.maxdeathprob-par.mindeathprob)*pow(distance,3.)/(pow(par.fitscale,3.)+pow(distance,3.));
+      cerr<<"distance is "<<distance<<", deathprob is "<<deathprob<<endl;
       sig_dist.push_back(make_pair(c.Sigma(),deathprob));
     }
   }

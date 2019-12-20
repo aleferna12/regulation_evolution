@@ -617,6 +617,12 @@ al. 2000). The current version of TST does not include such functionality.
     genome.MutateGenome(mu, mustd);
   }
 
+  inline void setGTiming(int timing){
+    gextiming=timing;
+  }
+  inline int Gextiming(void){
+    return gextiming;
+  }
   // Deal with gradient measurements:
 
   //! Set the current gradient of the cell to g. Currently not in use.

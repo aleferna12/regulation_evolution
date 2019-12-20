@@ -9,7 +9,8 @@ Gene::Gene(int type, int nr, int innr, int regnr)
   if (type==1){
     //w_innode.resize(innr,0.0); Could init all to 0, but is a bit weird
     for(int i=0; i<innr; i++){
-      w_innode.push_back(RANDOM()*2.-1.);
+      w_innode.push_back(RANDOM()*2.-1.); //right version
+      //w_innode.push_back(RANDOM()); //test version
     }
   }
 
@@ -17,7 +18,8 @@ Gene::Gene(int type, int nr, int innr, int regnr)
   if (type>=1){
     //w_regnode.resize(regnr,0.0);
     for(int i=0; i<regnr; i++){
-      w_regnode.push_back(RANDOM()*2.-1.);
+      w_regnode.push_back(RANDOM()*2.-1.);//right version
+      //w_regnode.push_back(RANDOM()); //test version
     }
   }
 
