@@ -44,6 +44,11 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define XPM(Z) Z ## _xpm
 #define ZYGXPM(Z) XPM(Z)
 
+//Leonie's sign function
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
 /* define default zygote */
 /* NOTE: ZYGOTE is normally defined in Makefile!!!!!! */
 // #ifndef ZYGOTE
@@ -216,6 +221,71 @@ double sat(double x) {
   return x/(par.saturation*x+1.);
   //return x;
 
+}
+
+void CellularPotts::InitializeEdgeList(void){
+  // unordered_set<long long int> edgeSet;
+	int neighbour;
+	int x,y, xp, yp;
+	int c, cp;
+  int xstart =0;
+  int xend=sizex-1;
+  int ystart=0;
+  int yend=sizey-1;
+
+  bool init_single_cell_center=true;
+
+  if (init_single_cell_center && sizex>200 && sizey>200){
+    xstart=(sizex-1)/2-100;
+    xend=(sizex-1)/2+100;
+    ystart=(sizey-1)/2-100;
+    yend=(sizey-1)/2+100;
+  }
+
+	for (x=xstart; x< xend; x++){
+    for ( y=ystart; y<yend; y++){
+      for (int nb=1; nb<=n_nb; nb++){
+    		c = sigma[x][y]; //c = sigma here
+    		xp = nx[nb]+x;  //check neighbour
+    		yp = ny[nb]+y;
+
+		      if (par.periodic_boundaries) {
+
+          // since we are asynchronic, we cannot just copy the borders once
+          // every MCS
+
+    			if (xp<=0)
+    				xp=sizex-2+xp;
+        	if (yp<=0)
+    				yp=sizey-2+yp;
+       	  if (xp>=sizex-1)
+    				xp=xp-sizex+2;
+       	  if (yp>=sizey-1)
+    				yp=yp-sizey+2;
+
+          cp=sigma[xp][yp];
+          }
+    		else if (xp<=0 || yp<=0 || xp>=sizex-1 || yp>=sizey-1)
+    			cp=-1;
+        else
+    			cp=sigma[xp][yp]; //if boundaries deal appropriately, else set the neighbour
+    //if c != cp and cp is not boundary and sgn(x) is the sign function
+    // (check for boundary state in the neigh.)
+    if (cp != c && cp != -1 && c!=-1 && sgn(cp)+sgn(c)>=0){
+      //edgeSetpair.insert({x,y,xp,yp});
+      edgeSetVector.insert({x,y,xp,yp});
+      // cout << edgeSetVector.subset_size() <<endl;
+      // edgeSetVector.push_back({x,y,xp,yp});
+      // edgeSetVector.insert_in_subset(edgeSetVector.subset_size());
+      // cout << edgeSetVector.subset_size() << endl;
+      //edgeSetpair.insert({xp,yp,x,y});
+      edgeSetVector.insert({xp,yp,x,y});
+      // edgeSetVector.push_back({xp,yp,x,y});
+      // edgeSetVector.insert_in_subset(edgeSetVector.subset_size());
+      // edgeVector.push_back({x,y,xp,yp});
+		}
+	}
+}}
 }
 
 int CellularPotts::DeltaHWithMedium(int x,int y, PDE *PDEfield)
@@ -945,7 +1015,6 @@ void CellularPotts::FreezeAmoebae(void)
 
 #include <fstream>
 //! Monte Carlo Step. Returns summed energy change
-
 // In this version there is a chance that you copy medium (from outer space)
 int CellularPotts::AmoebaeMove2(PDE *PDEfield)
 {
@@ -955,7 +1024,7 @@ int CellularPotts::AmoebaeMove2(PDE *PDEfield)
                               // that follows the normal process and depends on nrg.
                               //BTW, we raise this after we are sure that k != kp: we don't want medium inside the cell :P
 
-  bool mediumflag;
+  bool mediumflag, converted, inout1, inout2;
 
   // cout<<"I'm in AmoebaeMove"<<endl;
   int loop,p;
@@ -966,37 +1035,42 @@ int CellularPotts::AmoebaeMove2(PDE *PDEfield)
   if (frozen)
     return 0;
 
-  loop=(sizex-2)*(sizey-2);
+  //variables used in loop
+  int x,y, xp,yp, xn, yn;
+  int k,kp;
+  int edgesize, rindex;
 
+  loop = edgeSetVector.size_map()/n_nb;
+  //cout <<" loop size "<<loop<<endl;
   for (int i=0;i<loop;i++) {
     mediumflag=false;   // what happens if this is not re-set to false all the times?
                         // that the first time it goes true it will be true for the rest of the loop!
-    // take a random site
-    int xy = (int)(RANDOM()*(sizex-2)*(sizey-2));
-    int x = xy%(sizex-2)+1;
-    int y = xy/(sizex-2)+1;
+    converted=false;
+    edgesize=edgeSetVector.size_map(); //are there still edges to update?
+    if (edgesize==0){break;}
+    else{
+      rindex=RandomNumber(edgesize)-1; //pick random edge (Randomnumber goes from 1-N)
+      auto it = edgeSetVector[rindex]; //this returns an iterator to an unordered map element out of the vector edgevector in
+      x=(*it).first[0];
+      y=(*it).first[1];
+      xp=(*it).first[2];
+      yp=(*it).first[3];
+      k=sigma[x][y];
 
-    // take a random neighbour
-    // effect of copying could be that medium is introduced
-
-    int xyp=(int)(n_nb*RANDOM()+1);
-    int xp = nx[xyp]+x;
-    int yp = ny[xyp]+y;
-
-    int k=sigma[x][y];  // k is the sigma of focal grid point
-
-    int kp;
-    if (par.periodic_boundaries) {
+     if (par.periodic_boundaries) {
       // Boundary management:
       // since we are asynchronic, we cannot just copy the borders once
       // every MCS
-
+      if (x<=0) x=sizex-2+x;
+      if (y<=0) y=sizey-2+y;
+      if (x>=sizex-1) x=x-sizex+2;
+      if (y>=sizey-1) y=y-sizey+2;
       if(xp<=0) xp=sizex-2+xp;  //sizex-2 because both borders
       if(yp<=0) yp=sizey-2+yp;
       if(xp>=sizex-1) xp=xp-sizex+2;
       if(yp>=sizey-1) yp=yp-sizey+2;
-
-      kp=sigma[xp][yp]; // kp is the sigma of neighbour grid point
+      k=sigma[x][y];
+      kp=sigma[xp][yp];
 
     } else {
 
@@ -1005,14 +1079,10 @@ int CellularPotts::AmoebaeMove2(PDE *PDEfield)
       else
         kp=sigma[xp][yp];
     }
-
     // test for border state (relevant only if we do not use periodic boundaries)
     // test always passed with periodic boundaries
     if (kp!=-1) {
       // Don't even think of copying the special border state into you!
-
-      // Try to copy if sites do not belong to the same cell
-      // if k == kp it would be pointless to copy
       if ( k  != kp ) {
         // connectivity dissipation:
         int H_diss=0;
@@ -1020,55 +1090,202 @@ int CellularPotts::AmoebaeMove2(PDE *PDEfield)
         if (!ConnectivityPreservedP(x,y))
           H_diss=par.conn_diss;
 
-        //Here we already know that k != kp,
         //if k is different from medium and with small chance = chancemedium,
         // we propose to copy medium into k
         if(k!= MEDIUM && RANDOM() < chanceofmedium){
-          //cerr<<"AmoabeMove2, error during debugging we shouldn't be here"<<endl;
           kp=MEDIUM; //and so kp = MEDIUM
           mediumflag=true;
         }
         //IF we are not copying medium from outer space
         if(!mediumflag){
-
-//           if(sigma[x][y]==sigma[xp][yp]){
-//             cerr<<"AmoebaeMove2: Error. Same sigmas"<<endl;
-//             exit(1);
-//           }
-
           int D_H=DeltaH(x,y,xp,yp,PDEfield);
 
-          //cerr<<"Hello AmoebaeMove2: D_H = "<<D_H<<endl;
           if( (p=CopyvProb(D_H,H_diss))>0 ){
-            //cerr<<"Hello before ConvertSpin"<<endl;
             ConvertSpin( x,y,xp,yp );
-
-            //cerr<<"Hello after ConvertSpin"<<endl;
+            converted=true;
             SumDH+=D_H;
           }
         }else{
-//           cerr<<"Hello AmoebaeMove2: medium flag activated"<<endl;
           int D_H=DeltaHWithMedium(x,y,PDEfield);
 
-//           cerr<<"Hello AmoebaeMove2 0.4"<<endl;
           if ((p=CopyvProb(D_H,H_diss))>0) {
-            //cerr<<"this shouldn't happen if chanceofmedium =0 "<<endl;
-            //exit(1);
-            //cerr<<"Hello before ConvertSpinToMedium"<<endl;
             ConvertSpinToMedium( x,y );
-            //cerr<<"Hello after ConvertSpinToMedium"<<endl;
+            converted=true;
             SumDH+=D_H;
           }
 
         }
-      }
-    }
-  }
+        if (converted){
+          //go through neighbourhood
+          for (int j = 1; j <= n_nb; j++){
+    				xn = nx[j]+x;
+    				yn = ny[j]+y;
 
-  // cout<<"Exiting AmoebaeMove"<<endl;
+    				if (par.periodic_boundaries) {
+    					 	// since we are asynchronic, we cannot just copy the borders once
+    					 	// every MCS
+    					if (xn<=0)
+    						xn=sizex-2+xn;
+    					if(yn<=0)
+    						yn=sizey-2+yn;
+    					if (xn>=sizex-1)
+    						xn=xn-sizex+2;
+    				  if (yn>=sizey-1)
+    						yn=yn-sizey+2;
+    				}
+    				if (xn>0 && yn>0 && xn<sizex-1 && yn<sizey-1){//if the neighbour site is within the lattice
+
+    					// if we should add the edge to the edgelist, add it
+              if (sigma[xn][yn] != sigma[x][y] && sgn(sigma[xn][yn])+sgn(sigma[x][y])>=0){ //if we should add the edge to the edgelist, add it
+                inout1=edgeSetVector.insert({x,y,xn,yn});
+                inout2=edgeSetVector.insert({xn,yn,x,y});
+                if (inout1) loop += (double)1./(double)n_nb; // (double)2/n_nb IS A DOUBLE
+                if (inout2) loop += (double)1./(double)n_nb; // (double)2/n_nb IS A DOUBLE
+    					}
+    					// if the sites have the same celltype and they have an edge, remove it. not sure what the sgn does
+              if ((sigma[xn][yn] == sigma[x][y] || sgn(sigma[xn][yn])+sgn(sigma[x][y])<0)){
+                inout1=edgeSetVector.erase({x,y,xn,yn});
+                inout2=edgeSetVector.erase({xn,yn,x,y});
+                if (inout1) loop -= (double)1./(double)n_nb; // (double)2/n_nb IS A DOUBLE
+                if (inout2) loop -= (double)1./(double)n_nb;
+
+    					}
+    				} //end if neighbour in lattice
+    			}//end neighbourhood loop
+        }//end if converted
+
+      } //end if neighbour is different pixel type
+    }//end if neighbour is in the field
+  } //if edgelist still full
+  }//end for loop
+
   return SumDH;
 
 }
+
+// // In this version there is a chance that you copy medium (from outer space)
+// int CellularPotts::AmoebaeMove2(PDE *PDEfield)
+// {
+//   double chanceofmedium=par.chancemediumcopied;  //this is the chance that we test for medium instead of actual pixel
+//                               // (i.e. that we raise mediumflag for that)
+//                               //this is NOT probability that medium is inserted,
+//                               // that follows the normal process and depends on nrg.
+//                               //BTW, we raise this after we are sure that k != kp: we don't want medium inside the cell :P
+//
+//   bool mediumflag;
+//
+//   // cout<<"I'm in AmoebaeMove"<<endl;
+//   int loop,p;
+//   //int updated=0;
+//   thetime++;
+//   int SumDH=0;
+//
+//   if (frozen)
+//     return 0;
+//
+//   loop=(sizex-2)*(sizey-2);
+//
+//   for (int i=0;i<loop;i++) {
+//     mediumflag=false;   // what happens if this is not re-set to false all the times?
+//                         // that the first time it goes true it will be true for the rest of the loop!
+//     // take a random site
+//     int xy = (int)(RANDOM()*(sizex-2)*(sizey-2));
+//     int x = xy%(sizex-2)+1;
+//     int y = xy/(sizex-2)+1;
+//
+//     // take a random neighbour
+//     // effect of copying could be that medium is introduced
+//
+//     int xyp=(int)(n_nb*RANDOM()+1);
+//     int xp = nx[xyp]+x;
+//     int yp = ny[xyp]+y;
+//
+//     int k=sigma[x][y];  // k is the sigma of focal grid point
+//
+//     int kp;
+//     if (par.periodic_boundaries) {
+//       // Boundary management:
+//       // since we are asynchronic, we cannot just copy the borders once
+//       // every MCS
+//
+//       if(xp<=0) xp=sizex-2+xp;  //sizex-2 because both borders
+//       if(yp<=0) yp=sizey-2+yp;
+//       if(xp>=sizex-1) xp=xp-sizex+2;
+//       if(yp>=sizey-1) yp=yp-sizey+2;
+//
+//       kp=sigma[xp][yp]; // kp is the sigma of neighbour grid point
+//
+//     } else {
+//
+//       if (xp<=0 || yp<=0 || xp>=sizex-1 || yp>=sizey-1)
+//         kp=-1;
+//       else
+//         kp=sigma[xp][yp];
+//     }
+//
+//     // test for border state (relevant only if we do not use periodic boundaries)
+//     // test always passed with periodic boundaries
+//     if (kp!=-1) {
+//       // Don't even think of copying the special border state into you!
+//
+//       // Try to copy if sites do not belong to the same cell
+//       // if k == kp it would be pointless to copy
+//       if ( k  != kp ) {
+//         // connectivity dissipation:
+//         int H_diss=0;
+//
+//         if (!ConnectivityPreservedP(x,y))
+//           H_diss=par.conn_diss;
+//
+//         //Here we already know that k != kp,
+//         //if k is different from medium and with small chance = chancemedium,
+//         // we propose to copy medium into k
+//         if(k!= MEDIUM && RANDOM() < chanceofmedium){
+//           //cerr<<"AmoabeMove2, error during debugging we shouldn't be here"<<endl;
+//           kp=MEDIUM; //and so kp = MEDIUM
+//           mediumflag=true;
+//         }
+//         //IF we are not copying medium from outer space
+//         if(!mediumflag){
+//
+// //           if(sigma[x][y]==sigma[xp][yp]){
+// //             cerr<<"AmoebaeMove2: Error. Same sigmas"<<endl;
+// //             exit(1);
+// //           }
+//
+//           int D_H=DeltaH(x,y,xp,yp,PDEfield);
+//
+//           //cerr<<"Hello AmoebaeMove2: D_H = "<<D_H<<endl;
+//           if( (p=CopyvProb(D_H,H_diss))>0 ){
+//             //cerr<<"Hello before ConvertSpin"<<endl;
+//             ConvertSpin( x,y,xp,yp );
+//
+//             //cerr<<"Hello after ConvertSpin"<<endl;
+//             SumDH+=D_H;
+//           }
+//         }else{
+// //           cerr<<"Hello AmoebaeMove2: medium flag activated"<<endl;
+//           int D_H=DeltaHWithMedium(x,y,PDEfield);
+//
+// //           cerr<<"Hello AmoebaeMove2 0.4"<<endl;
+//           if ((p=CopyvProb(D_H,H_diss))>0) {
+//             //cerr<<"this shouldn't happen if chanceofmedium =0 "<<endl;
+//             //exit(1);
+//             //cerr<<"Hello before ConvertSpinToMedium"<<endl;
+//             ConvertSpinToMedium( x,y );
+//             //cerr<<"Hello after ConvertSpinToMedium"<<endl;
+//             SumDH+=D_H;
+//           }
+//
+//         }
+//       }
+//     }
+//   }
+//
+//   // cout<<"Exiting AmoebaeMove"<<endl;
+//   return SumDH;
+//
+// }
 
 
 //! Monte Carlo Step. Returns summed energy change
@@ -2420,22 +2637,15 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 
 vector<int> CellularPotts::DivideCells(vector<bool> which_cells)
 {
-  //cerr<<"Hello begin DivideCells"<<endl;
+
   int sigmaneigh;
+
   // for the cell directions
   Dir *celldir=0;
 
   // Allocate space for divisionflags
   vector<int> divflags( cell->size()*2 + 5 ); // automatically initialised to zero
   vector<int> toprint;
-  //int count_pix=0;
-
-  //  /* an array of int that give position of of cells... ? */
-  //int *divflags=(int *)malloc( (cell->size()*2 + 5)*sizeof(int) );
-  //  /* Clear divisionflags */
-  //for (int i=0; i<(int)(cell->size()*2+5); i++)
-  //  divflags[i]=0;
-
 
   //curious: here it also complains when which_cells contains as many cells as the whole cell vector
   //but further down, it will just divide all cells if which_cells is empty...
@@ -2443,29 +2653,20 @@ vector<int> CellularPotts::DivideCells(vector<bool> which_cells)
   if ( !(which_cells.size()==0 || which_cells.size() >= cell->size()) ) {
     throw "In CellularPotts::DivideCells, Too few elements in vector<int> which_cells.";
   }
-  //cerr<<"Begin of DivideCells, count_pix: "<<count_pix<<endl;
-//   cerr<<"mother Targetarea: "<<(*cell)[1].TargetArea()<<", daught tar area: "<<(*cell)[2].TargetArea()<<endl;
 
   /* division */
   {
     for (int i=1;i<sizex-1;i++) for (int j=1;j<sizey-1;j++)
       if (sigma[i][j]>0) // i.e. not medium and not border state (-1)
-	  {
-	    // Pointer to mother. Warning: Renew pointer after a new
-	    // cell is added (push_back). Then, the array *cell is relocated and
-	    // the pointer will be lost...
-	    Cell *motherp=&((*cell)[sigma[i][j]]); //mother points to the cell holding this pixel
-	    Cell *daughterp;
+	    {
+	      Cell *motherp=&((*cell)[sigma[i][j]]); //mother points to the cell holding this pixel
+	      Cell *daughterp;
 
-	    // Divide if NOT medium and if DIV bit set or divide_always is set
-	    // if which_cells is given, di+nx>0 && i+nx[k]<sizex-1 divide only if the cell
-	    // is marked in which_cells.
-	    if( !which_cells.size() || which_cells[motherp->sigma] ){
+	      // Divide if NOT medium and if DIV bit set or divide_always is set; if which_cells is given  divide only if the cell is listed
+	      if( !which_cells.size() || which_cells[motherp->sigma] ){
           //divflags is a vector that works like this: divflags[ mother_sigma ] = daughter_sigma
           //if first time we get this mother then divflags at pos mother_sigma is 0
           if( !(divflags[ motherp->Sigma() ]) ){
-            // add daughter cell, copying states of mother
-
             //we first check if we can recycle some position already exisiting in the vector
             //such position would come from a cell that has previously apoptosed
             vector<Cell>::iterator c;
@@ -2473,17 +2674,10 @@ vector<int> CellularPotts::DivideCells(vector<bool> which_cells)
             for ( c=cell->begin(), c++ ; c!=cell->end(); c++){
               if(c->AliveP() == false && c->TargetArea() <= 0 && c->Area() == 0 ){
                 //we recycle this sigma for the new cell
-                //cout << "We recycle position "<< c->Sigma() << " which used to be of type "<< c->getTau() << endl;
-
-
                 //set recycled sigma
                 daughterp=new Cell(*(motherp->owner), motherp->getTau(), c->Sigma());
                 daughterp->CellBirth(*motherp);
-                //cout<< "Check the sigma of mother:"<< motherp->Sigma() <<" and daugther" << daughterp->Sigma()<< endl;
-                //daughterp->SetSigmaIfRecycled( c->Sigma() );
                 *c = *daughterp;    // notice that the operator = (equal) is overloaded, see cell.h
-                //cout << "Hello1" << endl;
-
                 replaced=true;
                 break;
               }
@@ -2492,25 +2686,13 @@ vector<int> CellularPotts::DivideCells(vector<bool> which_cells)
               //cout << "We do not recycle, calling function new"<< endl;
               // THIS USED TO BE ABOVE, WHERE THE SIGN *** IS !!!
               //MAKES NEW CELL AT THE END OF ARRAY
-              //cerr<<"Particles mother before"<<motherp->particles<<endl;
-              //cerr<<"mother meanx,y: "<<motherp->getXpos()<<" "<<motherp->getYpos()<<endl;
-
               daughterp=new Cell(*(motherp->owner));  //this calls  Cell(...){ owner=&who; ConstructorBody()}
-                                                      // this is what prints Tomato2
-              //cerr<<"daughter after new meanx,y: "<<daughterp->getXpos()<<" "<<daughterp->getYpos()<<endl;
-              //cout << "Calling function CellBirth" << endl;
               daughterp->CellBirth(*motherp);
-
-              //cerr<<"daughter after cell birth meanx,y: "<<daughterp->getXpos()<<" "<<daughterp->getYpos()<<endl;
-              //cout<< "Check the sigma of mother:"<< motherp->Sigma() <<" and daugther" << daughterp->Sigma()<< endl;
-              //cerr<<"Particles mother after"<<motherp->particles<<", particles daughter after"<< daughterp->particles <<endl;
               cell->push_back(*daughterp);  //this calls default copy constructor Cell(const Cell &src)
                                             // prints "Tomato"
                                             //this puts new cells at the end of array if there was no space to recycle
               // renew pointer to mother (because after push_back memory might be relocated)
-              //cout << "bla"<<endl;
               motherp=&((*cell)[sigma[i][j]]);
-              //cout << "We do not recycle: new vector size is "<< cell->size() << endl;
             }
 
         divflags[ motherp->Sigma() ]=daughterp->Sigma(); //daughtersigma is set to newest sigma in ConstructorBody of Cell
@@ -2541,12 +2723,9 @@ vector<int> CellularPotts::DivideCells(vector<bool> which_cells)
 		// All that needs to be copied is copied in the copy constructor
 		// of Cell and in the default copy constr. of its base class Cytoplasm
 		// note: also the celltype is inherited
-		//cout << "Hello3" << endl;
 	      }else{
             daughterp=&( (*cell)[ divflags[motherp->Sigma()] ] );
-	      }
-
-          //cout << "Hello4" << endl;
+        }
 	      /* Now the actual division takes place */
 
 	      /* If celldirections where not yet computed: do it now */
@@ -2570,53 +2749,24 @@ vector<int> CellularPotts::DivideCells(vector<bool> which_cells)
 
             if( ((checki-meanx)>0) && ((checki-meanx)>(meanx-(checki-(par.sizex-2)))) ) {
               checki-=(par.sizex-2);
-              //cerr<<"celldiv passb1"<<endl;
             }
             else if( ((meanx-checki)>0) && ((meanx-checki)>(checki+(par.sizex-2)-meanx)) ){
               checki+=(par.sizex-2);
-              //cerr<<"celldiv passb2"<<endl;
             }
             if(  ((checkj-meany)>0)  &&  ((checkj-meany) >(meany-(checkj-(par.sizey-2)))) ){
               checkj-=(par.sizey-2);
-              //cerr<<"celldiv passb3"<<endl;
             }
             else if( ((meany-checkj)>0)   &&  ((meany-checkj) >(checkj+(par.sizey-2)-meany)) ){
               checkj+=(par.sizey-2);
-              //cerr<<"celldiv passb4"<<endl;
             }
           }
-          if( checkj>( (int)( celldir[motherp->sigma].aa2 + celldir[motherp->sigma].bb2*(double)checki) ) ){
-            //cout << "Hello5: motherp->sigma: "<<motherp->sigma<<", daughterp->sigma: "<<daughterp->sigma << endl;
-            //cout<<"meanx: "<< celldir[motherp->sigma].meanx<<", meany: "<<celldir[motherp->sigma].meany<<", checki: "<<checki<<", checkj: "<<checkj<< endl;
-            //cout << "line: y = "<< celldir[motherp->sigma].aa2<<" + "<<celldir[motherp->sigma].bb2<<" * x" << endl;
-            //exit(1);
-            //count_pix++;
-            motherp->DecrementArea();
-            //motherp->DecrementTargetArea();
-            motherp->RemoveSiteFromMoments(i,j);
 
-            //cout << "Hello6" << endl;
+          if( checkj>( (int)( celldir[motherp->sigma].aa2 + celldir[motherp->sigma].bb2*(double)checki) ) ){
+            motherp->DecrementArea();
+            motherp->RemoveSiteFromMoments(i,j);
             sigma[i][j]=daughterp->Sigma();  // WHERE is daughterp->Sigma() defined?
             daughterp->IncrementArea();
-            // daughterp->IncrementTargetArea();
-            //cerr << "Adding site (i,j)="<<i<<" "<<j << endl;
             daughterp->AddSiteToMoments(i,j);
-            //cout << "Hello8" << endl;
-            //cout<<"dividing cell "<<motherp->Sigma()<<" to cell "<<daughterp->Sigma()<<endl;
-            //update the neighbours (only if everything has been initialised!!
-            //if(thetime)
-            // {
-//                cout<<"Neighbour update in DivideCells, time is "<<thetime<<endl;
-//                 std::map<int, pair<int,int> >::iterator n;
-//                 int total=0;
-//                 for (n=motherp->neighbours.begin(); n!=motherp->neighbours.end(); n++)
-//                 {
-//                     total+=n->second.first;
-//                    cout<<"contact with cell "<<n->first<<" is "<<n->second.first<<endl;
-//                 }
-//                cout<<"Total boundary length of mother: "<<total<<endl;
-
-            //cout<<"Hello 0"<<endl;
             //go through neighbourhood to update contacts
             // to new daughter contacts we now pass duration from mother
             // sigma[i][j] is daughter, sigmaneigh can be daughter, mother, medium, someone else
@@ -2635,93 +2785,54 @@ vector<int> CellularPotts::DivideCells(vector<bool> which_cells)
                   continue;
                 }
               }
+              sigmaneigh = sigma[ neix ][ neiy ];
+              //if sigmaneigh is not sigma, we update the contact of daughter cell with it,
+              //and the contact of that cell with daughter (provided it is not medium)
+              if( sigmaneigh  != sigma[i][j] ){
 
+                //update the edgeSetVector
+                edgeSetVector.insert({i,j,neix,neiy});
+                edgeSetVector.insert({neix,neiy,i,j});
 
-            sigmaneigh = sigma[ neix ][ neiy ];
-            //if sigmaneigh is not sigma, we update the contact of daughter cell with it,
-            //and the contact of that cell with daughter (provided it is not medium)
-            if( sigmaneigh  != sigma[i][j] ){
-                //cout<<sigmaneigh<<" "<<sigma[i][j]<<" +1"<<endl;
-                //cerr<<"Hello 0.1"<<endl;
                 (*cell)[sigma[i][j]].updateNeighbourBoundary(sigmaneigh,1);
                 //take duration from mother iff sigmaneigh is not mother
                 if(sigmaneigh!=motherp->Sigma() && sigmaneigh!=MEDIUM)
                   (*cell)[sigma[i][j]].SetNeighbourDurationFromMother(sigmaneigh, motherp->returnDuration(sigmaneigh) );
 
-                      //cerr<<"Hello 0.2"<<endl;
                 //also cell to which sigmaneigh belongs must be updated, if it is not medium
                 if(sigmaneigh){
-                  //cerr<<"Hello 0.21, pos i,j: "<< i<<","<<j<<endl;
-                  //cerr<<"Sigmaneigh (method) is: " << (*cell)[sigmaneigh].Sigma()<< " and should be (from CA) "<< sigmaneigh;
-                  //cerr<< " from pos neix,neiy "<< neix<<","<<neiy<< endl;
-                  //cerr<< "Also before calculations nei x and y: "<<i+nx[k]<<","<<j+ny[k]<<endl;
-                    (*cell)[sigmaneigh].updateNeighbourBoundary(sigma[i][j],1);
-                    //cerr<<"Hello 0.22"<<endl;
-                    if( sigmaneigh!=motherp->Sigma() ){
-                      //cerr<<"Hello 0.23"<<endl;
+                  (*cell)[sigmaneigh].updateNeighbourBoundary(sigma[i][j],1);
+                  if( sigmaneigh!=motherp->Sigma() ){
                       (*cell)[sigmaneigh].SetNeighbourDurationFromMother( sigma[i][j], motherp->returnDuration(sigmaneigh) );
                     }
                 }
-                //cerr<<"Hello 0.3"<<endl;
+
                 if (sigmaneigh!=motherp->Sigma()){
-                  //cout<<sigmaneigh<<" "<<motherp->Sigma()<<" -1"<<endl;
                   motherp->updateNeighbourBoundary(sigmaneigh,-1);
-                  //cerr<<"Hello 0.4"<<endl;
+
                   if(sigmaneigh)
                     (*cell)[sigmaneigh].updateNeighbourBoundary(motherp->Sigma(),-1);
-                  //cerr<<"Hello 0.5"<<endl;
                 }
               }else//sigmaneigh==sigma[i][j] This pixel has already become a daughter pixel,
                       //remove from contacts between mother and daughter
                 {
-                  // cout<<sigmaneigh<<" "<<motherp->Sigma()<<" -1:mommy and daughter"<<endl;
-                  //cerr<<"Hello 0.6"<<endl;
+                  //update the edgeSetVector
+                  edgeSetVector.erase({i,j,neix,neiy});
+                  edgeSetVector.erase({neix,neiy,i,j});
+
                   motherp->updateNeighbourBoundary(sigmaneigh,-1);
-                  //cerr<<"Hello 0.7"<<endl;
                   (*cell)[sigmaneigh].updateNeighbourBoundary(motherp->Sigma(),-1);
-                  //cerr<<"Hello 0.8"<<endl;
                 }
-
-            }
-                //cout<<"Hello 1"<<endl;
-               // total=0;
-                //cout <<"mother:"<<endl;
-//                 for (n=motherp->neighbours.begin(); n!=motherp->neighbours.end(); n++)
-//                 {
-//                     total+=n->second.first;
-//                    cout<<"contact with cell "<<n->first<<" is "<<n->second.first<<endl;
-//                 }
-//                 //cout <<"daughter:"<<endl;
-//                 for (n=daughterp->neighbours.begin(); n!=daughterp->neighbours.end(); n++)
-//                 {
-//                     total+=n->second.first;
-//                    cout<<"contact with cell "<<n->first<<" is "<<n->second.first<<endl;
-//                 }
-//                cout<<"Total boundary length of mother and daughter: "<<total-motherp->neighbours[daughterp->Sigma()].first-daughterp->neighbours[motherp->Sigma()].first<<endl;
-
-              //}
-
+            } // end neighbour loop
 	     }
-
-
 	   }
-
 	 }
-
-	  //cout << "Hello9" << endl;
   }
   if (celldir)
     delete[] (celldir);
 
-  //cerr<<"End of DivideCells, count_pix: "<<count_pix<<endl;
-  //cerr<<"mother Targetarea: "<<(*cell)[1].TargetArea()<<", daught tar area: "<<(*cell)[2].TargetArea()<<endl;
-  // used to be this, now we return it instead
-  //if (divflags)
-  //  free(divflags);
   return divflags;
 
-  //cerr<<"Hello end DivideCells"<<endl;
-  //exit(1);
 }
 
 bool CellularPotts::PlaceOneCellsAtXY(int posx,int posy, int cellsize, int cellsigma)
@@ -3067,54 +3178,61 @@ int CellularPotts::GrowInCells(int n_cells, int cell_size, int sx, int sy, int o
 // by looking at the whole plane... the whole frigging plane?
 // for a cell that is -like- 5 pixels big when we remove it because it is dying
 // 8O
-void CellularPotts::RemoveCell(Cell* thiscell)
-{
-  int sigmaneigh;
-  for (int x=1; x<sizex-1;x++)
-    for (int y=1; y<sizey-1;y++){
-      if (sigma[x][y]==thiscell->Sigma()){
-        sigma[x][y]=0;
-        thiscell->DecrementArea();
-        thiscell->RemoveSiteFromMoments(x,y);
-
-        //remove contact that neighbours have with this pixel
-        for (int k=1; k<=n_nb; k++){
-          int neix=x+nx[k];
-          int neiy=y+ny[k];
-          if(neix<=0 || neix>=sizex-1 || neiy<=0 || neiy>=sizey-1){
-            if( par.periodic_boundaries ){
-              if(neix<=0) neix=sizex-2+neix;
-              if(neix>=sizex-1) neix=neix-sizex+2;
-              if(neiy<=0) neiy=sizey-2+neiy;
-              if(neiy>=sizey-1) neiy=neiy-sizey+2;
-            }else{
-              continue;
-            }
-          }
-          sigmaneigh=sigma[neix][neiy];
-          if( sigmaneigh != thiscell->Sigma() && sigmaneigh){
-            (*cell)[sigmaneigh].updateNeighbourBoundary(thiscell->Sigma(),-1);
-            (*cell)[sigmaneigh].updateNeighbourBoundary(0,1);
-
-          }
-        }
-      }
-    }
-
-}
+// void CellularPotts::RemoveCell(Cell* thiscell)
+// {
+//   int sigmaneigh;
+//   for (int x=1; x<sizex-1;x++)
+//     for (int y=1; y<sizey-1;y++){
+//       if (sigma[x][y]==thiscell->Sigma()){
+//         sigma[x][y]=0;
+//         thiscell->DecrementArea();
+//         thiscell->RemoveSiteFromMoments(x,y);
+//
+//         //remove contact that neighbours have with this pixel
+//         for (int k=1; k<=n_nb; k++){
+//           int neix=x+nx[k];
+//           int neiy=y+ny[k];
+//           if(neix<=0 || neix>=sizex-1 || neiy<=0 || neiy>=sizey-1){
+//             if( par.periodic_boundaries ){
+//               if(neix<=0) neix=sizex-2+neix;
+//               if(neix>=sizex-1) neix=neix-sizex+2;
+//               if(neiy<=0) neiy=sizey-2+neiy;
+//               if(neiy>=sizey-1) neiy=neiy-sizey+2;
+//             }else{
+//               continue;
+//             }
+//           }
+//           sigmaneigh=sigma[neix][neiy];
+//           if( sigmaneigh != thiscell->Sigma()){
+//             edgeSetVector.insert({x,y,neix,neiy});
+//             edgeSetVector.insert({neix,neiy,x,y});
+//             if( sigmaneigh){
+//               (*cell)[sigmaneigh].updateNeighbourBoundary(thiscell->Sigma(),-1);
+//               (*cell)[sigmaneigh].updateNeighbourBoundary(0,1);
+//             }
+//           }
+//           else{
+//             edgeSetVector.erase({x,y,neix,neiy});
+//             edgeSetVector.erase({neix,neiy,x,y});
+//           }
+//         }
+//       }
+//     }
+//
+// }
 
 int CellularPotts::FancyloopX(int loopdepth, int meanx, int meany, int thissig, bool above){
   int removed=0;
   bool loop=true;
-  int ny, nx;
-
-  ny=meany-((int)above*2-1)*loopdepth;
-  if(ny<=0||ny>=sizey-1){
+  int py, px;
+  int sigmaneigh;
+  py=meany-((int)above*2-1)*loopdepth;
+  if(py<=0||py>=sizey-1){
     if( par.periodic_boundaries ){
-      if(ny<=0)
-        ny=sizey-2+ny;
-      else if (ny>=sizey-1)
-        ny=ny-sizey+2;
+      if(py<=0)
+        py=sizey-2+py;
+      else if (py>=sizey-1)
+        py=py-sizey+2;
     }else{
       loop=false;
     }
@@ -3122,24 +3240,43 @@ int CellularPotts::FancyloopX(int loopdepth, int meanx, int meany, int thissig, 
 
   if(loop)
     for(int x=meanx-loopdepth; x<=meanx+loopdepth;x++){
-      nx=x;
+      px=x;
       if(x<=0 || x>=sizex-1){
         if( par.periodic_boundaries ){
           if(x<=0)
-            nx=sizex-2+x;
+            px=sizex-2+x;
           else if (x>=sizex-1)
-            nx=x-sizex+2;
+            px=x-sizex+2;
         }else{
           continue;
         }
       }
 //         cerr<<"removing?"<<endl;
-        if (sigma[nx][ny]==thissig){
+        if (sigma[px][py]==thissig){
 //           cerr<<"going on with removing X"<<endl;
-          sigma[nx][ny]=0;
+          sigma[px][py]=0;
           removed++;
+          for (int k=1; k<=n_nb; k++){
+            int neix=px+nx[k];
+            int neiy=py+ny[k];
+            if(neix<=0 || neix>=sizex-1 || neiy<=0 || neiy>=sizey-1){
+              if( par.periodic_boundaries ){
+                if(neix<=0) neix=sizex-2+neix;
+                if(neix>=sizex-1) neix=neix-sizex+2;
+                if(neiy<=0) neiy=sizey-2+neiy;
+                if(neiy>=sizey-1) neiy=neiy-sizey+2;
+              }else{
+                continue;
+              }
+            }
+            sigmaneigh=sigma[neix][neiy];
+            if( sigmaneigh == 0){
+              edgeSetVector.erase({px,py,neix,neiy});
+              edgeSetVector.erase({neix,neiy,px,py});
+            }
         }
       }
+    }
 
   return removed;
 }
@@ -3147,15 +3284,16 @@ int CellularPotts::FancyloopX(int loopdepth, int meanx, int meany, int thissig, 
 int CellularPotts::FancyloopY(int loopdepth, int meanx, int meany, int thissig, bool left){
   int removed=0;
   bool loop=true;
-  int ny, nx;
+  int py, px;
+  int sigmaneigh;
 
-  nx=meanx-((int)left*2-1)*loopdepth;
-  if(nx<=0||nx>=sizex-1){
+  px=meanx-((int)left*2-1)*loopdepth;
+  if(px<=0||px>=sizex-1){
     if( par.periodic_boundaries ){
-      if(nx<=0)
-        nx=sizex-2+nx;
-      else if (nx>=sizex-1)
-        nx=nx-sizex+2;
+      if(px<=0)
+        px=sizex-2+px;
+      else if (px>=sizex-1)
+        px=px-sizex+2;
     }else{
       loop=false;
     }
@@ -3163,21 +3301,40 @@ int CellularPotts::FancyloopY(int loopdepth, int meanx, int meany, int thissig, 
 
   if(loop)
     for(int y=meany-loopdepth+1; y<=meany+loopdepth-1;y++){
-      ny=y;
+      py=y;
       if(y<=0 || y>=sizey-1){
         if( par.periodic_boundaries ){
           if(y<=0)
-            ny=sizey-2+y;
+            py=sizey-2+y;
           else if (y>=sizey-1)
-            ny=y-sizey+2;
+            py=y-sizey+2;
         }else{
           continue;
         }
       }
 
-        if (sigma[nx][ny]==thissig){
-          sigma[nx][ny]=0;
+        if (sigma[px][py]==thissig){
+          sigma[px][py]=0;
           removed++;
+          for (int k=1; k<=n_nb; k++){
+            int neix=px+nx[k];
+            int neiy=py+ny[k];
+            if(neix<=0 || neix>=sizex-1 || neiy<=0 || neiy>=sizey-1){
+              if( par.periodic_boundaries ){
+                if(neix<=0) neix=sizex-2+neix;
+                if(neix>=sizex-1) neix=neix-sizex+2;
+                if(neiy<=0) neiy=sizey-2+neiy;
+                if(neiy>=sizey-1) neiy=neiy-sizey+2;
+              }else{
+                continue;
+              }
+            }
+            sigmaneigh=sigma[neix][neiy];
+            if( sigmaneigh == 0){
+              edgeSetVector.erase({px,py,neix,neiy});
+              edgeSetVector.erase({neix,neiy,px,py});
+            }
+        }
         }
       }
 

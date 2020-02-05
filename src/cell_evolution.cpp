@@ -85,7 +85,7 @@ INIT {
       // at this stage, cells are only surrounded by medium
       InitContactLength();  // see dish.cpp - you don't need dish->InitContactLength because this part IS in dish
       cout << "done setting contact length"<<endl;
-
+      CPM->InitializeEdgeList();
       cout << "Going to initialise genome"<<endl;
       for(auto &c: cell) {
         if(c.Sigma()){

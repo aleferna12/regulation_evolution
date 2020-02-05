@@ -30,12 +30,103 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define _CA_HH_
 #include <vector>
 #include <stdio.h>
+#include <unordered_map>
+#include <array>
 #include "graph.h"
 #include "pde.h"
 //#include "dish.h"
 #include "cell.h"
 
 class Dish;
+
+namespace std
+{
+    //templates: typename is the variable type, which we can call T (can be int, char, vector, whatever)
+    template<typename T, size_t N>struct hash <const array<T, N> >{
+        typedef const array<T, N> argument_type;
+        typedef size_t result_type;
+
+        result_type operator()(const argument_type& a) const{
+            hash<T> hasher;
+            result_type h = 1;
+            for (result_type i = 0; i < N; ++i)
+            {
+                h = h * hasher(a[i]);
+            }
+            return h;
+        }
+    };
+    template<typename T, size_t N>struct hash <array<T, N> >{
+        typedef array<T, N> argument_type;
+        typedef size_t result_type;
+
+        result_type operator()(const argument_type& a) const
+        {
+            hash<T> hasher;
+            result_type h = 1;
+            for (result_type i = 0; i < N; ++i)
+            {
+                h = h * hasher(a[i]);
+            }
+            return h;
+        }
+    };
+}
+
+//template <class T>
+class Edges
+{
+public:
+   // this defines the operator [] for the this unordered_map (in the const and not const case <---? why the latter though)
+   const std::unordered_map<std::array<int, 4>,int>::iterator & operator[](unsigned index) const { return edgevector[index]; }
+   std::unordered_map<std::array<int, 4>,int>::iterator & operator[](unsigned index) { return edgevector[index]; }
+
+   //Edges(){};
+   //~Edges(){};
+
+   bool insert(std::array<int,4> edge){
+        int n = edgevector.size();
+       auto insertion = edgemap.insert({edge, n});
+       //unordered_map.insert()returns a pair object. first el is iterator to new element and second is bool indicating success of insert
+       if (insertion.second){
+         edgevector.push_back(insertion.first); //store iterator pointing to new element in edgemap.
+       }
+       else{
+         // cout << "edge already in set while trying to add" << endl;
+       }
+       return insertion.second;
+   }
+
+   bool erase(std::array<int,4> edge){
+     // cout << "trying to erase, length = " << edgemap.size() <<endl;
+     try {
+       int index = edgemap.at(edge);
+       // std::unordered_map<std::array<int,4>,int>::iterator last_it = edgevector
+       std::swap(edgevector[index],edgevector.back()); //swap the item to be removed with the item at the back, then pop out of the vector
+       edgevector[index]->second = index; //item that used to be at the back gets the other's index
+       edgevector.pop_back();
+       edgemap.erase(edge);
+        // cout << "trying to erase, length = " << edgemap.size() <<endl;
+     }
+     catch (const std::out_of_range& oor) {
+       // cout << "edge not present while trying to delete" << endl;
+       return false;
+     }
+     return true;
+   }
+
+   unsigned size_map() const{
+       return edgemap.size();
+   }
+
+   unsigned size_vector() const{
+     return edgevector.size();
+   }
+
+private:
+   std::unordered_map<std::array<int,4>,int> edgemap; //the edges are the keys, the value is length of edgevector upon insertion.
+   std::vector<std::unordered_map<std::array<int, 4>,int>::iterator> edgevector; //iterators to elements in edgemap, ordered by time of insertion
+};
 
 class Dir {
 
@@ -77,6 +168,7 @@ public:
 
   // destructor must also be virtual
   virtual ~CellularPotts();
+  void InitializeEdgeList(void); //Set the initial edgelist which are eligible to change
 
   /*! \brief Plots the dish to the screen or to a movie and searches the
    neighbours.
@@ -323,6 +415,7 @@ protected:
 
 
 private:
+  Edges edgeSetVector;
   bool frozen;
   static int shuffleindex[9];
   std::vector<Cell> *cell;

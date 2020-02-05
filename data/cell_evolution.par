@@ -1,7 +1,7 @@
 ### Max time (max # monte carlo steps) ###
 # takes about 1hour per 100000 timesteps
 #mcs = 200000000
-mcs = 10000000
+mcs = 20000
 
 #cells in blobs move at 0.0055 px/mcs
 # duration of season could then be larger than field size/ speed
@@ -182,7 +182,7 @@ metabolic_conversion = 0.5
 ## output ##
 ############
 
-storage_stride = 100
+storage_stride = 10
 graphics = false
 store = true
 datadir = data_film2
