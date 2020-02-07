@@ -891,6 +891,104 @@ void Dish::CellsEat2(void)
 
 }
 
+//changes cells direction vector based on where more food is
+// tried to optimise by only looking around cells
+void Dish::CellsEat3(void)
+{
+  // if(par.periodic_boundaries)
+  // {
+  //   std::cerr << "CellsEat2: does not work with wrapped boundaries" << '\n';
+  //   exit(1);
+  // }
+
+  int MAX_PARTICLES=1000000; //max particles that a cell can have inside it
+  //std::vector<int> fsumx(cell.size(),0), fsumy(cell.size(),0),ftotal(cell.size(),0);
+  int fsumx, fsumy, ftotal, count;
+  int foodload, howmuchfood, current_particles, added_particles;
+  int boxsize;
+  int i_meanx, i_meany, fx, fy, cell_sigma;
+  double xv, yv, hyphyp;
+
+
+  for (auto &c : cell){
+    if (c.AliveP() && c.getTau()){
+      i_meanx=(int)c.getXpos();
+      i_meany=(int)c.getYpos();
+      boxsize=(int)c.Length()+2; //radius^2 is size of box, to be fairly sure we got all pixels
+      fsumx=0;
+      fsumy=0;
+      ftotal=0;
+      count=0;
+      //we are going to look in a box around the cell only
+      for (int x=i_meanx-boxsize; x<=i_meanx+boxsize; x++){
+        for (int y=i_meany-boxsize; y<=i_meany+boxsize; y++){
+          fx=x;
+          fy=y;
+          //correct pixel position
+          if(par.periodic_boundaries){
+            if (x<1 ) fx+=par.sizex-2;
+            if (x>par.sizex-2 ) fx-=par.sizex-2;
+            if (y<1 ) fy+=par.sizex-2;
+            if (y>par.sizex-2 ) fx-=par.sizex-2;
+          }else if (x<1||x>par.sizex-2||y<1||y>par.sizex-2){
+            continue;
+          }
+
+          //is this pixel indeed of this cell, and is there food or chemokine
+          if(CPM->Sigma(fx,fy)==c.Sigma()){
+            count++;
+            if((foodload=Food->Sigma(fx,fy))){
+
+              if (foodload>0){ //this is for chemotaxis
+                fsumx+=x*foodload;
+                fsumy+=y*foodload;
+                ftotal+=foodload;
+              }else{ //this is for eating
+                howmuchfood = BinomialDeviate( -1*foodload , c.GetEatProb()/(double)par.scaling_cell_to_ca_time );
+                Food->addtoValue(x,y,-1*-howmuchfood);
+                // we cannot add all the particles endlessly, otherwise it overflows
+                current_particles = c.particles;
+                added_particles = ( current_particles <= (MAX_PARTICLES-howmuchfood) )?howmuchfood:(MAX_PARTICLES-current_particles);
+                c.particles += added_particles;
+              }
+            }
+          }
+        } //yboxloop
+      } //xboxloop
+      if (count<c.Area()){
+        cerr<<"CellsEat3 warning: not all pixels counted of cell "<<c.Sigma()<<endl;
+      }
+      //hopefully we checked all the pixels of this cell, now calculate chemvec from chemokine data
+      if(ftotal){
+        xv=fsumx/(double)ftotal-c.meanx;
+        yv=fsumy/(double)ftotal-c.meany;
+        c.grad_conc=ftotal;//set the cell gradient amount
+        hyphyp=hypot(xv,yv);
+        // in a homogeneous medium, gradient is zero
+        // we then pick a random direction
+        if(hyphyp > 0.0001){
+          xv/=hyphyp;
+          yv/=hyphyp;
+          c.setChemVec(xv,yv);
+        }else{
+          double theta = 2.*M_PI*RANDOM();
+          c.setChemVec( cos(theta) , sin(theta) );
+        }
+      }else{ //this cell sees no chemokine -> random vector
+        double theta = 2.*M_PI*RANDOM();
+        c.setChemVec( cos(theta) , sin(theta) );
+      }
+      if(c.chemvecx>1 || c.chemvecy>1){
+        std::cerr << ", vector: "<< c.chemvecx <<" "<< c.chemvecy  << '\n';
+        exit(1);
+      }
+
+    } //is cell alive and of right type
+
+  }
+
+}
+
 //to initialise cells' mu, perstime and persdur
 void Dish::InitCellMigration(void)
 {

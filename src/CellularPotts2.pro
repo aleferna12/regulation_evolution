@@ -1,8 +1,8 @@
 TEMPLATE = app
 GRAPHICS = x11
 CONFIG += console
-CONFIG += release   #default +
-CONFIG -= debug     #default -
+CONFIG -= release   #default +
+CONFIG += debug     #default -
 CONFIG -= app_bundle
 
 

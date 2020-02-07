@@ -86,12 +86,13 @@ INIT {
       InitContactLength();  // see dish.cpp - you don't need dish->InitContactLength because this part IS in dish
       cout << "done setting contact length"<<endl;
       CPM->InitializeEdgeList();
+      cout << "done initialising edge list"<<endl;
       cout << "Going to initialise genome"<<endl;
       for(auto &c: cell) {
         if(c.Sigma()){
           c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
           //initialise a cell's timing for gex Updating
-          c.setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
+          //c.setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
           //  creates a cell's genome, either randomly or from file
           if (strlen(par.genomefile)){
             c.ReadGenomeFromFile(par.genomefile);
@@ -141,10 +142,10 @@ TIMESTEP {
 
     if( !(i%100000) ) cerr<<"TIME: "<<i<<endl;
 
-    dish->CellsEat2();
+    dish->CellsEat3();
 
     //This function updates the network and deals with the consequences of the output (motility vs division)
-    dish->UpdateCellParameters(i); // SCALED//this changes neighs (via DivideCells)
+    //dish->UpdateCellParameters(i); // SCALED
 
     dish->CellMigration();//updates persistence time and targetvectors
 

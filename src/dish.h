@@ -104,6 +104,7 @@ public:
   void CellGrowthAndDivision(void);
   void CellsEat(void);
   void CellsEat2(void); //chenges cells direction vector based on where more food is
+  void CellsEat3(void); //hopefully more efficient version of cellseat2
 
   void UpdateCellExpression(void);
 

@@ -13,8 +13,8 @@ MAKEFILE      = Makefile
 CC            = gcc
 CXX           = g++
 DEFINES       = 
-CFLAGS        = -pipe -O2 -Wall -W -fPIC $(DEFINES)
-CXXFLAGS      = -pipe -std=c++11 -O2 -DX11GRAPHICS -Wall -W -Wno-unused-parameter -Wno-unused-variable -Wno-ignored-qualifiers -Wno-unused-result -Wno-write-strings -Wno-misleading-indentation -fPIC $(DEFINES)
+CFLAGS        = -pipe -g -Wall -W -fPIC $(DEFINES)
+CXXFLAGS      = -pipe -std=c++11 -g -DX11GRAPHICS -Wall -W -Wno-unused-parameter -Wno-unused-variable -Wno-ignored-qualifiers -Wno-unused-result -Wno-write-strings -Wno-misleading-indentation -fPIC $(DEFINES)
 INCPATH       = -I. -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++
 QMAKE         = /usr/lib/qt5/bin/qmake
 DEL_FILE      = rm -f
@@ -37,7 +37,7 @@ COMPRESS      = gzip -9f
 DISTNAME      = cell_evolution1.0.0
 DISTDIR = /home/renske/origins_postdoc/multicell/regulation_evolution/src/.tmp/cell_evolution1.0.0
 LINK          = g++
-LFLAGS        = -Wl,-O1
+LFLAGS        = 
 LIBS          = $(SUBLIBS) -lpng -lXext -lX11 -lm
 AR            = ar cqs
 RANLIB        = 
@@ -142,6 +142,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmake.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf \
+		.qmake.stash \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf \
@@ -261,6 +262,7 @@ Makefile: CellularPotts2.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qma
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmake.conf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf \
+		.qmake.stash \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf \
@@ -332,6 +334,7 @@ Makefile: CellularPotts2.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qma
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/qt_config.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmake.conf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_post.prf:
+.qmake.stash:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/exclusive_builds.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/toolchain.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/default_pre.prf:
@@ -400,6 +403,7 @@ ca.o: ca.cpp sticky.h \
 		pde.h \
 		cell.h \
 		genome.h \
+		gene.h \
 		dish.h \
 		intplane.h \
 		sqr.h \
@@ -410,17 +414,22 @@ ca.o: ca.cpp sticky.h \
 hull.o: hull.cpp hull.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o hull.o hull.cpp
 
-gene.o: gene.cpp random.h \
+gene.o: gene.cpp gene.h \
+		random.h \
 		parameter.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o gene.o gene.cpp
 
-genome.o: genome.cpp 
+genome.o: genome.cpp genome.h \
+		gene.h \
+		random.h \
+		parameter.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o genome.o genome.cpp
 
 cell.o: cell.cpp cell.h \
 		parameter.h \
 		random.h \
 		genome.h \
+		gene.h \
 		sticky.h \
 		dish.h \
 		graph.h \
@@ -442,6 +451,7 @@ dish.o: dish.cpp dish.h \
 		intplane.h \
 		cell.h \
 		genome.h \
+		gene.h \
 		ca.h \
 		mainpage.h \
 		sticky.h \
@@ -457,6 +467,7 @@ info.o: info.cpp dish.h \
 		intplane.h \
 		cell.h \
 		genome.h \
+		gene.h \
 		ca.h \
 		mainpage.h \
 		info.h \
@@ -491,6 +502,7 @@ pde.o: pde.cpp crash.h \
 		cell.h \
 		random.h \
 		genome.h \
+		gene.h \
 		conrec.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o pde.o pde.cpp
 
@@ -503,6 +515,7 @@ intplane.o: intplane.cpp crash.h \
 		cell.h \
 		random.h \
 		genome.h \
+		gene.h \
 		intplane.h \
 		conrec.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o intplane.o intplane.cpp
@@ -526,6 +539,7 @@ cell_evolution.o: cell_evolution.cpp dish.h \
 		intplane.h \
 		cell.h \
 		genome.h \
+		gene.h \
 		ca.h \
 		mainpage.h \
 		info.h \
