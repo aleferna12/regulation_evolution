@@ -2,7 +2,7 @@
 #define GenomeHeader
 
 #include <cstdio>
-#include <vector>
+#include <array>
 #include <iostream>
 #include <fstream>
 #include <string.h>
@@ -40,9 +40,10 @@ class Genome
   void PrintGenome(char * filename); //makes a dot plot
   void OutputGeneState(void);
 
-  void GetOutput(vector<int> &out);
+  void GetOutput(array<int,2> &out);
   //genomic functions
-  void UpdateGeneExpression(const vector<double> &input);
+  void UpdateGeneExpression(const array<double,2> &input, bool sync_cells);
+  void FinishUpdate(void);
 
   void MutateGenome(double mu, double mustd);
 

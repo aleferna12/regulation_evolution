@@ -13,8 +13,8 @@ MAKEFILE      = Makefile
 CC            = gcc
 CXX           = g++
 DEFINES       = 
-CFLAGS        = -pipe -g -Wall -W -fPIC $(DEFINES)
-CXXFLAGS      = -pipe -std=c++11 -g -DX11GRAPHICS -Wall -W -Wno-unused-parameter -Wno-unused-variable -Wno-ignored-qualifiers -Wno-unused-result -Wno-write-strings -Wno-misleading-indentation -fPIC $(DEFINES)
+CFLAGS        = -pipe -O2 -Wall -W -fPIC $(DEFINES)
+CXXFLAGS      = -pipe -std=c++11 -O2 -DX11GRAPHICS -Wall -W -Wno-unused-parameter -Wno-unused-variable -Wno-ignored-qualifiers -Wno-unused-result -Wno-write-strings -Wno-misleading-indentation -fPIC $(DEFINES)
 INCPATH       = -I. -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++
 QMAKE         = /usr/lib/qt5/bin/qmake
 DEL_FILE      = rm -f
@@ -37,7 +37,7 @@ COMPRESS      = gzip -9f
 DISTNAME      = cell_evolution1.0.0
 DISTDIR = /home/renske/origins_postdoc/multicell/regulation_evolution/src/.tmp/cell_evolution1.0.0
 LINK          = g++
-LFLAGS        = 
+LFLAGS        = -Wl,-O1
 LIBS          = $(SUBLIBS) -lpng -lXext -lX11 -lm
 AR            = ar cqs
 RANLIB        = 

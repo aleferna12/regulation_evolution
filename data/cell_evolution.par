@@ -1,11 +1,11 @@
 ### Max time (max # monte carlo steps) ###
 # takes about 1hour per 100000 timesteps
 #mcs = 200000000
-mcs = 5000
+mcs = 300000
 
 #cells in blobs move at 0.0055 px/mcs
 # duration of season could then be larger than field size/ speed
-season_duration = 10000
+season_duration = 300000
 
 ### grid size ###
 sizex = 500
@@ -95,9 +95,9 @@ scaling_cell_to_ca_time = 20  # scaling factor for: freq update food plane, pred
 ########################
 
 howmany_makeit_for_nextgen = 200
-popsize = 20
+popsize = 200
 
-n_init_cells = 20
+n_init_cells = 200
 size_init_cells = 25
 
 #Initial configuration of cells, see ca.cpp placecellsorderly()
@@ -111,7 +111,7 @@ divisions = 0
 ###################
 
 #radius of the box for cells that make it to next generation
-the_line = 20X
+the_line = 20
 
 #if true, persdur is set to zero when line is reached
 #please don't use this
@@ -129,7 +129,7 @@ evolsim = 1
 evolreg = 1
 
 #genome mutation
-mu = 0.05
+mu = 0.02
 mustd = 0.1
 
 #scaling of death rates at end of season

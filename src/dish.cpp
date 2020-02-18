@@ -39,6 +39,8 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "crash.h"
 #include "pde.h"
 #include "intplane.h"
+#include <chrono>
+using namespace std::chrono;
 
 #define EXTERNAL_OFF
 
@@ -820,6 +822,10 @@ void Dish::CellsEat2(void)
   int MAX_PARTICLES=1000000; //max particles that a cell can have inside it
   std::vector<int> fsumx(cell.size(),0), fsumy(cell.size(),0),ftotal(cell.size(),0);
   int foodload;
+
+  // static int sum1=0, nr1=0;
+  // auto start1 = high_resolution_clock::now();
+
   for(int x=1; x<par.sizex-1;x++){
       for(int y=1; y<par.sizey-1;y++){
         if(CPM->Sigma(x,y) && cell[CPM->Sigma(x,y)].AliveP() && cell[CPM->Sigma(x,y)].getTau() == PREY && Food->Sigma(x,y)){
@@ -856,7 +862,16 @@ void Dish::CellsEat2(void)
         }
       }
     }
+    // auto stop1 = high_resolution_clock::now();
+    // auto duration1 = duration_cast<microseconds>(stop1 - start1);
+    // sum1+=duration1.count();
+    // nr1++;
+    // if (!(nr1%1000)){
+    //   cout <<" duration average 1: "<<sum1/nr1<<endl;
+    // }
 
+    // static int sum=0, nr=0;
+    // auto start = high_resolution_clock::now();
     //update the cell's movement vector with respect to the location of food
     int count=0;
     double xv,yv;
@@ -888,7 +903,13 @@ void Dish::CellsEat2(void)
         exit(1);
       }
     }
-
+    // auto stop = high_resolution_clock::now();
+    // auto duration = duration_cast<microseconds>(stop - start);
+    // sum+=duration.count();
+    // nr++;
+    // if (!(nr%1000)){
+    //   cout <<" duration average 2: "<<sum/nr<<endl;
+    // }
 }
 
 //changes cells direction vector based on where more food is
@@ -908,7 +929,7 @@ void Dish::CellsEat3(void)
   int boxsize;
   int i_meanx, i_meany, fx, fy, cell_sigma;
   double xv, yv, hyphyp;
-
+  // static int sum1=0, nr1=0, sum2=0, nr2=0;
 
   for (auto &c : cell){
     if (c.AliveP() && c.getTau()){
@@ -920,43 +941,56 @@ void Dish::CellsEat3(void)
       ftotal=0;
       count=0;
       //we are going to look in a box around the cell only
+      // auto start1 = high_resolution_clock::now();
       for (int x=i_meanx-boxsize; x<=i_meanx+boxsize; x++){
+        fx=x;
+        if(x<1||x>par.sizex-2){
+          continue;
+        }else if (par.periodic_boundaries){
+          if (x<1 ) fx+=par.sizex-2;
+          if (x>par.sizex-2 ) fx-=par.sizex-2;
+        }
         for (int y=i_meany-boxsize; y<=i_meany+boxsize; y++){
-          fx=x;
           fy=y;
           //correct pixel position
-          if(par.periodic_boundaries){
-            if (x<1 ) fx+=par.sizex-2;
-            if (x>par.sizex-2 ) fx-=par.sizex-2;
-            if (y<1 ) fy+=par.sizex-2;
-            if (y>par.sizex-2 ) fx-=par.sizex-2;
-          }else if (x<1||x>par.sizex-2||y<1||y>par.sizex-2){
+          if(y<1||y>par.sizey-2){
             continue;
+          }else if (par.periodic_boundaries){
+            if (y<1 ) fy+=par.sizey-2;
+            if (y>par.sizey-2 ) fy-=par.sizey-2;
           }
 
           //is this pixel indeed of this cell, and is there food or chemokine
           if(CPM->Sigma(fx,fy)==c.Sigma()){
             count++;
-            if((foodload=Food->Sigma(fx,fy))){
+            foodload=Food->Sigma(fx,fy);
 
-              if (foodload>0){ //this is for chemotaxis
-                fsumx+=x*foodload;
-                fsumy+=y*foodload;
-                ftotal+=foodload;
-              }else{ //this is for eating
-                howmuchfood = BinomialDeviate( -1*foodload , c.GetEatProb()/(double)par.scaling_cell_to_ca_time );
-                Food->addtoValue(x,y,-1*-howmuchfood);
-                // we cannot add all the particles endlessly, otherwise it overflows
-                current_particles = c.particles;
-                added_particles = ( current_particles <= (MAX_PARTICLES-howmuchfood) )?howmuchfood:(MAX_PARTICLES-current_particles);
-                c.particles += added_particles;
-              }
+            if (foodload>0){ //this is for chemotaxis
+              fsumx+=fx*foodload;
+              fsumy+=fy*foodload;
+              ftotal+=foodload;
+            }else{ //this is for eating
+              howmuchfood = BinomialDeviate( -1*foodload , c.GetEatProb()/(double)par.scaling_cell_to_ca_time );
+              Food->addtoValue(fx,fy,-1*-howmuchfood);
+              // we cannot add all the particles endlessly, otherwise it overflows
+              current_particles = c.particles;
+              added_particles = ( current_particles <= (MAX_PARTICLES-howmuchfood) )?howmuchfood:(MAX_PARTICLES-current_particles);
+              c.particles += added_particles;
             }
           }
         } //yboxloop
       } //xboxloop
+      // auto stop1 = high_resolution_clock::now();
+      // auto duration1 = duration_cast<microseconds>(stop1 - start1);
+      // sum1+=duration1.count();
+      // nr1++;
+      // if (!(nr1%10000)){
+      //   cout <<" duration average 1: "<<sum1/nr1<<endl;
+      // }
+      //
+      // auto start2 = high_resolution_clock::now();
       if (count<c.Area()){
-        cerr<<"CellsEat3 warning: not all pixels counted of cell "<<c.Sigma()<<endl;
+        cerr<<"CellsEat3 warning: not all pixels counted of cell "<<c.Sigma()<<": "<<c.Area()-count<<endl;
       }
       //hopefully we checked all the pixels of this cell, now calculate chemvec from chemokine data
       if(ftotal){
@@ -982,8 +1016,16 @@ void Dish::CellsEat3(void)
         std::cerr << ", vector: "<< c.chemvecx <<" "<< c.chemvecy  << '\n';
         exit(1);
       }
+      // auto stop2 = high_resolution_clock::now();
+      // auto duration2 = duration_cast<microseconds>(stop2 - start2);
+      // sum2+=duration2.count();
+      // nr2++;
+      // if (!(nr2%10000)){
+      //   cout <<" duration average 2: "<<sum2/nr2<<endl;
+      // }
 
     } //is cell alive and of right type
+
 
   }
 
@@ -998,20 +1040,28 @@ void Dish::InitCellMigration(void)
   //when the initialisation period has passed: start up the vectors and migration
   for(auto end=std::end(cell); icell != end; ++icell)
   {
-    icell->setMu(par.startmu);
-    icell->startTarVec();
-    if (par.persduration<par.mcs){
-      icell->setPersTime(int(par.persduration*RANDOM())); //so that cells don't all start turning at the same time...
-    }
-    else{
-      icell->setPersTime(0); //special type of experiment
-      icell->tvecx=1.;
-      icell->tvecy=0.;
-    }
-    icell->setPersDur(par.persduration);
+    if (icell->getTau()==1){
+      icell->setMu(par.startmu);
+      icell->startTarVec();
+      if (par.persduration<par.mcs){
+        icell->setPersTime(int(par.persduration*RANDOM())); //so that cells don't all start turning at the same time...
+      }
+      else{
+        icell->setPersTime(0); //special type of experiment
+        icell->tvecx=1.;
+        icell->tvecy=0.;
+      }
+      icell->setPersDur(par.persduration);
 
-    icell->setChemMu(par.init_chemmu);
-    icell->startChemVec();
+      icell->setChemMu(par.init_chemmu);
+      icell->startChemVec();
+    }else{
+      icell->setMu(0.);
+      icell->setPersTime(0);
+      icell->setPersDur(0);
+      icell->setChemMu(0.);
+    }
+
     //cerr<<"Cell "<<icell->sigma<<" vecx="<<icell->tvecx<<" vecy="<<icell->tvecy<<endl;
     //cerr<<"Cell persdur "<<icell->persdur<<" perstime "<<icell->perstime<<endl;
   }
@@ -1194,76 +1244,139 @@ void Dish::CellGrowthAndDivision2(void)
 }
 
 
-//Function that checks and changes cell parameters
-void Dish::UpdateCellParameters(int Time)
+// //Function that checks and changes cell parameters
+// void Dish::UpdateCellParameters(int Time)
+// {
+//     vector<Cell>::iterator c; //iterator to go over all Cells
+//     vector <double> inputs(1, 0.); //was inputs(2,0.);
+//     vector<int> output;
+//     vector<bool> which_cells(cell.size());
+//     vector<int> sigma_newcells;
+//     int interval;
+//
+//     for( c=cell.begin(), ++c; c!=cell.end(); ++c){
+//       if( c->AliveP() ){
+//
+//         c->time_since_birth++;
+//         interval=Time+c->Gextiming();
+//         //update the network withing each cell, if it is the right time
+//         if(!(interval%par.scaling_cell_to_ca_time)){
+//           //calculate inputs
+//           inputs[0]=(double)c->grad_conc;
+//           output.clear();
+//           // cerr<<c->Sigma()<<" grad is "<<c->grad_conc<<endl;
+//           // inputs[1]=(double)c->returnBoundaryLength(0.);
+//           c->UpdateGenes(inputs);
+//
+//           //what is the state of the output node of the cell?
+//           c->GetGeneOutput(output);
+//           if(c->dividecounter>=par.divtime+par.divdur){
+//             //divide
+//             if(c->Area()>30){
+//               which_cells[c->sigma]=TRUE;
+//             }
+//             //we already set the target area back to normal. We won't run any AmoebaeMove in between this and division
+//             //like this both daughter cells will inherit the normal size
+//             //and if the cell was too small, it needs to start all over anyway. (Hopefully a rare case)
+//             c->SetTargetArea(par.target_area);
+//             c->dividecounter=0;
+//           }
+//           else if(output[0]==1 || c->dividecounter>par.divtime){
+//             //when you've initiated division, grow and stop moving
+//             //cerr << "Cell "<<c->Sigma()<<" is now in divide mode"<<endl;
+//             if(c->dividecounter>par.divtime){
+//               if(c->TargetArea()<par.target_area*2) c->SetTargetArea(c->TargetArea()+1);
+//               c->setMu(0.);
+//               c->setTau(2); //basically only for color right now...
+//             }
+//             //the division counter is updated when your output says so or when you've already initiated division
+//             c->dividecounter++;
+//           }else {
+//             c->dividecounter=0;
+//             c->setMu(par.startmu);
+//             c->setTau(1);
+//           }
+//         }
+//
+//
+//       }
+//       //check area:if cell is too small (whether alive or not) we remove its sigma
+//       // notice that this keeps the cell in the cell array, it only removes its sigma from the field
+//       if(c->Area()< par.min_area_for_life){
+//          c->SetTargetArea(0);
+//          c->Apoptose(); //set alive to false
+//          CPM->RemoveCell(&*c,par.min_area_for_life,c->meanx,c->meany);
+//       }
+//     }
+//
+//     //divide all cells that are bound to divide
+//     sigma_newcells=CPM->DivideCells(which_cells);
+//     MutateCells(sigma_newcells);
+//     UpdateVectorJ(sigma_newcells);
+//
+//
+// }
+
+//function to calculate the input a cell receives from other cells
+double Dish::NeighInputCalc(Cell &c)
 {
-    vector<Cell>::iterator c; //iterator to go over all Cells
-    vector <double> inputs(1, 0.); //was inputs(2,0.);
-    vector<int> output;
-    vector<bool> which_cells(cell.size());
-    vector<int> sigma_newcells;
-    int interval;
+  double totalsig=0.;
+  int totalmem=0;
+  array <int,2> cellout={0,0};
 
-    for( c=cell.begin(), ++c; c!=cell.end(); ++c){
-      if( c->AliveP() ){
+  for (auto const& nei : c.neighbours){
+    cell[nei.first].GetGeneOutput(cellout); //what is this cell signalling?
+    totalsig+=nei.second.first*(double)cellout[1]; //how much membrane contact * signal
+    totalmem+=nei.second.first;
+  }
 
-        c->time_since_birth++;
-        interval=Time+c->Gextiming();
-        //update the network withing each cell, if it is the right time
-        if(!(interval%par.scaling_cell_to_ca_time)){
-          //calculate inputs
-          inputs[0]=(double)c->grad_conc;
-          output.clear();
-          // cerr<<c->Sigma()<<" grad is "<<c->grad_conc<<endl;
-          // inputs[1]=(double)c->returnBoundaryLength(0.);
-          c->UpdateGenes(inputs);
+  return totalsig/(double)totalmem;
 
-          //what is the state of the output node of the cell?
-          c->GetGeneOutput(output);
-          if(c->dividecounter>=par.divtime+par.divdur){
-            //divide
-            if(c->Area()>30){
-              which_cells[c->sigma]=TRUE;
-            }
-            //we already set the target area back to normal. We won't run any AmoebaeMove in between this and division
-            //like this both daughter cells will inherit the normal size
-            //and if the cell was too small, it needs to start all over anyway. (Hopefully a rare case)
-            c->SetTargetArea(par.target_area);
-            c->dividecounter=0;
-          }
-          else if(output[0]==1 || c->dividecounter>par.divtime){
-            //when you've initiated division, grow and stop moving
-            //cerr << "Cell "<<c->Sigma()<<" is now in divide mode"<<endl;
-            if(c->dividecounter>par.divtime){
-              if(c->TargetArea()<par.target_area*2) c->SetTargetArea(c->TargetArea()+1);
-              c->setMu(0.);
-              c->setTau(2); //basically only for color right now...
-            }
-            //the division counter is updated when your output says so or when you've already initiated division
-            c->dividecounter++;
-          }else {
-            c->dividecounter=0;
-            c->setMu(par.startmu);
-            c->setTau(1);
-          }
-        }
+}
 
+//Function that checks and changes cell parameters
+void Dish::UpdateCellParameters2(void)
+{
+   //synchronous updating of all cells; otherwise you'll need to scramble
+   //cell order too
 
-      }
-      //check area:if cell is too small (whether alive or not) we remove its sigma
-      // notice that this keeps the cell in the cell array, it only removes its sigma from the field
-      if(c->Area()< par.min_area_for_life){
-         c->SetTargetArea(0);
-         c->Apoptose(); //set alive to false
-         CPM->RemoveCell(&*c,par.min_area_for_life,c->meanx,c->meany);
-      }
-    }
+   vector<Cell>::iterator c; //iterator to go over all Cells
+   array <double, 2> inputs={0.,0.}; //was inputs(2,0.);
+   array <int,2> output={0,0};
+   vector<bool> which_cells(cell.size());
+   vector<int> sigma_newcells;
+   int interval;
 
-    //divide all cells that are bound to divide
-    sigma_newcells=CPM->DivideCells(which_cells);
-    MutateCells(sigma_newcells);
-    UpdateVectorJ(sigma_newcells);
+   for (int i=0; i<par.scaling_cell_to_ca_time; i++){
+     for( auto &c : cell ){
+       if( c.AliveP() && c.Sigma()){
+         c.time_since_birth++;
+         //update the network withing each cell, if it is the right time
+         //calculate inputs
+         inputs[0]=(double)c.grad_conc;
+         inputs[1]=NeighInputCalc(c);
 
+         c.UpdateGenes(inputs, true); //second argument is whether cells update synchronously. For now YES
+
+       }
+     }
+     //set all cells to their new gene expression
+     for( auto &c : cell ){
+       c.FinishGeneUpdate();
+     }
+   }
+
+   //now the updates are done: set cells to their new fate.
+   for( auto &c : cell ){
+     c.GetGeneOutput(output);
+     if(output[0]==1){ //this cell is a dividing cell
+       c.setMu(0.);
+       c.setTau(2); //basically only for color right now...
+     }else{
+       c.setMu(par.startmu);
+       c.setTau(1);
+     }
+   }
 
 }
 
@@ -1440,6 +1553,7 @@ void Dish::ReproduceEndOfSeason(void)
   std::vector<double> fitness(cell.size(), 0.); //as many as there are cells (dead or alive), all with value 0.
   double tot_fitness = 0.;
 
+  //calculate each cell's fitness
   for(auto &c : cell){
     if(c.AliveP() && c.Sigma()>0){
       double cell_fitness = FitnessFunction( c.particles, c.getXpos(), c.getYpos());
@@ -1450,8 +1564,7 @@ void Dish::ReproduceEndOfSeason(void)
       c.chemmu = 0.;
     }
   }
-  // std::cerr << "tot fitness: "<<tot_fitness << '\n';
-  //for(auto &f:fitness) f/=tot_fitness;  <- what the hell?
+
   for(int i = 0; i<par.howmany_makeit_for_nextgen; ++i){
     double sum_fitness=0.;
     double rn = tot_fitness*RANDOM(); //random choice of who replicates proportional to fitness
@@ -1474,19 +1587,6 @@ void Dish::ReproduceEndOfSeason(void)
     sigma_of_cells_that_will_divide.push_back(which_sig);
   }
 
-  // std::cerr << "These are the sigmas of the cells alive now, before cell division" << '\n';
-  // for(auto c: cell)
-  //   if(c.AliveP()) std::cerr << c.Sigma()<<" ";
-  // std::cerr << " " << '\n';
-  // std::cerr << "These are the sigmas of the cells dead now, before cell division" << '\n';
-  // for(auto c: cell)
-  //   if(!c.AliveP()) std::cerr << c.Sigma()<<" ";
-  // std::cerr << " " << '\n';
-  //
-  // std::cerr << "These are the cells that will divide" << '\n';
-  // for(auto sig:sigma_of_cells_that_will_divide) std::cerr << sig<<" ";
-  // std::cerr << " " << '\n';
-
   //At this point we should orchestrate actual cell division:
   // some cells replicate 10 times, other zero: the idea is that we let cells divide
   // if they are bigger than a certain amount, if not, we run amoeabeamove until they have expanded enough
@@ -1508,10 +1608,6 @@ void Dish::ReproduceEndOfSeason(void)
       }
     }
     //make cell division
-    // std::cerr << "\nThese are the sigmas that replicate this round"<<endl;
-    // for(auto x: which_cells) std::cerr << x <<" ";
-    // std::cerr << " " << '\n';
-    // std::cerr <<"cell.size()="<<cell.size()<< ", vector size = " << which_cells.size() << '\n';
     //it can still be that which cells is empty because cells that should divide are still too small
     // it is VERY unlikely that this happens, but it can happen:
     if(!which_cells.empty()){
@@ -1678,6 +1774,40 @@ void Dish::GradientBasedCellKill(int popsize)
   //   CPM->RemoveCell(&cell[removesig] ,par.min_area_for_life,cell[removesig].meanx,cell[removesig].meany);
   //   current_popsize--;
   // }
+
+}
+//death based on celltype, then until popsize is restored
+void Dish::RemoveMotileCells(int popsize)
+{
+  int current_popsize=0;
+  std::vector<int> alivesigma;
+
+  //first remove all cells that were motile: they die by default
+  for( auto &c: cell){
+    if(c.Sigma()>0 && c.AliveP()){
+      if (c.getTau()==1){ //motile cell
+        c.SetTargetArea(0);
+        c.Apoptose(); //set alive to false
+        CPM->RemoveCell(&c,par.min_area_for_life,c.meanx,c.meany);
+      }else{
+        alivesigma.push_back(c.Sigma());
+        current_popsize++;
+      }
+    }
+  }
+
+ //if the population is still too big, kill some more
+  int rn, sigtorm;
+  while(current_popsize>popsize/2){
+    rn = current_popsize*RANDOM();
+    sigtorm = alivesigma[rn];
+    alivesigma[rn] = alivesigma[current_popsize-1];
+    current_popsize--; //so that next time rn interval is reduced
+
+    cell[sigtorm].SetTargetArea(0);
+    cell[sigtorm].Apoptose(); //set alive to false
+    CPM->RemoveCell(&cell[sigtorm] ,par.min_area_for_life,cell[sigtorm].meanx,cell[sigtorm].meany);
+  }
 
 }
 

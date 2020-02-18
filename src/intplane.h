@@ -90,7 +90,7 @@ class IntPlane {
   \param layer: the PDE plane to probe.
   \param x, y: grid point to probe.
   */
-  inline double Sigma(const int x, const int y) const {
+  inline int Sigma(const int x, const int y) const {
     return sigma[x][y];
   }
 
@@ -152,8 +152,8 @@ class IntPlane {
   \param l: layer
   \return Maximum value in layer l.
   */
-  inline double Max(void ) {
-    double max=sigma[0][0];
+  inline int Max(void ) {
+    int max=sigma[0][0];
     int loop=sizex*sizey;
     for (int i=1;i<loop;i++)
       if (sigma[0][i]>max) {
@@ -166,8 +166,8 @@ class IntPlane {
   \param l: layer
   \return Minimum value in layer l.
   */
-  inline double Min(void) {
-    double min=sigma[0][0];
+  inline int Min(void) {
+    int min=sigma[0][0];
     int loop=sizex*sizey;
     for (int i=1;i<loop;i++)
       if (sigma[0][i]<min) {

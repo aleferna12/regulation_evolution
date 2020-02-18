@@ -167,7 +167,7 @@ void Genome::WriteToFile(char *filename)
   ofs.close();
 }
 
-void Genome::UpdateGeneExpression(const vector<double> &input)
+void Genome::UpdateGeneExpression(const array<double,2> &input, bool sync_cells)
 {
   int i,j;
   double newval;
@@ -215,6 +215,15 @@ void Genome::UpdateGeneExpression(const vector<double> &input)
 
   }
 
+  //only update BoolState if we update cells asynchronously
+  if(!sync_cells) FinishUpdate();
+
+}
+
+//this function puts the NewBool state of nodes into BoolState
+void Genome::FinishUpdate(void)
+{
+  int i;
   //update the actual expression
   for (i=0; i<regnodes.size();i++){
     regnodes[i].EndCycle();
@@ -310,9 +319,9 @@ int i;
 
 }
 
-void Genome::GetOutput(vector<int> &out)
+void Genome::GetOutput(array<int,2> &out)
 {
   for (auto &n: outputnodes){
-    out.push_back(n.Boolstate);
+    out[n.genenr-(innr+regnr)]=n.Boolstate;
   }
 }

@@ -43,7 +43,8 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #else
 #include "x11graph.h"
 #endif
-
+#include <chrono>
+using namespace std::chrono;
 
 //NOTE: The bookkeeping for cell contacts is very extensive:
 // When cells are initially placed (call dish->InitContactLength afterwards)
@@ -93,7 +94,7 @@ INIT {
           c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
           //initialise a cell's timing for gex Updating
           //c.setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
-          //  creates a cell's genome, either randomly or from file
+          //creates a cell's genome, either randomly or from file
           if (strlen(par.genomefile)){
             c.ReadGenomeFromFile(par.genomefile);
           }
@@ -102,6 +103,7 @@ INIT {
           }
         }
       }
+
       cout << "Done initialising genome"<<endl;
 
       //Set function pointer for food update, depending on parameters
@@ -116,7 +118,7 @@ INIT {
         CPM->AmoebaeMove2(PDEfield);  //this changes neighs
       }
       InitCellMigration();
-
+      UpdateCellParameters2();//update cell status
       par.starttime=0;
     }
     else {
@@ -139,11 +141,17 @@ TIMESTEP {
     static Dish *dish=new Dish(); //here ca planes and cells are constructed
     static Info *info=new Info(*dish, *this);
     static int i=par.starttime; //starttime is set in Dish. Not the prettiest solution, but let's hope it works.
+    static int sum=0, nr=0;
 
     if( !(i%100000) ) cerr<<"TIME: "<<i<<endl;
 
+    //auto start = high_resolution_clock::now();
     dish->CellsEat3();
-
+    //auto stop = high_resolution_clock::now();
+    //auto duration = duration_cast<microseconds>(stop - start);
+    //sum+=duration.count();
+    //nr++;
+    //cout << duration.count() << endl;
     //This function updates the network and deals with the consequences of the output (motility vs division)
     //dish->UpdateCellParameters(i); // SCALED
 
@@ -158,14 +166,18 @@ TIMESTEP {
 
       if(par.evolsim){
         if(i>0 && i%par.season_duration==0){
+          // cout <<" duration average "<<sum/nr<<endl;
           //reproduce people based on fitness criterion
           //remove random cells until popsize is back to normal
           //reset food and gradient
           std::cerr << "Time = "<<i << '\n';
           std::cerr << "End of season: there are "<< dish->CountCells() <<" cells" << '\n';
           dish->SaveNetworks(i);
-          dish->GradientBasedCellKill(par.popsize);
+          //dish->GradientBasedCellKill(par.popsize);
+          dish->RemoveMotileCells(par.popsize); //kill all nondividing cells and more if necessary
           std::cerr << "After remove there are "<< dish->CountCells() <<" cells" << '\n';
+          dish->ReproduceEndOfSeason(); //replenish the population
+          dish->UpdateCellParameters2();//update cell status
           dish->Food->IncreaseVal(*(dish->Food)); //this has to be last thing to do here
           std::cout << "End of season: Gradient switching at time (+/- 25 MCS) = "<< i << '\n';
         }

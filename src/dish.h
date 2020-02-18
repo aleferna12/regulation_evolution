@@ -115,13 +115,15 @@ public:
   //find cells that ate enough and let them grow; divide big cells and kill small cells
   void CellGrowthAndDivision2(void);
   void UpdateCellParameters(int Time);
+  void UpdateCellParameters2(void);
+  double NeighInputCalc(Cell &c);
   int CheckWhoMadeitLinear(void);
   int CheckWhoMadeitRadial(void);
 
   double FitnessFunction(int particles, double meanx, double meany);
   void ReproduceEndOfSeason(void);
   void RemoveCellsUntilPopIs(int popsize);
-
+  void RemoveMotileCells(int popsize);
   void RemoveWhoDidNotMakeIt(void);
   void GradientBasedCellKill(int currentsize);
 
