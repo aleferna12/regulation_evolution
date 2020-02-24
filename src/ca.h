@@ -168,7 +168,7 @@ public:
 
   // destructor must also be virtual
   virtual ~CellularPotts();
-  void InitializeEdgeList(void); //Set the initial edgelist which are eligible to change
+  void InitializeEdgeList(bool init_single_cell_center); //Set the initial edgelist which are eligible to change
 
   /*! \brief Plots the dish to the screen or to a movie and searches the
    neighbours.
@@ -311,6 +311,7 @@ public:
   int GrowInCells(int n_cells, int cellsize, double subfield=1.);
   int GrowInCells(int n_cells, int cell_size, int sx, int sy, int offset_x, int offset_y);
   bool PlaceOneCellsAtXY(int posx,int posy, int cellsize, int cellsigma);
+  int PlaceOneCellRandomly(int sig, int cellsize);
   int PlaceCellsRandomly(int n_cells, int cellsize);
   int PlaceCellsOrderly(int n_cells, int cellsize);
   //! \brief Adds a new Cell and returns a reference to it.
@@ -379,7 +380,7 @@ public:
   static const int nx[25], ny[25];
   static const int nbh_level[5];
   int n_nb;
-
+  void MeasureCellSizes(void);
 private:
   void IndexShuffle(void);
   int DeltaH(int x,int y, int xp, int yp, PDE *PDEfield=0);
@@ -391,7 +392,7 @@ private:
   void SprayMedium(void);
   int CopyvProb(int DH,  double stiff);
   void FreezeAmoebae(void);
-  void MeasureCellSizes(void);
+
   void MeasureCellSize(Cell &c);
   void CopyProb(double T);
   bool ConnectivityPreservedP(int x, int y);

@@ -119,7 +119,7 @@ public:
   double NeighInputCalc(Cell &c);
   int CheckWhoMadeitLinear(void);
   int CheckWhoMadeitRadial(void);
-
+  void ScatterEndOfSeason(void);
   double FitnessFunction(int particles, double meanx, double meany);
   void ReproduceEndOfSeason(void);
   void RemoveCellsUntilPopIs(int popsize);

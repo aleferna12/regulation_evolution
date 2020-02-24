@@ -546,12 +546,9 @@ void Dish::Plot(Graphics *g, int colour) {
       CPM->Plot(g, colour);
     }
 
-    // return;
-
-
     //here food plotting, with info from cpm and cell
     FoodPlot(g);
-    // return;
+
     //Plot direction arrows, with line function from X11?
     if(par.startmu>0){
       for(auto c: cell){
@@ -564,14 +561,13 @@ void Dish::Plot(Graphics *g, int colour) {
         int y2=2*(c.meany+5*c.tvecy);
         if(y2>=2*par.sizey) y2=2*par.sizey;
         else if(y2<0) y2=0;
-        //now we have to wrap this
+       //now we have to wrap this
         // do we really? we could just truncate vectors up to the max size..
         g->Line(x1,y1,x2, y2, 1); //notice that Line just calls Point for drawing,
                                   // so it does not intrinsically suffer from x,y inversion
       }
     }
     // return;
-
     //get info where the peak is and draw a line for box where who_made_it should register stuff
     // notice that the box is now radial
     int peakx = Food->GetPeakx();
@@ -1375,6 +1371,7 @@ void Dish::UpdateCellParameters2(void)
      }else{
        c.setMu(par.startmu);
        c.setTau(1);
+       c.startTarVec();
      }
    }
 
@@ -1521,6 +1518,46 @@ void Dish::RemoveWhoDidNotMakeIt(void)
   }
 }
 
+//this is going to be a tricky function because I won't kill cells, but redistribute them
+void Dish::ScatterEndOfSeason(void)
+{
+
+  //first remove the cell pixels from the ca
+  for (auto &c: cell){
+    if(c.AliveP() && c.Area() && c.Sigma())
+      CPM->RemoveCell(&c,par.min_area_for_life,c.meanx,c.meany);
+  }
+
+  //replace every cell that is still alive
+  for (auto &c: cell){
+    if(c.AliveP() && c.Sigma()>0){
+      int pix=CPM->PlaceOneCellRandomly(c.Sigma(),par.size_init_cells);
+      c.InitMeanX(par.sizex/2.);
+      c.InitMeanY(par.sizey/2.);
+    }
+  }
+
+  //how big are they now?
+  CPM->MeasureCellSizes();
+
+  for (auto &c: cell){
+    if(c.AliveP() && c.Sigma()>0){
+      c.SetTargetArea(par.target_area);
+      c.setMu(0.0); //make sure they don't move yet!
+      c.setChemMu(0.0);
+    }
+  }
+  //make new edge list
+  CPM->InitializeEdgeList(false);
+
+  //set neighbour contact lengths
+  InitContactLength();
+  for(int init_time=0;init_time<10;init_time++){
+    CPM->AmoebaeMove2(PDEfield);  //this changes neighs
+  }
+
+}
+
 double Dish::FitnessFunction(int particles, double meanx, double meany)
 {
   //get info where the peak is
@@ -1587,18 +1624,27 @@ void Dish::ReproduceEndOfSeason(void)
     sigma_of_cells_that_will_divide.push_back(which_sig);
   }
 
+  //now that we calculated who divides how often, we can scatter the cells
+  if(par.scatter_cells){
+    ScatterEndOfSeason();
+  }
+
   //At this point we should orchestrate actual cell division:
   // some cells replicate 10 times, other zero: the idea is that we let cells divide
   // if they are bigger than a certain amount, if not, we run amoeabeamove until they have expanded enough
   std::vector<int> new_sigma_of_cells_that_will_divide;
+  int count=0;
   while( ! sigma_of_cells_that_will_divide.empty() ){
     for(auto sig: sigma_of_cells_that_will_divide){
       //if cell[sig] is large enough
       //if which_cells[sig] is not already marked
       // std::cerr << "Cell: "<<sig <<" has area "<< cell[sig].area << " and which_cells[sig] = "<<which_cells[sig] ;
       // put in which_cells
+      //cout<<"sig is "<<sig<<endl;
       if(cell[sig].Area() > 30 && which_cells[sig]==false){
         which_cells[sig]=true;
+        count++;
+        //cout<<"sig "<<sig<<"will divide"<<endl;
         // std::cerr << " therefore yes" << '\n';
       }
       // if not, put in new_sigma_of_cells_that_will_divide
@@ -1610,8 +1656,10 @@ void Dish::ReproduceEndOfSeason(void)
     //make cell division
     //it can still be that which cells is empty because cells that should divide are still too small
     // it is VERY unlikely that this happens, but it can happen:
-    if(!which_cells.empty()){
+    if(count && !(which_cells.empty())){
+      //cout<<"doing divisions"<<endl;
       sigma_newcells = CPM->DivideCells(which_cells); //replicate cells
+      count=0;
       // sigma_newcells is an int vector as long as there are cells,
       // it is zero everywhere, except at the positions of a mother cell's sigma,
       // where it contains as value the sigma of the daughter cell
@@ -1651,11 +1699,11 @@ void Dish::ReproduceEndOfSeason(void)
     for(int i=0;i<5;i++) CPM->AmoebaeMove2(PDEfield); // let them expand a little
     //copy new_sigma_of_cells_that_will_divide into old one
     // std::cerr << "After AmoebaeMove2 there are so many alive cells: "<<CountCells() << '\n';
-
+  //  cout<<"done some amoebamove"<<endl;
 
     sigma_of_cells_that_will_divide = new_sigma_of_cells_that_will_divide;
     new_sigma_of_cells_that_will_divide.clear();
-
+    //cout<<"length of cellist "<<sigma_of_cells_that_will_divide.size()<<endl;
     //checks - PASSED
     // std::cerr << "Just a check that vector copying went fine\n sigma_of_bla... should not be empty"<<endl;
     // for(auto x: sigma_of_cells_that_will_divide) std::cerr << x <<" ";
@@ -1667,7 +1715,6 @@ void Dish::ReproduceEndOfSeason(void)
 
     // return;
   }
-
   //also needed, to set all daugher cells
   vector<Cell>::iterator c; //iterator to go over all Cells
   int counter=0;
@@ -1782,14 +1829,14 @@ void Dish::RemoveMotileCells(int popsize)
   int current_popsize=0;
   std::vector<int> alivesigma;
 
-  //first remove all cells that were motile: they die by default
+  //first remove most or all cells that were motile: they die by default
   for( auto &c: cell){
     if(c.Sigma()>0 && c.AliveP()){
-      if (c.getTau()==1){ //motile cell
+      if ((c.getTau()==1 && RANDOM()<par.motiledeath) || (c.getTau()==2 && RANDOM()<par.dividingdeath)){ //motile cell
         c.SetTargetArea(0);
         c.Apoptose(); //set alive to false
         CPM->RemoveCell(&c,par.min_area_for_life,c.meanx,c.meany);
-      }else{
+      }else {
         alivesigma.push_back(c.Sigma());
         current_popsize++;
       }

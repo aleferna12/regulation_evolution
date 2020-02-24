@@ -87,6 +87,9 @@ Parameter::Parameter() {
   divdur=10;
   mindeathprob=0.;
   maxdeathprob=1.;
+  scatter_cells=false;
+  motiledeath=1.0;
+  dividingdeath=0.;
   fitscale=100.;
   datadir = strdup("data_film");
   datafile = strdup("data_cellcount.txt");
@@ -177,6 +180,7 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<" -noevolsim # No evolution at all: sim ends in 1 season, when [howmany_makeit_for_nextgen] cells pass [the_line])"<<endl;
   cerr<<" -nofood # No food distributed in the simulation"<<endl;
   cerr<<" -noevolreg # No evolution of regulation parameters"<<endl;
+  cerr<<" -scatter # spread cells after a season"<<endl;
   cerr<<" -backupfile path/to/backupfile # to start simulation from backup"<<endl;
   cerr<<" -season [INT_NUMBER] # season duration"<<endl;
   cerr<<" -foodinflux [FLOAT_NUMBER] # howmuchfood"<<endl;
@@ -330,6 +334,9 @@ int Parameter::ReadArguments(int argc, char *argv[])
     }else if( 0==strcmp(argv[i],"-noevolsim") ){
       evolsim = false;
       cerr<<"No evolution in this simulation (sim ends when [howmany_makeit_for_nextgen] cells pass [the_line])"<<endl;
+    }else if( 0==strcmp(argv[i],"-scatter") ){
+      scatter_cells = true;
+      cerr<<"Cells will be scattered at the end of the season, before reproduction"<<endl;
     }else if( 0==strcmp(argv[i],"-noevolreg") ){
       evolreg = false;
       cerr<<"No evolution of regulation parameters"<<endl;
@@ -498,6 +505,9 @@ void Parameter::Read(const char *filename) {
   divdur = igetpar(fp, "divdur", 50, true);
   mindeathprob = fgetpar(fp, "mindeathprob", 0., true);
   maxdeathprob = fgetpar(fp, "maxdeathprob", 1.0, true);
+  scatter_cells = bgetpar(fp, "scatter_cells", false, true);
+  motiledeath = fgetpar(fp, "motiledeath", 1.0, true);
+  dividingdeath = fgetpar(fp, "dividingdeath", 0.0, true);
   fitscale = fgetpar(fp, "fitscale", 100., true);
   datadir = sgetpar(fp, "datadir", "data_film", true);
   datafile = sgetpar(fp,"datafile" , "data_cellcount.txt",true);

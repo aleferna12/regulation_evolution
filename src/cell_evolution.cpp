@@ -86,7 +86,7 @@ INIT {
       // at this stage, cells are only surrounded by medium
       InitContactLength();  // see dish.cpp - you don't need dish->InitContactLength because this part IS in dish
       cout << "done setting contact length"<<endl;
-      CPM->InitializeEdgeList();
+      CPM->InitializeEdgeList(true);
       cout << "done initialising edge list"<<endl;
       cout << "Going to initialise genome"<<endl;
       for(auto &c: cell) {
@@ -146,7 +146,7 @@ TIMESTEP {
     if( !(i%100000) ) cerr<<"TIME: "<<i<<endl;
 
     //auto start = high_resolution_clock::now();
-    dish->CellsEat3();
+    dish->CellsEat2();
     //auto stop = high_resolution_clock::now();
     //auto duration = duration_cast<microseconds>(stop - start);
     //sum+=duration.count();
@@ -176,8 +176,13 @@ TIMESTEP {
           //dish->GradientBasedCellKill(par.popsize);
           dish->RemoveMotileCells(par.popsize); //kill all nondividing cells and more if necessary
           std::cerr << "After remove there are "<< dish->CountCells() <<" cells" << '\n';
+          //if(par.scatter_cells){
+          //    dish->ScatterEndOfSeason();
+          //}
           dish->ReproduceEndOfSeason(); //replenish the population
+          cout<<"done reproducing"<<endl;
           dish->UpdateCellParameters2();//update cell status
+          cout<<"done updating"<<endl;
           dish->Food->IncreaseVal(*(dish->Food)); //this has to be last thing to do here
           std::cout << "End of season: Gradient switching at time (+/- 25 MCS) = "<< i << '\n';
         }
@@ -239,8 +244,7 @@ TIMESTEP {
         char fname[300];
         sprintf(fname,"%s/tau%09d.png",par.datadir,i);
         // BeginScene(); //this is an empty function for X11
-        ClearImage(); //
-
+        ClearImage();
         dish->Plot(this,0); // this is g //everything contained here
         EndScene();
         Write(fname);

@@ -108,6 +108,9 @@ class Parameter {
   int persduration;
   int scaling_cell_to_ca_time;
   int howmany_makeit_for_nextgen;
+  bool scatter_cells;
+  double motiledeath;
+  double dividingdeath;
   int popsize;
   char * backupdir;
   char * backupfile;

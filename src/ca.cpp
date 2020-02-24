@@ -223,7 +223,7 @@ double sat(double x) {
 
 }
 
-void CellularPotts::InitializeEdgeList(void){
+void CellularPotts::InitializeEdgeList(bool init_single_cell_center){
   // unordered_set<long long int> edgeSet;
 	int neighbour;
 	int x,y, xp, yp;
@@ -233,7 +233,9 @@ void CellularPotts::InitializeEdgeList(void){
   int ystart=0;
   int yend=sizey-1;
 
-  bool init_single_cell_center=true;
+//  bool init_single_cell_center=true;
+
+  //cout<<"edgevector is size "<<edgeSetVector.size_map()<<endl;;
 
   if (init_single_cell_center && sizex>200 && sizey>200){
     xstart=(sizex-1)/2-100;
@@ -241,6 +243,7 @@ void CellularPotts::InitializeEdgeList(void){
     ystart=(sizey-1)/2-100;
     yend=(sizey-1)/2+100;
   }
+
 
 	for (x=xstart; x< xend; x++){
     for ( y=ystart; y<yend; y++){
@@ -1770,6 +1773,7 @@ void CellularPotts::MeasureCellSizes(void) {
   for (vector<Cell>::iterator c=cell->begin();c!=cell->end();c++) {
     c->SetTargetArea(0);
     c->area = 0;
+    c->CleanMoments();
   }
 
   // calculate the area of the cells
@@ -1788,7 +1792,6 @@ void CellularPotts::MeasureCellSizes(void) {
   {
   for (vector<Cell>::iterator c=cell->begin();c!=cell->end();c++) {
     c->SetAreaToTarget();
-
   }
   }
 }
@@ -2855,6 +2858,56 @@ bool CellularPotts::PlaceOneCellsAtXY(int posx,int posy, int cellsize, int cells
     }
   }
   return true;
+}
+
+int CellularPotts::PlaceOneCellRandomly(int sig, int cellsize)
+{
+  bool overlap=false;
+  int radsq=(int)(((double)cellsize)/3.14);
+  int check=0;
+  int placedpix=0;
+  int x0,y0;
+
+  while (check<100)
+  {
+    overlap=false;
+    placedpix=0;
+    x0=radsq+RandomNumber(sizex-2*radsq); //should avoid putting them across boundaries, radsq
+                                                  //(radius square is overdoing it,
+                                                  //but it's ok given the bugs that happen
+                                                  //when you put cells across boundaries :S )
+    y0=radsq+RandomNumber(sizey-2*radsq);
+    // check overlap
+    for (int x=x0-cellsize;x<x0+cellsize;x++){
+      for (int y=y0-cellsize;y<y0+cellsize;y++){
+        if( (x-x0)*(x-x0)+(y-y0)*(y-y0)<radsq && x>=1 && x<sizex-1 && y>=1 && y<sizey-1)  // circle
+        {
+          if( sigma[x][y] ){
+            overlap=true;
+            check++;
+            break;
+          }
+        }
+      }
+      if(overlap)
+         break;
+    }
+
+    if(!overlap){
+      for (int x=x0-cellsize;x<x0+cellsize;x++){
+        for (int y=y0-cellsize;y<y0+cellsize;y++){
+          if((x-x0)*(x-x0)+(y-y0)*(y-y0)<radsq && x>=1 && x<sizex-1 && y>=1 && y<sizey-1){ //circle
+            sigma[x][y]=sig;
+            placedpix++;
+          }
+        }
+      }
+      break;
+    }
+  }
+
+  return placedpix;
+
 }
 
 int CellularPotts::PlaceCellsRandomly(int n, int cellsize)

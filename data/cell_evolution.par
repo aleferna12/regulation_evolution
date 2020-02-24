@@ -1,11 +1,11 @@
 ### Max time (max # monte carlo steps) ###
 # takes about 1hour per 100000 timesteps
 #mcs = 200000000
-mcs = 300000
+mcs = 10000
 
 #cells in blobs move at 0.0055 px/mcs
 # duration of season could then be larger than field size/ speed
-season_duration = 300000
+season_duration = 2000
 
 ### grid size ###
 sizex = 500
@@ -69,7 +69,8 @@ min_area_for_life = 4
 #keylock_list_filename = ../data/KL_l24_14_28.dat
 #keylock_list_filename = ../data/KL_l25_12_24.dat
 #keylock_list_filename = ../data/KL_l25_12_48.dat
-keylock_list_filename = ../data/newKL_12_12_g6.dat
+#keylock_list_filename = ../data/newKL_12_12_g6.dat
+keylock_list_filename = ../data/newKL_14_28_g0.dat
 
 #lookup table for J val with medium:
 # e.g if I get 10o4_3_2_1 -> J(tau,medium) = 10 + sum(4*key[0],3*key[1],2*key[2],1*key[3])
@@ -129,10 +130,17 @@ evolsim = 1
 evolreg = 1
 
 #genome mutation
-mu = 0.02
+mu = 0.01
 mustd = 0.1
 
-#scaling of death rates at end of season
+#should cells be scattered at the end of the season?
+scatter_cells = true
+
+#death rates for different cell types
+motiledeath=0.8
+dividingdeath=0.2
+
+#scaling of death rates at end of season: for gradientbased cell death
 mindeathprob = 0.1
 maxdeathprob = 1.0
 fitscale = 250
