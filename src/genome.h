@@ -35,6 +35,7 @@ class Genome
   Genome(const Genome &Parent); //copy constructor
 
   //read and write genome
+  void ResetGenomeState(void);
   void ReadFromFile(char* filename);
   void WriteToFile(char* filename);
   void PrintGenome(char * filename); //makes a dot plot

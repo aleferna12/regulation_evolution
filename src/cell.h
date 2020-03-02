@@ -578,6 +578,8 @@ al. 2000). The current version of TST does not include such functionality.
   //! Returns a counter keeping track of the number of divisions
   inline int TimesDivided(void) const { return times_divided; }
 
+  inline void AddTimesDivided(void) const {  times_divided++; }
+
   //! Returns Monte Carlo Step (MCS) when this cell originated.
   inline int DateOfBirth(void) const { return date_of_birth; }
 
@@ -597,6 +599,10 @@ al. 2000). The current version of TST does not include such functionality.
 
 
   //deal with the genome:
+  inline void ClearGenomeState(void){
+    genome.ResetGenomeState();
+  }
+
   inline void ReadGenomeFromFile(char *filename){
     genome.ReadFromFile(filename);
   }

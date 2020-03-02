@@ -1,11 +1,11 @@
 ### Max time (max # monte carlo steps) ###
 # takes about 1hour per 100000 timesteps
 #mcs = 200000000
-mcs = 10000
+mcs = 100000000
 
 #cells in blobs move at 0.0055 px/mcs
 # duration of season could then be larger than field size/ speed
-season_duration = 2000
+season_duration = 500000
 
 ### grid size ###
 sizex = 500
@@ -125,7 +125,7 @@ zero_persistence_past_theline = 0
 #mutrate, typical length of key and lock is 10+10 -> 20*0.01=0.2 one mutation every 5 replications...
 #these days k+l=50 -> 50*0.01=0.5 (one mutation every two replications)
 #mut_rate = 0.01
-mut_rate = 0.02
+mut_rate = 0.0
 evolsim = 1
 evolreg = 1
 
@@ -134,11 +134,11 @@ mu = 0.01
 mustd = 0.1
 
 #should cells be scattered at the end of the season?
-scatter_cells = true
+scatter_cells = false
 
 #death rates for different cell types
-motiledeath=0.8
-dividingdeath=0.2
+motiledeath = 0.5
+dividingdeath = 0.5
 
 #scaling of death rates at end of season: for gradientbased cell death
 mindeathprob = 0.1
@@ -190,7 +190,7 @@ metabolic_conversion = 0.5
 ## output ##
 ############
 
-storage_stride = 100
+storage_stride = 2000
 graphics = false
 store = true
 datadir = data_film2

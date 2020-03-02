@@ -1241,77 +1241,79 @@ void Dish::CellGrowthAndDivision2(void)
 
 
 // //Function that checks and changes cell parameters
-// void Dish::UpdateCellParameters(int Time)
-// {
-//     vector<Cell>::iterator c; //iterator to go over all Cells
-//     vector <double> inputs(1, 0.); //was inputs(2,0.);
-//     vector<int> output;
-//     vector<bool> which_cells(cell.size());
-//     vector<int> sigma_newcells;
-//     int interval;
-//
-//     for( c=cell.begin(), ++c; c!=cell.end(); ++c){
-//       if( c->AliveP() ){
-//
-//         c->time_since_birth++;
-//         interval=Time+c->Gextiming();
-//         //update the network withing each cell, if it is the right time
-//         if(!(interval%par.scaling_cell_to_ca_time)){
-//           //calculate inputs
-//           inputs[0]=(double)c->grad_conc;
-//           output.clear();
-//           // cerr<<c->Sigma()<<" grad is "<<c->grad_conc<<endl;
-//           // inputs[1]=(double)c->returnBoundaryLength(0.);
-//           c->UpdateGenes(inputs);
-//
-//           //what is the state of the output node of the cell?
-//           c->GetGeneOutput(output);
-//           if(c->dividecounter>=par.divtime+par.divdur){
-//             //divide
-//             if(c->Area()>30){
-//               which_cells[c->sigma]=TRUE;
-//             }
-//             //we already set the target area back to normal. We won't run any AmoebaeMove in between this and division
-//             //like this both daughter cells will inherit the normal size
-//             //and if the cell was too small, it needs to start all over anyway. (Hopefully a rare case)
-//             c->SetTargetArea(par.target_area);
-//             c->dividecounter=0;
-//           }
-//           else if(output[0]==1 || c->dividecounter>par.divtime){
-//             //when you've initiated division, grow and stop moving
-//             //cerr << "Cell "<<c->Sigma()<<" is now in divide mode"<<endl;
-//             if(c->dividecounter>par.divtime){
-//               if(c->TargetArea()<par.target_area*2) c->SetTargetArea(c->TargetArea()+1);
-//               c->setMu(0.);
-//               c->setTau(2); //basically only for color right now...
-//             }
-//             //the division counter is updated when your output says so or when you've already initiated division
-//             c->dividecounter++;
-//           }else {
-//             c->dividecounter=0;
-//             c->setMu(par.startmu);
-//             c->setTau(1);
-//           }
-//         }
-//
-//
-//       }
-//       //check area:if cell is too small (whether alive or not) we remove its sigma
-//       // notice that this keeps the cell in the cell array, it only removes its sigma from the field
-//       if(c->Area()< par.min_area_for_life){
-//          c->SetTargetArea(0);
-//          c->Apoptose(); //set alive to false
-//          CPM->RemoveCell(&*c,par.min_area_for_life,c->meanx,c->meany);
-//       }
-//     }
-//
-//     //divide all cells that are bound to divide
-//     sigma_newcells=CPM->DivideCells(which_cells);
-//     MutateCells(sigma_newcells);
-//     UpdateVectorJ(sigma_newcells);
-//
-//
-// }
+void Dish::UpdateCellParameters(int Time)
+{
+    vector<Cell>::iterator c; //iterator to go over all Cells
+    vector <double> inputs(1, 0.); //was inputs(2,0.);
+    vector<int> output;
+    vector<bool> which_cells(cell.size());
+    vector<int> sigma_newcells;
+    int interval;
+\
+    for( c=cell.begin(), ++c; c!=cell.end(); ++c){
+      if( c->AliveP() ){
+
+        c->time_since_birth++;
+        interval=Time+c->Gextiming();
+        //update the network withing each cell, if it is the right time
+        if(!(interval%par.scaling_cell_to_ca_time)){
+          //calculate inputs
+          inputs[0]=(double)c->grad_conc;
+          output.clear();
+          // cerr<<c->Sigma()<<" grad is "<<c->grad_conc<<endl;
+          // inputs[1]=(double)c->returnBoundaryLength(0.);
+          c->UpdateGenes(inputs);
+
+          //what is the state of the output node of the cell?
+          c->GetGeneOutput(output);
+          if(c->dividecounter>=par.divtime+par.divdur && c->TimesDivided()<3){ //cannot divide more than three times
+            //divide
+            if(c->Area()>30){
+              which_cells[c->sigma]=TRUE;
+            }
+            //we already set the target area back to normal. We won't run any AmoebaeMove in between this and division
+            //like this both daughter cells will inherit the normal size
+            //and if the cell was too small, it needs to start all over anyway. (Hopefully a rare case)
+            c->SetTargetArea(par.target_area);
+            c->dividecounter=0;
+          }
+          else if(output[0]==1 || c->dividecounter>par.divtime){
+            //when you've initiated division, grow and stop moving
+            //cerr << "Cell "<<c->Sigma()<<" is now in divide mode"<<endl;
+            if(c->dividecounter>par.divtime){
+              if(c->TargetArea()<par.target_area*2) c->SetTargetArea(c->TargetArea()+1);
+              c->setMu(0.);
+              c->setChemMu(0.0);
+              c->setTau(2); //basically only for color right now...
+            }
+            //the division counter is updated when your output says so or when you've already initiated division
+            c->dividecounter++;
+          }else {
+            c->dividecounter=0;
+            c->setMu(par.startmu);
+            c->setChemMu(par.init_chemmu);
+            c->setTau(1);
+          }
+        }
+
+
+      }
+      //check area:if cell is too small (whether alive or not) we remove its sigma
+      // notice that this keeps the cell in the cell array, it only removes its sigma from the field
+      if(c->Area()< par.min_area_for_life){
+         c->SetTargetArea(0);
+         c->Apoptose(); //set alive to false
+         CPM->RemoveCell(&*c,par.min_area_for_life,c->meanx,c->meany);
+      }
+    }
+
+    //divide all cells that are bound to divide
+    sigma_newcells=CPM->DivideCells(which_cells);
+    MutateCells(sigma_newcells);
+    UpdateVectorJ(sigma_newcells);
+
+
+}
 
 //function to calculate the input a cell receives from other cells
 double Dish::NeighInputCalc(Cell &c)
@@ -1343,6 +1345,11 @@ void Dish::UpdateCellParameters2(void)
    vector<int> sigma_newcells;
    int interval;
 
+   //make sure the genomes are cleared: in 0 start states
+    for( auto &c : cell ){
+      c.ClearGenomeState();
+    }
+
    for (int i=0; i<par.scaling_cell_to_ca_time; i++){
      for( auto &c : cell ){
        if( c.AliveP() && c.Sigma()){
@@ -1367,9 +1374,11 @@ void Dish::UpdateCellParameters2(void)
      c.GetGeneOutput(output);
      if(output[0]==1){ //this cell is a dividing cell
        c.setMu(0.);
+       c.setChemMu(0.);
        c.setTau(2); //basically only for color right now...
      }else{
        c.setMu(par.startmu);
+       c.setChemMu(par.init_chemmu);
        c.setTau(1);
        c.startTarVec();
      }
@@ -1829,6 +1838,7 @@ void Dish::RemoveMotileCells(int popsize)
   int current_popsize=0;
   std::vector<int> alivesigma;
 
+//  cout<<"Motile death rate is "<<par.motiledeath<<", dividingdeath rate is "<<par.dividingdeath<<endl;
   //first remove most or all cells that were motile: they die by default
   for( auto &c: cell){
     if(c.Sigma()>0 && c.AliveP()){
@@ -1836,9 +1846,11 @@ void Dish::RemoveMotileCells(int popsize)
         c.SetTargetArea(0);
         c.Apoptose(); //set alive to false
         CPM->RemoveCell(&c,par.min_area_for_life,c.meanx,c.meany);
+  //      cout<<"killed cell of type "<<c.getTau()<<endl;
       }else {
         alivesigma.push_back(c.Sigma());
         current_popsize++;
+    //    cout<<"cell of type "<<c.getTau()<<" survives"<<endl;
       }
     }
   }
@@ -2234,6 +2246,8 @@ int Dish::SaveData(int Time)
     ofs<< icell->getXpos()<<" "<<icell->getYpos()<<" ";
     ofs<<icell->getXvec()<<" "<<icell->getYvec()<<" ";
     ofs<<icell->getChemXvec()<<" "<<icell->getChemYvec()<<" ";
+    ofs << icell->mu << " ";
+    ofs << icell->chemmu << " ";
     // ... and all this seems to work fine. except here...
     ofs << icell->GetTimeSinceBirth() << " "; // used to be date of birth, now it's time since birth
     for( auto x: icell->getJkey() ) ofs<<x; //key
@@ -2241,7 +2255,6 @@ int Dish::SaveData(int Time)
     for( auto x: icell->getJlock() ) ofs<<x; //lock
     ofs << " ";
 
-    ofs << icell->mu << " ";
     //ofs << icell->getXvec()<<" "<< icell->getYvec()<<" ";
     ofs << icell->particles << " ";
 

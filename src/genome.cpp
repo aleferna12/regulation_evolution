@@ -66,6 +66,18 @@ Genome::Genome(const Genome &Parent)
   }
 }
 
+void Genome::ResetGenomeState(void)
+{
+  for (auto &n: regnodes){
+    n.Boolstate=0;
+    n.NewBool=0;
+  }
+  for (auto &n: outputnodes){
+    n.Boolstate=0;
+    n.NewBool=0;
+  }
+}
+
 void Genome::ReadFromFile(char *filename)
 {
   std::ifstream ifs;

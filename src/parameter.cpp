@@ -753,6 +753,8 @@ void Parameter::Write(ostream &os) const {
   os << " growth = " << growth << endl;
   os << " gradnoise = " << gradnoise << endl;
   os << " gradscale = " << gradscale << endl;
+  os << " motiledeath = " << motiledeath << endl;
+  os << " dividingdeath = " << dividingdeath << endl;
   os << " min_contact_duration_for_preying = " << min_contact_duration_for_preying;
   os << " frac_contlen_eaten = " << frac_contlen_eaten << endl;
   os << " metabolic_conversion = " << metabolic_conversion << endl;

@@ -79,6 +79,7 @@ void Cell::CellBirth(Cell &mother_cell) {
   mother_cell.daughter=this->sigma;
   mother=mother_cell.sigma;
   times_divided=++mother_cell.times_divided;
+  mother_cell.AddTimesDivided();
   owner=mother_cell.owner;
 
   date_of_birth=owner->Time();
