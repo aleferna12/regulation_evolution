@@ -79,12 +79,14 @@ Parameter::Parameter() {
   storage_stride = 10;
   graphics = true;
   store = false;
+  divisioncolour=false;
   genomefile=strdup("");
   nr_regnodes=1;
   mu=0.05;
   mustd=0.1;
   divtime=50;
   divdur=10;
+  maxdivisions=4;
   mindeathprob=0.;
   maxdeathprob=1.;
   scatter_cells=false;
@@ -166,6 +168,7 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<" -datafile path/to/datafile # output file" <<endl;
   cerr<<" -datadir path/to/datadir # output movie dir"<<endl;
   cerr<<" -backupdir path/to/backupdir # output backup dir"<<endl;
+  cerr<<" -store # store pictures"<<endl;
   cerr<<" -keylockfilename path/to/keylockfilename"<<endl;
   cerr<<" -seed INT_NUMBER # for random number generator"<<endl;
   cerr<<" -maxtime INT_NUMBER"<<endl;
@@ -337,6 +340,9 @@ int Parameter::ReadArguments(int argc, char *argv[])
     }else if( 0==strcmp(argv[i],"-scatter") ){
       scatter_cells = true;
       cerr<<"Cells will be scattered at the end of the season, before reproduction"<<endl;
+    }else if( 0==strcmp(argv[i],"-store") ){
+      store = true;
+      cerr<<"pictures will be stored"<<endl;
     }else if( 0==strcmp(argv[i],"-noevolreg") ){
       evolreg = false;
       cerr<<"No evolution of regulation parameters"<<endl;
@@ -497,12 +503,14 @@ void Parameter::Read(const char *filename) {
   storage_stride = igetpar(fp, "storage_stride", 10, true);
   graphics = bgetpar(fp, "graphics", true, true);
   store = bgetpar(fp, "store", false, true);
+  divisioncolour = bgetpar(fp, "divisioncolour", false, true);
   genomefile = sgetpar(fp, "genomefile", "", true);
   nr_regnodes = igetpar(fp, "nr_regnodes", 0, true);
   mu = fgetpar(fp, "mu", 0., true);
   mustd = fgetpar(fp, "mustd", 0., true);
   divtime = igetpar(fp, "divtime", 200, true);
   divdur = igetpar(fp, "divdur", 50, true);
+  maxdivisions = igetpar(fp, "maxdivisions", 4, true);
   mindeathprob = fgetpar(fp, "mindeathprob", 0., true);
   maxdeathprob = fgetpar(fp, "maxdeathprob", 1.0, true);
   scatter_cells = bgetpar(fp, "scatter_cells", false, true);

@@ -524,12 +524,15 @@ void Dish::FoodPlot(Graphics *g)
 
       if(Food->Sigma(x,y) != 0){
         if(CPM->Sigma(x,y)==0){
+          if(Food->Sigma(x,y)<0){
+            cerr<<"foodplane below zero!!"<<endl;
+          }
           // Make the pixel four times as large
           // to fit with the CPM plane
-          g->Point(10+food_to_index_convfact*Food->Sigma(x,y),2*x,2*y);
-          g->Point(10+food_to_index_convfact*Food->Sigma(x,y),2*x+1,2*y);
-          g->Point(10+food_to_index_convfact*Food->Sigma(x,y),2*x,2*y+1);
-          g->Point(10+food_to_index_convfact*Food->Sigma(x,y),2*x+1,2*y+1);
+          g->Point(16+food_to_index_convfact*Food->Sigma(x,y),2*x,2*y);
+          g->Point(16+food_to_index_convfact*Food->Sigma(x,y),2*x+1,2*y);
+          g->Point(16+food_to_index_convfact*Food->Sigma(x,y),2*x,2*y+1);
+          g->Point(16+food_to_index_convfact*Food->Sigma(x,y),2*x+1,2*y+1);
         }else{
           ;
           // it's getting a bit cumbersome to look at this, for now I'll do without
@@ -1243,76 +1246,86 @@ void Dish::CellGrowthAndDivision2(void)
 // //Function that checks and changes cell parameters
 void Dish::UpdateCellParameters(int Time)
 {
-    vector<Cell>::iterator c; //iterator to go over all Cells
-    vector <double> inputs(1, 0.); //was inputs(2,0.);
-    vector<int> output;
-    vector<bool> which_cells(cell.size());
-    vector<int> sigma_newcells;
-    int interval;
-\
-    for( c=cell.begin(), ++c; c!=cell.end(); ++c){
-      if( c->AliveP() ){
+  vector<Cell>::iterator c; //iterator to go over all Cells
+  array <double,2> inputs={0., 0.}; //was inputs(2,0.);
+  array <int,2> output={0,0};
+  vector<bool> which_cells(cell.size(), false);
+  vector<int> sigma_newcells;
+  int interval;
+  int divvs=0;
 
-        c->time_since_birth++;
-        interval=Time+c->Gextiming();
-        //update the network withing each cell, if it is the right time
-        if(!(interval%par.scaling_cell_to_ca_time)){
-          //calculate inputs
-          inputs[0]=(double)c->grad_conc;
-          output.clear();
-          // cerr<<c->Sigma()<<" grad is "<<c->grad_conc<<endl;
-          // inputs[1]=(double)c->returnBoundaryLength(0.);
-          c->UpdateGenes(inputs);
+  //cout<<"Update Cell parameters "<<Time<<endl;
+  //update networks asynchronously f
+  for( c=cell.begin(), ++c; c!=cell.end(); ++c){
+    if( c->AliveP() ){
+      c->time_since_birth++;
+      interval=Time+c->Gextiming();
+      //update the network withing each cell, if it is the right time
+      if(!(interval%par.scaling_cell_to_ca_time)){
+        //calculate inputs
+        inputs[0]=(double)c->grad_conc;
+        inputs[1]=(double)c->TimesDivided(); //NeighInputCalc(*c);
+        c->UpdateGenes(inputs, true);
+        c->FinishGeneUpdate();
+        //what is the state of the output node of the cell?
+        c->GetGeneOutput(output);
 
-          //what is the state of the output node of the cell?
-          c->GetGeneOutput(output);
-          if(c->dividecounter>=par.divtime+par.divdur && c->TimesDivided()<3){ //cannot divide more than three times
+        //cell decides to divide
+        if (output[0]==1){
+          //cout<<"cell "<<c->Sigma()<<" wants to divide"<<endl;
+          c->dividecounter++;
+
+          if(c->dividecounter>=par.divtime+par.divdur && c->TimesDivided()<par.maxdivisions){ //cannot divide more than three times
             //divide
             if(c->Area()>30){
+              //cout<<"cell "<<c->Sigma()<<" will divide"<<endl;
               which_cells[c->sigma]=TRUE;
+              divvs=1;
             }
             //we already set the target area back to normal. We won't run any AmoebaeMove in between this and division
             //like this both daughter cells will inherit the normal size
             //and if the cell was too small, it needs to start all over anyway. (Hopefully a rare case)
             c->SetTargetArea(par.target_area);
             c->dividecounter=0;
+            c->ClearGenomeState(); //reset the GRN!
           }
-          else if(output[0]==1 || c->dividecounter>par.divtime){
-            //when you've initiated division, grow and stop moving
-            //cerr << "Cell "<<c->Sigma()<<" is now in divide mode"<<endl;
-            if(c->dividecounter>par.divtime){
-              if(c->TargetArea()<par.target_area*2) c->SetTargetArea(c->TargetArea()+1);
-              c->setMu(0.);
-              c->setChemMu(0.0);
-              c->setTau(2); //basically only for color right now...
-            }
-            //the division counter is updated when your output says so or when you've already initiated division
-            c->dividecounter++;
-          }else {
-            c->dividecounter=0;
-            c->setMu(par.startmu);
-            c->setChemMu(par.init_chemmu);
-            c->setTau(1);
+          //not time to divide yet, but do stop migrating and start growing
+          else if (c->dividecounter>par.divtime ){
+            //cout<<"cell "<<c->Sigma()<<" starting to divide"<<endl;
+            if ( c->TimesDivided()<par.maxdivisions && c->TargetArea()<par.target_area*2) c->SetTargetArea(c->TargetArea()+1);
+            c->setMu(0.);
+            c->setChemMu(0.0);
+            c->setTau(2); //basically only for color right now...
           }
         }
-
-
+        //this is a migratory cell
+        else{
+          //if (c->dividecounter) cout<<"cell "<<c->Sigma()<<" stopped division program"<<endl;
+          c->dividecounter=0;
+          c->setMu(par.startmu);
+          c->setChemMu(par.init_chemmu);
+          c->SetTargetArea(par.target_area);
+          c->setTau(1);
+          //cout<<"cell "<<c->Sigma()<<" is a migratory cell"<<endl;
+        }
       }
+
       //check area:if cell is too small (whether alive or not) we remove its sigma
       // notice that this keeps the cell in the cell array, it only removes its sigma from the field
       if(c->Area()< par.min_area_for_life){
-         c->SetTargetArea(0);
-         c->Apoptose(); //set alive to false
-         CPM->RemoveCell(&*c,par.min_area_for_life,c->meanx,c->meany);
+        c->SetTargetArea(0);
+        c->Apoptose(); //set alive to false
+        CPM->RemoveCell(&*c,par.min_area_for_life,c->meanx,c->meany);
       }
     }
+  }
 
-    //divide all cells that are bound to divide
-    sigma_newcells=CPM->DivideCells(which_cells);
-    MutateCells(sigma_newcells);
-    UpdateVectorJ(sigma_newcells);
+  //divide all cells that are bound to divide
+  sigma_newcells=CPM->DivideCells(which_cells);
+  MutateCells(sigma_newcells);
+  UpdateVectorJ(sigma_newcells);
 
-
+ //cout<<"Update Cell parameters end\n\n"<<endl;
 }
 
 //function to calculate the input a cell receives from other cells
@@ -1807,6 +1820,10 @@ void Dish::GradientBasedCellKill(int popsize)
       cell[n.first].Apoptose(); //set alive to false
       CPM->RemoveCell(&cell[n.first] ,par.min_area_for_life,cell[n.first].meanx,cell[n.first].meany);
     }
+    else{
+      cell[n.first].ResetTimesDivided();
+      cell[n.first].ClearGenomeState();
+    }
   }
 
   //now to remove a fixed nr of cells. So fitness is relative.
@@ -2248,6 +2265,8 @@ int Dish::SaveData(int Time)
     ofs<<icell->getChemXvec()<<" "<<icell->getChemYvec()<<" ";
     ofs << icell->mu << " ";
     ofs << icell->chemmu << " ";
+    ofs << icell->TimesDivided()<< " ";
+    ofs << icell->grad_conc<< " ";
     // ... and all this seems to work fine. except here...
     ofs << icell->GetTimeSinceBirth() << " "; // used to be date of birth, now it's time since birth
     for( auto x: icell->getJkey() ) ofs<<x; //key
@@ -2280,9 +2299,11 @@ void Dish::SaveNetworks(int Time)
 {
   char fname[300];
 
-  for (auto c: cell){
-    sprintf(fname,"%s/networks/t%010d_c%04d.txt",par.datadir,Time,c.Sigma());
-    c.WriteGenomeToFile(fname);
+  for (auto &c: cell){
+    if(c.AliveP()){
+      sprintf(fname,"%s/networks/t%010d_c%04d.txt",par.datadir,Time,c.Sigma());
+      c.WriteGenomeToFile(fname);
+    }
   }
 
 }
@@ -2302,8 +2323,9 @@ void Dish::MakeBackup(int Time){
   //don't store area or neighbours: can be inferred from the stored plane
   for(auto c: cell){
     if(c.sigma==0) continue;
-    ofs<<c.sigma<<" "<< c.tau<<" "<< c.alive<<" "<< c.tvecx<<" "<<c.tvecy<<" "<< c.prevx<<" "<< c.prevy<<" "
-    << c.persdur<<" "<<c.perstime<<" "<<c.mu<<" "<<c.chemmu<<" "<<c.chemvecx<<" "<<c.chemvecy<<" "<< c.target_area<<" "<< c.half_div_area<<" "<< c.eatprob<<" "<<c.particles<<" "<< c.growth<<" ";
+    ofs<<c.sigma<<" "<< c.tau<<" "<< c.alive<<" "<< c.time_since_birth<<" "<< c.tvecx<<" "<<c.tvecy<<" "<< c.prevx<<" "<< c.prevy<<" "
+    << c.persdur<<" "<<c.perstime<<" "<<c.mu<<" "<<c.chemmu<<" "<<c.chemvecx<<" "<<c.chemvecy<<" "<< c.target_area<<" "
+    << c.half_div_area<<" "<< c.length<<" "<< c.eatprob<<" "<<c.particles<<" "<< c.growth<<" "<<c.gextiming<<" "<<c.dividecounter<<" "<<c.grad_conc<<" ";
     for( auto x: c.jkey ) ofs<<x; //key
     ofs << " ";
     for( auto x: c.jlock ) ofs<<x; //lock
@@ -2382,10 +2404,13 @@ int Dish::ReadBackup(char *filename){
    getline(ifs, line);
    while (line.length()){
      rc=new Cell(*this); //temporary pointer to cell object
-     stringstream strstr(line);
+     strstr.clear();
+     strstr.str(std::string());
+     strstr << line;
      //read the straightforward cell variables from the line
-     strstr>>rc->sigma>>rc->tau>>rc->alive>>rc->tvecx>>rc->tvecy>>rc->prevx>>rc->prevy>>rc->persdur
-     >>rc->perstime>>rc->mu>>rc->chemmu>>rc->chemvecx>>rc->chemvecy>>rc->target_area>>rc->half_div_area>>rc->eatprob>>rc->particles>>rc->growth
+     strstr >> rc->sigma>>rc->tau>>rc->alive>>rc->time_since_birth>>rc->tvecx>>rc->tvecy>>rc->prevx>>rc->prevy>>rc->persdur
+     >>rc->perstime>>rc->mu>>rc->chemmu>>rc->chemvecx>>rc->chemvecy>>rc->target_area>>rc->half_div_area>>rc->length>>
+     rc->eatprob>>rc->particles>>rc->growth>>rc->gextiming>>rc->dividecounter>>rc->grad_conc
      >>jkey>>jlock;
      //read the key and lock into the cell
      for (char& c : jkey){
@@ -2407,8 +2432,10 @@ int Dish::ReadBackup(char *filename){
    //this does assume size parameters match, so be careful!
    getline(ifs, line);
    while (line.length()){
-    stringstream ss(line);
-    while(ss>>pos){
+    strstr.clear();
+    strstr.str(std::string());
+    strstr<<line;
+    while(strstr>>pos){
       int wrong=CPM->SetNextSigma(pos);
       if (wrong){
         cerr<<"ReadBackup error in reading CA plane. more values than fit in plane."<<endl;
@@ -2421,8 +2448,10 @@ int Dish::ReadBackup(char *filename){
   //read the food intplane
   getline(ifs, line);
   while (line.length()){
-   stringstream ss(line);
-   while(ss>>pos){
+    strstr.clear();
+    strstr.str(std::string());
+    strstr<<line;
+   while(strstr>>pos){
     int wrong=Food->SetNextVal(pos);
     if (wrong){
       cerr<<"ReadBackup error in reading Food plane. more values than fit in plane."<<endl;

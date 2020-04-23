@@ -668,7 +668,8 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
   // static int first_time=1;
   // if(!first_time) return;
   // first_time=0;
-  
+
+  double maxdist;
   if(!par.evolsim){
     peakx=sizex/2;
     peaky=1;
@@ -690,18 +691,23 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
     switch (gradient_dir) {
       case 0 : peakx = sizex/2;
                peaky = 1;
+               maxdist=sqrt(0.25*sizex*sizex+sizey*sizey);
                break;
       case 1 : peakx = sizex/2;
                peaky = sizey-1;
+               maxdist=sqrt(0.25*sizex*sizex+sizey*sizey);
                break;
       case 2 : peakx = 1;
                peaky = sizey/2;
+               maxdist=sqrt(0.25*sizey*sizey+sizex*sizex);
                break;
       case 3 : peakx = sizex-1;
                peaky = sizey/2;
+               maxdist=sqrt(0.25*sizey*sizey+sizex*sizex);
                break;
       default: peakx = sizex/2;
                peaky = sizey/2;
+               maxdist=sqrt(0.25*sizex*sizex+0.25*sizey*sizey);
                cerr<<"How could you possibly get an error here?"<<endl;
                exit(1);
                break;
@@ -713,6 +719,7 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
   for(int i=1;i<sizex-1;i++)for(int j=1;j<sizey-1;j++){
     sigma[i][j]=0;
     //center point is at coordinates (sizex/2, sizey)
+
     double dist_from_peak;
 
     // Different definitions of distance from peak will give you different gradients
@@ -734,7 +741,7 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
     // also- the 1+ part of the equation could go...
     // or even better counter balanced by a lesser gradient in the variable part
     //final formula:
-    double dfood = 1.+ par.gradscale*((double)sizey/100.) * (1. - dist_from_peak/(double)sizey); //this the usable line
+    double dfood = 1.+ par.gradscale*((double)maxdist/100.) * (1. - dist_from_peak/(double)maxdist); //this the usable line
 
     int maxfood = (int)dfood;
     if(RANDOM() < dfood - maxfood) maxfood++; //finer gradient made with a little unbiased noise
@@ -743,10 +750,13 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
     // double pfood_j = 0.1+ 0.9* (1. - dist_from_peak/(double)sizey);  // this is the usable one
     //double pfood_j = 1.;
     //pfood_j = 0.3; // also like this is works... but why?
+
+    //sigma[i][j]+=maxfood;
     double pfood_j = par.gradnoise;
-    
+
     if(RANDOM() < pfood_j)
-      sigma[i][j]=maxfood; //else already set to zero
+      sigma[i][j]=maxfood;
+      //sigma[i][j]+=10; //else already set to zero
     // else
     //   sigma[i][j]=0;
     //
@@ -769,7 +779,7 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
     }
   }
 
-  // std::cerr << "peak x,y = " <<peakx <<", "<< peaky << endl;
+  cerr << "peak x,y = " <<peakx <<", "<< peaky << endl;
 
   return;
 

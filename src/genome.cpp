@@ -45,7 +45,7 @@ Genome::~Genome()
 {
  //cout<<"destructed"<<endl;
 }
-
+//copy constructor
 Genome::Genome(const Genome &Parent)
 {
   innr=Parent.innr;
@@ -104,6 +104,9 @@ void Genome::ReadFromFile(char *filename)
     }
 
     getline(ifs, line);
+    strstr.clear();
+    strstr.str(std::string());
+    strstr<<line;
     for(i=0;i<innr; i++){
       strstr>>scale;
       inputscale.push_back(scale);
@@ -112,7 +115,10 @@ void Genome::ReadFromFile(char *filename)
     //now read all the interaction strengths
     getline(ifs, line);
     while (line.length()){
-      stringstream strstr(line);
+      strstr.clear();
+      strstr.str(std::string());
+      strstr<<line;
+      //stringstream strstr(line);
       //read the straightforward cell variables from the line
       strstr>> nodetype >>nodenr>>thresh;
 

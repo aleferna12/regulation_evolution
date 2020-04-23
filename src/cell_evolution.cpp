@@ -69,8 +69,16 @@ INIT {
     if (! strlen(par.backupfile)) {
 
       //THIS IS TO USE FOR NORMAL INITIALISATION
-      //CPM->PlaceCellsRandomly(par.n_init_cells,par.size_init_cells);
-      CPM->PlaceCellsOrderly(par.n_init_cells,par.size_init_cells);
+      if(par.scatter_cells){
+        CPM->PlaceCellsRandomly(par.n_init_cells,par.size_init_cells);
+        CPM->InitializeEdgeList(false);
+        cout << "done initialising edge list"<<endl;
+      }else{
+        CPM->PlaceCellsOrderly(par.n_init_cells,par.size_init_cells);
+        CPM->InitializeEdgeList(true);
+        cout << "done initialising edge list"<<endl;
+      }
+
       CPM->ConstructInitCells(*this); //within an object, 'this' is the object itself
 
       // Assign a random type to each of the cells, i.e. PREYS and PREDATORS
@@ -86,11 +94,12 @@ INIT {
       // at this stage, cells are only surrounded by medium
       InitContactLength();  // see dish.cpp - you don't need dish->InitContactLength because this part IS in dish
       cout << "done setting contact length"<<endl;
-      CPM->InitializeEdgeList(true);
-      cout << "done initialising edge list"<<endl;
+
       cout << "Going to initialise genome"<<endl;
       for(auto &c: cell) {
         if(c.Sigma()){
+          c.setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
+          c.dividecounter=0;
           c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
           //initialise a cell's timing for gex Updating
           //c.setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
@@ -99,8 +108,9 @@ INIT {
             c.ReadGenomeFromFile(par.genomefile);
           }
           else{
-            c.CreateRandomGenome(1, par.nr_regnodes, 1);
+            c.CreateRandomGenome(2, par.nr_regnodes, 2);
           }
+          c.ClearGenomeState();
         }
       }
 
@@ -112,17 +122,36 @@ INIT {
 
       // Initialises food plane (now the gradient plane)
       Food->IncreaseVal(*(Food));
-
+      cout<<"done with food"<<endl;
       //run CPM for some time without persistent motion
       for(int init_time=0;init_time<10;init_time++){
         CPM->AmoebaeMove2(PDEfield);  //this changes neighs
       }
+      cout<<"done with update"<<endl;
       InitCellMigration();
-      UpdateCellParameters2();//update cell status
+      UpdateCellParameters(0);//update cell status //UpdateCellParameters2();
       par.starttime=0;
     }
     else {
+      cout<<"backup file is "<<par.backupfile<<endl;
       par.starttime=ReadBackup(par.backupfile);
+      int networktime=par.starttime;
+      //now get the right network into the cells. first find which time point to use
+      while(networktime%par.season_duration){
+        networktime+=1000;
+      }
+      char fname[300];
+      for(auto &c: cell) {
+        if(c.Sigma() && c.AliveP()){
+          //c.setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
+          //c.dividecounter=0;
+          //c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
+          sprintf(fname,"%s/t%010d_c%04d.txt",par.genomefile,networktime,c.Sigma());
+          cout<<"network file is "<<fname<<endl;
+          c.ReadGenomeFromFile(fname);
+        }
+      }
+      CPM->InitializeEdgeList(false);
       InitContactLength();
       InitVectorJ();
       Food->InitIncreaseVal(CPM);
@@ -143,6 +172,7 @@ TIMESTEP {
     static int i=par.starttime; //starttime is set in Dish. Not the prettiest solution, but let's hope it works.
     static int sum=0, nr=0;
 
+
     if( !(i%100000) ) cerr<<"TIME: "<<i<<endl;
 
     //auto start = high_resolution_clock::now();
@@ -153,7 +183,7 @@ TIMESTEP {
     //nr++;
     //cout << duration.count() << endl;
     //This function updates the network and deals with the consequences of the output (motility vs division)
-    //dish->UpdateCellParameters(i); // SCALED
+    dish->UpdateCellParameters(i); // for continuous GRN updating and reproduction
 
     dish->CellMigration();//updates persistence time and targetvectors
 
@@ -173,16 +203,15 @@ TIMESTEP {
           std::cerr << "Time = "<<i << '\n';
           std::cerr << "End of season: there are "<< dish->CountCells() <<" cells" << '\n';
           dish->SaveNetworks(i);
-          //dish->GradientBasedCellKill(par.popsize);
-          dish->RemoveMotileCells(par.popsize); //kill all nondividing cells and more if necessary
+          dish->GradientBasedCellKill(par.popsize);
+          //dish->RemoveMotileCells(par.popsize); //kill all nondividing cells and more if necessary; for noncontinuous reproduction
           std::cerr << "After remove there are "<< dish->CountCells() <<" cells" << '\n';
-          //if(par.scatter_cells){
-          //    dish->ScatterEndOfSeason();
-          //}
-          dish->ReproduceEndOfSeason(); //replenish the population
-          cout<<"done reproducing"<<endl;
-          dish->UpdateCellParameters2();//update cell status
-          cout<<"done updating"<<endl;
+
+          if (par.scatter_cells) dish->ScatterEndOfSeason();
+        //  dish->ReproduceEndOfSeason(); //replenish the population; for noncontinuous sim
+          //cout<<"done reproducing"<<endl;
+          //dish->UpdateCellParameters2();//update cell status; for noncontinuous sim
+          //cout<<"done updating"<<endl;
           dish->Food->IncreaseVal(*(dish->Food)); //this has to be last thing to do here
           std::cout << "End of season: Gradient switching at time (+/- 25 MCS) = "<< i << '\n';
         }

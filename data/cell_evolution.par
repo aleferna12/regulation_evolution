@@ -38,7 +38,7 @@ subfield = 1.0
 relaxation = 0
 
 target_length = 0
-lambda = 5
+lambda = 4
 lambda2 = 0
 
 #migration parameters
@@ -70,7 +70,8 @@ min_area_for_life = 4
 #keylock_list_filename = ../data/KL_l25_12_24.dat
 #keylock_list_filename = ../data/KL_l25_12_48.dat
 #keylock_list_filename = ../data/newKL_12_12_g6.dat
-keylock_list_filename = ../data/newKL_14_28_g0.dat
+#keylock_list_filename = ../data/newKL_14_28_g0.dat
+keylock_list_filename = ../data/newKL_14_36_g-4.dat
 
 #lookup table for J val with medium:
 # e.g if I get 10o4_3_2_1 -> J(tau,medium) = 10 + sum(4*key[0],3*key[1],2*key[2],1*key[3])
@@ -85,20 +86,21 @@ key_lock_length = 24
 ## of Cell Behaviour ##
 #######################
 
-#genomefile =
+genomefile = noscat80.4/nets/
 nr_regnodes = 3
 divtime = 20	# scaled nr of steps before a cell initiates division
-divdur = 100     # duration of division, during which a cell stops moving
+divdur = 1000     # duration of division, during which a cell stops moving
 scaling_cell_to_ca_time = 20  # scaling factor for: freq update food plane, predation, feeding and growth/divide
+maxdivisions = 4
 
 ########################
 ## initial conditions ##
 ########################
 
-howmany_makeit_for_nextgen = 200
-popsize = 200
+howmany_makeit_for_nextgen = 100
+popsize = 100
 
-n_init_cells = 200
+n_init_cells = 100
 size_init_cells = 25
 
 #Initial configuration of cells, see ca.cpp placecellsorderly()
@@ -130,11 +132,11 @@ evolsim = 1
 evolreg = 1
 
 #genome mutation
-mu = 0.01
-mustd = 0.1
+mu = 0.02
+mustd = 0.05
 
 #should cells be scattered at the end of the season?
-scatter_cells = false
+scatter_cells = true
 
 #death rates for different cell types
 motiledeath = 0.5
@@ -142,8 +144,8 @@ dividingdeath = 0.5
 
 #scaling of death rates at end of season: for gradientbased cell death
 mindeathprob = 0.1
-maxdeathprob = 1.0
-fitscale = 250
+maxdeathprob = 0.95
+fitscale = 30
 
 # PDE parameters (irrelevant for this simulation)
 n_chem = 0
@@ -155,8 +157,8 @@ n_chem = 0
 #food_influx_location options: everywhere, notonprey, nowhere, patchy, somewhere, somewhere_notonprey, patchy_random, patchy_random_persistence, food_growth, specified_experiment,boundarygradient
 # notice that nowhere zeroes foodinflux
 food_influx_location = specified_experiment
-gradnoise = 0.9
-gradscale = 1.0
+gradnoise = 1.0
+gradscale = 5.0
 
 # only used in specified_experiment, if true it puts 1 food randomly, with probability foodinflux = 0.05
 is_there_food = 0
@@ -190,9 +192,10 @@ metabolic_conversion = 0.5
 ## output ##
 ############
 
-storage_stride = 2000
+storage_stride = 1000
 graphics = false
 store = true
+divisioncolour = true
 datadir = data_film2
 save_text_file_period = 1000
 datafile = data_cellcount.txt

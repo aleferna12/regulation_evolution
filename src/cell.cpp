@@ -78,8 +78,9 @@ void Cell::CellBirth(Cell &mother_cell) {
   // Administrate ancestry
   mother_cell.daughter=this->sigma;
   mother=mother_cell.sigma;
-  times_divided=++mother_cell.times_divided;
   mother_cell.AddTimesDivided();
+  times_divided=mother_cell.times_divided;
+
   owner=mother_cell.owner;
 
   date_of_birth=owner->Time();
@@ -97,6 +98,8 @@ void Cell::CellBirth(Cell &mother_cell) {
 
   genome=mother_cell.genome;
   gextiming=mother_cell.gextiming;
+  dividecounter=0;
+  mother_cell.dividecounter=0;
   //genome.MutateGenome();
 
   // Do not add moments here, they are going to be calculated from scratch

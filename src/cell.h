@@ -87,7 +87,7 @@ public:
     date_of_birth=src.date_of_birth;
     //cerr<<"this?: "<<date_of_birth<<endl;
     colour_of_birth=src.colour_of_birth;
-
+    dividecounter=src.dividecounter;
     genome=src.genome;
     gextiming=src.gextiming;
 
@@ -161,9 +161,10 @@ public:
     target_area=src.target_area;
     half_div_area=src.half_div_area;
     date_of_birth = src.date_of_birth;
-
+    times_divided=src.times_divided;
     genome=src.genome;
     gextiming=src.gextiming;
+    dividecounter=src.dividecounter;
 
     v[0]=src.v[0];
     v[1]=src.v[1];
@@ -578,7 +579,9 @@ al. 2000). The current version of TST does not include such functionality.
   //! Returns a counter keeping track of the number of divisions
   inline int TimesDivided(void) const { return times_divided; }
 
-  inline void AddTimesDivided(void) const {  times_divided++; }
+  inline void AddTimesDivided(void){  times_divided++; }
+
+  inline void ResetTimesDivided(void){  times_divided=0; }
 
   //! Returns Monte Carlo Step (MCS) when this cell originated.
   inline int DateOfBirth(void) const { return date_of_birth; }

@@ -75,10 +75,12 @@ class Parameter {
   int storage_stride;
   bool graphics;
   bool store;
+  bool divisioncolour;
   char * genomefile;
   int nr_regnodes; //how many regulatory nodes in genomes
   int divtime; //how many steps does it take before a cell can start dividing?
   int divdur; //duration once a cell starts division program
+  int maxdivisions;
   double mu;
   double mustd;
   double mindeathprob;
