@@ -1889,6 +1889,7 @@ void Dish::GradientBasedCellKill2(int popsize)
        sig_dist[i].second-=thisfit;
        i++;
      }
+     totalfit-=thisfit;
      sig_dist.erase(sig_dist.begin()+(i-1));
      cell[removesig].SetTargetArea(0);
      cell[removesig].Apoptose(); //set alive to false
