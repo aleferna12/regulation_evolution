@@ -126,7 +126,7 @@ public:
   void RemoveMotileCells(int popsize);
   void RemoveWhoDidNotMakeIt(void);
   void GradientBasedCellKill(int currentsize);
-
+  void GradientBasedCellKill2(int currentsize);
   void ReproduceWhoMadeIt(void);
   void ReproduceWhoMadeIt2(void); //with particles dependent reproduction
   void ReproduceWhoMadeIt3(void); //trying to save cells that reproduce a lot

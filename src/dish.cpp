@@ -1849,6 +1849,63 @@ void Dish::GradientBasedCellKill(int popsize)
   // }
 
 }
+
+//this function brings population back to fixed number
+void Dish::GradientBasedCellKill2(int popsize)
+{
+  int current_popsize=0;
+  std::vector< pair<int,double> > sig_dist;
+  double distance, rn;
+  double deathprob;
+  double fitness, totalfit, thisfit;
+  totalfit=0.;
+  int removei,removesig;
+
+
+  //determine final distance of those cells that are alive
+  for(auto c: cell){
+    if(c.Sigma()>0 && c.AliveP()){
+      current_popsize++;
+      distance=sqrt((Food->GetPeakx()-c.getXpos())*(Food->GetPeakx()-c.getXpos())+(Food->GetPeaky()-c.getYpos())*(Food->GetPeaky()-c.getYpos()));
+      deathprob=par.mindeathprob+(par.maxdeathprob-par.mindeathprob)*pow(distance,3.)/(pow(par.fitscale,3.)+pow(distance,3.));
+      totalfit+=deathprob; //for relative version
+      cerr<<"distance is "<<distance<<", deathprob is "<<deathprob<<endl;
+      sig_dist.push_back(make_pair(c.Sigma(),totalfit));
+    }
+  }
+
+  int i;
+  while(current_popsize>popsize){
+
+     rn = totalfit*RANDOM();
+     i=0;
+     while (sig_dist[i].second<rn){
+       i++;
+     }
+     thisfit=sig_dist[i].second-sig_dist[i-1].second;
+     removei=i;
+     removesig=sig_dist[i].first;
+     while (i<sig_dist.size()){
+       sig_dist[i].second-=thisfit;
+       i++;
+     }
+     sig_dist.erase(sig_dist.begin()+(i-1));
+     cell[removesig].SetTargetArea(0);
+     cell[removesig].Apoptose(); //set alive to false
+     CPM->RemoveCell(&cell[removesig] ,par.min_area_for_life,cell[removesig].meanx,cell[removesig].meany);
+     current_popsize--;
+   }
+
+   //for remaining cells, reset the times they divided and clear the genome states
+   for(auto &c : cell){
+     if (c.AliveP() && c.Sigma()){
+       c.ResetTimesDivided();
+       c.ClearGenomeState();
+     }
+   }
+
+}
+
 //death based on celltype, then until popsize is restored
 void Dish::RemoveMotileCells(int popsize)
 {

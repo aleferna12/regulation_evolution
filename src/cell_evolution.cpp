@@ -203,7 +203,7 @@ TIMESTEP {
           std::cerr << "Time = "<<i << '\n';
           std::cerr << "End of season: there are "<< dish->CountCells() <<" cells" << '\n';
           dish->SaveNetworks(i);
-          dish->GradientBasedCellKill(par.popsize);
+          dish->GradientBasedCellKill2(par.popsize);
           //dish->RemoveMotileCells(par.popsize); //kill all nondividing cells and more if necessary; for noncontinuous reproduction
           std::cerr << "After remove there are "<< dish->CountCells() <<" cells" << '\n';
 
