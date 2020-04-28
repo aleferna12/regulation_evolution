@@ -1861,6 +1861,7 @@ void Dish::GradientBasedCellKill2(int popsize)
   totalfit=0.;
   int removei,removesig;
 
+  sig_dist.push_back(make_pair(0,0.0));
 
   //determine final distance of those cells that are alive
   for(auto c: cell){
@@ -1869,12 +1870,13 @@ void Dish::GradientBasedCellKill2(int popsize)
       distance=sqrt((Food->GetPeakx()-c.getXpos())*(Food->GetPeakx()-c.getXpos())+(Food->GetPeaky()-c.getYpos())*(Food->GetPeaky()-c.getYpos()));
       deathprob=par.mindeathprob+(par.maxdeathprob-par.mindeathprob)*pow(distance,3.)/(pow(par.fitscale,3.)+pow(distance,3.));
       totalfit+=deathprob; //for relative version
-      cerr<<"distance is "<<distance<<", deathprob is "<<deathprob<<endl;
+      //cerr<<"distance is "<<distance<<", deathprob is "<<deathprob<<endl;
       sig_dist.push_back(make_pair(c.Sigma(),totalfit));
     }
   }
 
   int i;
+
   while(current_popsize>popsize){
 
      rn = totalfit*RANDOM();
@@ -1890,7 +1892,7 @@ void Dish::GradientBasedCellKill2(int popsize)
        i++;
      }
      totalfit-=thisfit;
-     sig_dist.erase(sig_dist.begin()+(i-1));
+     sig_dist.erase(sig_dist.begin()+(removei));
      cell[removesig].SetTargetArea(0);
      cell[removesig].Apoptose(); //set alive to false
      CPM->RemoveCell(&cell[removesig] ,par.min_area_for_life,cell[removesig].meanx,cell[removesig].meany);
