@@ -1561,7 +1561,7 @@ int **CellularPotts::SearchNandPlot(Graphics *g, bool get_neighbours)
         if(!par.divisioncolour){
           colour = (*cell)[sigma[i][j]].Colour();
         }else{
-          colour = (*cell)[sigma[i][j]].getTau()+1+( (*cell)[sigma[i][j]].getTau()-1 ) *par.maxdivisions+(*cell)[sigma[i][j]].TimesDivided();
+          colour = (*cell)[sigma[i][j]].getTau()+1+( (*cell)[sigma[i][j]].getTau()-1 ) *4+(*cell)[sigma[i][j]].TimesDivided();
         }
 
 
