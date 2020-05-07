@@ -1086,6 +1086,8 @@ protected:
   int grad_conc; //how much gradient do I perceive?
   int gextiming; //funny variable deciding when to update gex
 
+
+
   // this is not used anymore - vJ is dynamically increased
   // Dynamically increased when cells are added to the system
   // unless a static Jtable is used (currently this is the default situation)
