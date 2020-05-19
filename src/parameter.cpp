@@ -190,6 +190,7 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<" -gradscale [FLOAT_NUMBER] slope of the gradient (in percent units)"<<endl;
   cerr<<" -gradnoise [FLOAT_NUMBER] chances that any grid point has gradient, rather than being empty"<<endl;
   cerr<<" -chemmu [FLOAT_NUMBER] scaling factor for chemotaxis in the Hamiltonian"<<endl;
+  cerr<<" -fitscale [FLOAT_NUMBER] point in field where deathrate is half value"<<endl;
   cerr<<" -target_area [INT_NUMBER] that (initial) target area of cells"<<endl;
   cerr<<" -init_cell_config [0-3] initial configuration of cells, see ca.cpp"<<endl;
   cerr<<endl<<"Will not execute if datafile and datadir already exist"<<endl;
@@ -395,7 +396,16 @@ int Parameter::ReadArguments(int argc, char *argv[])
       }
       gradnoise = atof( argv[i] );
       cerr<<"New value for gradnoise: "<<gradnoise<<endl;
-    }else if( 0==strcmp( argv[i],"-name") ){
+    }else if( 0==strcmp(argv[i],"-fitscale") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in fitscale?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      fitscale = atof( argv[i] );
+      cerr<<"New value for fitscale: "<<fitscale<<endl;
+    }
+
+    else if( 0==strcmp( argv[i],"-name") ){
       i++; if(i==argc){
         cerr<<"Something odd in name?"<<endl;
         return 1;  //check if end of arguments, exit with error in case
