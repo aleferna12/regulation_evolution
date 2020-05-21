@@ -673,6 +673,7 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
   if(!par.evolsim){
     peakx=sizex/2;
     peaky=1;
+    maxdist=sqrt(0.25*sizex*sizex+sizey*sizey);
   }
   else{
     static int gradient_dir=-1;

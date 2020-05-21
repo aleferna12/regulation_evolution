@@ -128,8 +128,8 @@ zero_persistence_past_theline = 0
 #these days k+l=50 -> 50*0.01=0.5 (one mutation every two replications)
 #mut_rate = 0.01
 mut_rate = 0.01
-evolsim = 1
-evolreg = 1
+evolsim = 0
+evolreg = 0
 
 #genome mutation
 mu = 0.02
