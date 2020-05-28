@@ -191,6 +191,7 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<" -gradnoise [FLOAT_NUMBER] chances that any grid point has gradient, rather than being empty"<<endl;
   cerr<<" -chemmu [FLOAT_NUMBER] scaling factor for chemotaxis in the Hamiltonian"<<endl;
   cerr<<" -fitscale [FLOAT_NUMBER] point in field where deathrate is half value"<<endl;
+  cerr<<" -genomefile [string] starting genome with which to seed the field"<<endl;
   cerr<<" -target_area [INT_NUMBER] that (initial) target area of cells"<<endl;
   cerr<<" -init_cell_config [0-3] initial configuration of cells, see ca.cpp"<<endl;
   cerr<<endl<<"Will not execute if datafile and datadir already exist"<<endl;
@@ -250,7 +251,20 @@ int Parameter::ReadArguments(int argc, char *argv[])
 
       cerr<<"New value for keylock_list_filename: "<<keylock_list_filename<<endl;
 
-    }else if( 0==strcmp(argv[i],"-seed") ){
+    }else if( 0==strcmp(argv[i],"-genomefile") ){
+      i++; if(i==argc) {
+        cerr<<"Something odd in genomefile?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      //strcpy(datadir, argv[i]);
+      free(genomefile);
+      genomefile = (char *)malloc( 5+strlen(argv[i])*sizeof(char) )  ; //strlen(argv[i]) is ok because argv[i] is null terminated
+      genomefile = strdup(argv[i]);
+
+      cerr<<"New value for genomefile: "<<genomefile<<endl;
+
+    }
+    else if( 0==strcmp(argv[i],"-seed") ){
       i++; if(i==argc){
         cerr<<"Something odd in seed?"<<endl;
         return 1;  //check if end of arguments, exit with error in case

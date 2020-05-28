@@ -99,6 +99,7 @@ INIT {
       for(auto &c: cell) {
         if(c.Sigma()){
           c.setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
+          //c.setGTiming(0);
           c.dividecounter=0;
           c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
           //initialise a cell's timing for gex Updating
