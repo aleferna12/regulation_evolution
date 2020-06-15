@@ -33,11 +33,13 @@ void Genome::InitGenome(int in, int reg, int out)
   //}
 
   for (i=0; i<reg; i++){
-    regnodes.push_back(*(new Gene(1, i+innr, innr, regnr)));
+    //regnodes.push_back(*(new Gene(1, i+innr, innr, regnr)));
+    regnodes.emplace_back(1, i+innr, innr, regnr);
   }
 
   for (i=0; i<out; i++){
-    outputnodes.push_back(*(new Gene(2, i+innr+regnr, innr, regnr)));
+    //outputnodes.push_back(*(new Gene(2, i+innr+regnr, innr, regnr)));
+    outputnodes.emplace_back(2, i+innr+regnr, innr, regnr);
   }
 }
 
