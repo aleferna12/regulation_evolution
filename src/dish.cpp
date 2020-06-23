@@ -1258,6 +1258,7 @@ void Dish::UpdateCellParameters(int Time)
   //update networks asynchronously f
   for( c=cell.begin(), ++c; c!=cell.end(); ++c){
     if( c->AliveP() ){
+			
       c->time_since_birth++;
       interval=Time+c->Gextiming();
       //update the network withing each cell, if it is the right time
@@ -1799,7 +1800,7 @@ void Dish::GradientBasedCellKill(int popsize)
 
 
   //determine final distance of those cells that are alive
-  for(auto c: cell){
+  for(auto &c: cell){
     if(c.Sigma()>0 && c.AliveP()){
       current_popsize++;
       distance=sqrt((Food->GetPeakx()-c.getXpos())*(Food->GetPeakx()-c.getXpos())+(Food->GetPeaky()-c.getYpos())*(Food->GetPeaky()-c.getYpos()));
@@ -1807,22 +1808,28 @@ void Dish::GradientBasedCellKill(int popsize)
       //totalfit+=fitness; //for relative version
       //sig_dist.push_back(make_pair(c.Sigma(),totalfit)); //for relative version
       deathprob=par.mindeathprob+(par.maxdeathprob-par.mindeathprob)*pow(distance,3.)/(pow(par.fitscale,3.)+pow(distance,3.));
-      cerr<<"distance is "<<distance<<", deathprob is "<<deathprob<<endl;
+      //cerr<<"distance is "<<distance<<", deathprob is "<<deathprob<<endl;
       sig_dist.push_back(make_pair(c.Sigma(),deathprob));
     }
   }
 
   //this is a nonrelative version, based on an individually-determined death rate
-  for(auto n :sig_dist){
+  for(auto &n :sig_dist){
     rn = RANDOM();//should be between 0 and 1
-    if(rn<n.second){
+    cerr<<"cell "<<n.first;
+    if(rn<n.second && cell[n.first].AliveP()){
+      cerr<<" going to kill... ";
       cell[n.first].SetTargetArea(0);
       cell[n.first].Apoptose(); //set alive to false
+      cerr<<" so... ";
       CPM->RemoveCell(&cell[n.first] ,par.min_area_for_life,cell[n.first].meanx,cell[n.first].meany);
+      cerr<<" killed"<<endl;
     }
-    else{
+    else if (cell[n.first].AliveP()){
+			cerr<<" going to reset.... ";
       cell[n.first].ResetTimesDivided();
       cell[n.first].ClearGenomeState();
+      cerr<<" ...kept"<<endl;
     }
   }
 
