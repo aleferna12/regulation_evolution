@@ -3443,45 +3443,26 @@ void CellularPotts::RemoveCell(Cell* thiscell,int min_area, int meanx, int meany
     loopdepth++;
 
   }
-   cerr<<"removed cell, now take care of neighbours"<<endl;
-
+   
    //take care that area is set to 0
     thiscell->DecrementAreaBy(thisarea);
     //removed the tracking of the moments. Check if this gives major problems
 
-	//deal with the cells that have this cell as a neighbour
-  for(auto neigh:thiscell->neighbours){
-    int signeigh=neigh.first;
-    int blength=neigh.second.first;
-    cerr<<"this cell "<<thissig<<" neighbour "<<signeigh<<" boundary length "<<blength<<endl;
-  }
-
+	
   //deal with the cells that have this cell as a neighbour
   for(auto &neigh:thiscell->neighbours){
     int signeigh=neigh.first;
     int blength=neigh.second.first;
-    cerr<<"updating neighbour "<<signeigh<<" boundary length "<<blength<<endl;
-    if (signeigh>((*cell).size())*2 || signeigh<0 || blength>1000){
-			cerr<<"going to move on..."<<endl;
-			continue;
-		} 
+  
     if(signeigh){
       (*cell)[signeigh].setNeighbour(thissig,0,0);
       (*cell)[signeigh].updateNeighbourBoundary(0,blength);
-      cerr<<"adjusted boundaries of neighbour"<<endl;
     }
-    thiscell->setNeighbour(signeigh,0,0);
-    cerr<<"done with this neighbour"<<endl;
-    //deal with the cells that have this cell as a neighbour
-		for(auto neigh2:thiscell->neighbours){
-			int signeigh2=neigh2.first;
-			int blength2=neigh2.second.first;
-			cerr<<"new neigharray neighbour "<<signeigh2<<" boundary length "<<blength2<<endl;
-		}
+    
   }
+  
+  thiscell->clearNeighbours();
 
-	cerr<<"done removing cells"<<endl;
-//   cerr<<
 //   exit(1);
 
 }

@@ -1816,20 +1816,15 @@ void Dish::GradientBasedCellKill(int popsize)
   //this is a nonrelative version, based on an individually-determined death rate
   for(auto &n :sig_dist){
     rn = RANDOM();//should be between 0 and 1
-    cerr<<"cell "<<n.first;
+ 
     if(rn<n.second && cell[n.first].AliveP()){
-      cerr<<" going to kill... ";
       cell[n.first].SetTargetArea(0);
       cell[n.first].Apoptose(); //set alive to false
-      cerr<<" so... ";
       CPM->RemoveCell(&cell[n.first] ,par.min_area_for_life,cell[n.first].meanx,cell[n.first].meany);
-      cerr<<" killed"<<endl;
     }
     else if (cell[n.first].AliveP()){
-			cerr<<" going to reset.... ";
       cell[n.first].ResetTimesDivided();
       cell[n.first].ClearGenomeState();
-      cerr<<" ...kept"<<endl;
     }
   }
 
