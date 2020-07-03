@@ -176,6 +176,8 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<" -persmu FLOAT_NUMBER [ > 0 ], strength of persistent random walk"<<endl;
   cerr<<" -persduration INT_NUMBER"<<endl;
   cerr<<" -mutrate FLOAT_NUMBER [0,1) # mutation rate for key and lock"<<endl;
+  cerr<<" -mu FLOAT_NUMBER [0,1) # mutation rate for genome regulation"<<endl;
+  cerr<<" -mustd FLOAT_NUMBER [0,1) # mutation size for genome regulation"<<endl;
   cerr<<" -casize INT_NUMBER INT_NUMBER # dimensions of the CA"<<endl;
   cerr<<" -popsize INT_NUMBER [-pop_as_initpop] # population size, optional same as n_init_cells"<<endl;
   cerr<<" -pop_as_initpop # initial population size = popsize"<<endl;
@@ -285,6 +287,20 @@ int Parameter::ReadArguments(int argc, char *argv[])
       }
       mut_rate = atof( argv[i] );
       cerr<<"New value for mutation rate: "<<mut_rate<<endl;
+    }else if( 0==strcmp(argv[i],"-mu") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in mu?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      mu = atof( argv[i] );
+      cerr<<"New value for genome mutation rate: "<<mu<<endl;
+    }else if( 0==strcmp(argv[i],"-mustd") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in mustd?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      mustd = atof( argv[i] );
+      cerr<<"New value for mustd: "<<mustd<<endl;
     }else if( 0==strcmp(argv[i],"-persduration") ){
       i++; if(i==argc){
         cerr<<"Something odd in persduration?"<<endl;
