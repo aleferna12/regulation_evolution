@@ -1,7 +1,7 @@
 ### Max time (max # monte carlo steps) ###
 # takes about 1hour per 100000 timesteps
 #mcs = 200000000
-mcs = 10000 #100000000
+mcs = 500000 #100000000
 
 #cells in blobs move at 0.0055 px/mcs
 # duration of season could then be larger than field size/ speed
@@ -97,10 +97,10 @@ maxdivisions = 3
 ## initial conditions ##
 ########################
 
-howmany_makeit_for_nextgen = 100
-popsize = 100
+howmany_makeit_for_nextgen = 1
+popsize = 1
 
-n_init_cells = 100
+n_init_cells = 1
 size_init_cells = 25
 
 #Initial configuration of cells, see ca.cpp placecellsorderly()

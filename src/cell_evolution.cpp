@@ -196,7 +196,7 @@ TIMESTEP {
     if( i%25 == 0){
 
       if(par.evolsim){
-        if(i>0 && i%par.season_duration==0){
+        if(i>par.starttime && i%par.season_duration==0 ){
           // cout <<" duration average "<<sum/nr<<endl;
           //reproduce people based on fitness criterion
           //remove random cells until popsize is back to normal
