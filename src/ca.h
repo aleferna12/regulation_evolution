@@ -314,6 +314,7 @@ public:
   int PlaceOneCellRandomly(int sig, int cellsize);
   int PlaceCellsRandomly(int n_cells, int cellsize);
   int PlaceCellsOrderly(int n_cells, int cellsize);
+  int Place2Groups(int placement,int size_init_cells, int groupsize);
   //! \brief Adds a new Cell and returns a reference to it.
   inline Cell &AddCell(Dish &beast) {
     cell->push_back(Cell(beast));

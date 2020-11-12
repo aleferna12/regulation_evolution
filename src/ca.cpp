@@ -3072,6 +3072,90 @@ int CellularPotts::PlaceCellsOrderly(int n_cells,int size_cells)
     return count;
 }
 
+int CellularPotts::Place2Groups(int placement,int size_cells, int groupsize)
+{
+    int count=0;
+    int this_area=0;
+    int a_little_bit=2;
+
+    int smaller_dimension=( par.sizex < par.sizey)?par.sizex:par.sizey;
+    int sqrt_n_cells = 1+sqrt(groupsize);
+    //to avoid having 49 cells when you want 50, I'm rounding sqrt(n_cells) to +1
+    if( (  sqrt_n_cells  *(sqrt(size_cells) + a_little_bit))>smaller_dimension ){
+      std::cerr << "Place2Groups(): Error. Too many cells or too large size?" << '\n';
+      exit(1);
+    }
+
+    // int begin = (smaller_dimension-  sqrt(n_cells)*(sqrt(size_cells) + a_little_bit))/2;
+    // int end = (smaller_dimension +  sqrt(n_cells)*(sqrt(size_cells) + a_little_bit))/2;
+    int beginx1 = a_little_bit;
+    int endx1 =   sqrt_n_cells*(sqrt(size_cells) + a_little_bit);
+    int beginx2 = (par.sizex -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit));
+    int endx2 =   par.sizex-1;
+
+    if (beginx2<endx1) {
+      std::cerr<<"Place2Groups(): Error. Groups overlap, exiting."<<endl;
+      exit(1);
+    }
+    int beginy, endy;
+    if(placement==1){//the far end of the field
+      beginy = (par.sizey -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit));
+      endy =   par.sizey-1;
+    }else{
+      beginy = (par.sizey -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+      endy =   (par.sizey +  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+    }
+
+    int step = ( sqrt(size_cells) + a_little_bit );
+    
+    
+    //place the cells
+    for (int yy=beginy; yy<endy; yy+=step){
+      for (int xx=beginx1; xx<endx1; xx+=step){
+
+        this_area=0;
+        count++;
+        for(int i=0; i<sqrt(size_cells); i++){
+          for(int j=0; j<sqrt(size_cells); j++){
+            if(sigma[xx+i][yy+j]){
+              std::cerr << "Sigma = "<< sigma[xx+i][yy+j] << '\n';
+              std::cerr << "Grid point "<< xx+i <<","<< yy+j <<" is already occupied" << '\n';
+              exit(1);
+            }
+            sigma[xx+i][yy+j]=count;
+            this_area++;
+            if(this_area == size_cells) break;
+          }
+          if(this_area == size_cells) break;
+        }
+      }
+
+      for (int xx=beginx2; xx<endx2; xx+=step){
+
+        this_area=0;
+        count++;
+        for(int i=0; i<sqrt(size_cells); i++){
+          for(int j=0; j<sqrt(size_cells); j++){
+            if(sigma[xx+i][yy+j]){
+              std::cerr << "Sigma = "<< sigma[xx+i][yy+j] << '\n';
+              std::cerr << "Grid point "<< xx+i <<","<< yy+j <<" is already occupied" << '\n';
+              exit(1);
+            }
+            sigma[xx+i][yy+j]=count;
+            this_area++;
+            if(this_area == size_cells) break;
+          }
+          if(this_area == size_cells) break;
+        }
+      }
+    }
+
+
+    cerr<<"Placed "<<count<<" cells out of "<<groupsize*2<<" requested;"<<endl;
+    //exit(1);
+    return count;
+}
+
 /**! Fill the plane with initial cells
  \return actual amount of cells (some are not draw due to overlap) */
 int CellularPotts::ThrowInCells(int n,int cellsize) {

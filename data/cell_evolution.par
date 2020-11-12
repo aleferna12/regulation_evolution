@@ -87,6 +87,7 @@ key_lock_length = 24
 #######################
 
 #genomefile = noscat80.4/nets/
+#competitionfile = stuff
 nr_regnodes = 3
 divtime = 20	# scaled nr of steps before a cell initiates division
 divdur = 1000     # duration of division, during which a cell stops moving
@@ -127,8 +128,8 @@ zero_persistence_past_theline = 0
 #mutrate, typical length of key and lock is 10+10 -> 20*0.01=0.2 one mutation every 5 replications...
 #these days k+l=50 -> 50*0.01=0.5 (one mutation every two replications)
 #mut_rate = 0.01
-mut_rate = 0.01
-evolsim = 0
+mut_rate = 0.0
+evolsim = 1
 evolreg = 0
 
 #genome mutation

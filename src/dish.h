@@ -153,6 +153,8 @@ public:
   void SaveNetworks(int Time);
   void MakeBackup(int Time);
   int ReadBackup(char *filename);
+  int ReadCompetitionFile(char *filename);
+
   //! \brief Returns the horizontal size of the dish.
   int SizeX(void);
 

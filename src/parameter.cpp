@@ -81,6 +81,7 @@ Parameter::Parameter() {
   store = false;
   divisioncolour=false;
   genomefile=strdup("");
+  competitionfile=strdup("");
   nr_regnodes=1;
   mu=0.05;
   mustd=0.1;
@@ -194,6 +195,7 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<" -chemmu [FLOAT_NUMBER] scaling factor for chemotaxis in the Hamiltonian"<<endl;
   cerr<<" -fitscale [FLOAT_NUMBER] point in field where deathrate is half value"<<endl;
   cerr<<" -genomefile [string] starting genome with which to seed the field"<<endl;
+  cerr<<" -competitionfile [string] information for competition experiment"<<endl;
   cerr<<" -target_area [INT_NUMBER] that (initial) target area of cells"<<endl;
   cerr<<" -init_cell_config [0-3] initial configuration of cells, see ca.cpp"<<endl;
   cerr<<endl<<"Will not execute if datafile and datadir already exist"<<endl;
@@ -264,6 +266,18 @@ int Parameter::ReadArguments(int argc, char *argv[])
       genomefile = strdup(argv[i]);
 
       cerr<<"New value for genomefile: "<<genomefile<<endl;
+
+    }else if( 0==strcmp(argv[i],"-competitionfile") ){
+      i++; if(i==argc) {
+        cerr<<"Something odd in competitionfile?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      //strcpy(datadir, argv[i]);
+      free(competitionfile);
+      competitionfile = (char *)malloc( 5+strlen(argv[i])*sizeof(char) )  ; //strlen(argv[i]) is ok because argv[i] is null terminated
+      competitionfile = strdup(argv[i]);
+
+      cerr<<"New value for competitionfile: "<<competitionfile<<endl;
 
     }
     else if( 0==strcmp(argv[i],"-seed") ){
@@ -483,8 +497,10 @@ int Parameter::ReadArguments(int argc, char *argv[])
       datadir = strdup(name_moviedir.c_str());
       backupdir = strdup(name_backupdir.c_str());
       // this took a while to code :P
-    }else
+    }else{
+      cerr<<"Something went wrong reading the commandline arguments"<<endl; 
       return 1;
+    }
   }
   return 0;
 }
@@ -545,6 +561,7 @@ void Parameter::Read(const char *filename) {
   store = bgetpar(fp, "store", false, true);
   divisioncolour = bgetpar(fp, "divisioncolour", false, true);
   genomefile = sgetpar(fp, "genomefile", "", true);
+  competitionfile = sgetpar(fp, "competitionfile", "", true);
   nr_regnodes = igetpar(fp, "nr_regnodes", 0, true);
   mu = fgetpar(fp, "mu", 0., true);
   mustd = fgetpar(fp, "mustd", 0., true);
@@ -784,6 +801,9 @@ void Parameter::Write(ostream &os) const {
   os << " store = " << sbool(store) << endl;
   if (genomefile){
       os << " genomefile = " << genomefile << endl;
+  }
+  if (competitionfile){
+      os << " competitionfile = " << competitionfile << endl;
   }
   os << " nr_regnodes = " << nr_regnodes << endl;
   os << " mu = " << mu << endl;

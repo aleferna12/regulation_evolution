@@ -30,6 +30,8 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <fstream>
 #include <string.h>
 #include <sstream>
+#include <iterator>
+#include <iostream>
 #include <errno.h>
 #include <math.h>
 #include "dish.h"
@@ -191,11 +193,11 @@ void Dish::InitVectorJ(void) //Initialise vector of J values for each cell
   std::vector<Cell>::iterator ci;
   std::vector<Cell>::iterator cj;
 
-  //cerr<<"InitVectorJ begin"<<endl;
 
   int thisval;
   for(ci=cell.begin(); ci!=cell.end(); ++ci){
     for(cj=ci, ++cj; cj!=cell.end(); ++cj){
+      
       if(ci->Sigma() == MEDIUM){
         if(cj->Sigma() == MEDIUM) thisval=0;
         else thisval = CalculateJwithMedium( cj->getJkey() );  //J with medium is calculated from part of cell's
@@ -2435,6 +2437,89 @@ void Dish::MakeBackup(int Time){
   }
   ofs<<endl;
 }
+
+int Dish::ReadCompetitionFile(char *filename){
+  std::ifstream ifs;
+  string line, key1, lock1, key2, lock2;
+  Cell *rc;
+
+  char grnfile1[500],grnfile2[500];
+ 
+    // copying the contents of the
+    // string to char array
+  
+  int placement, groupsize;
+
+  ifs.open( filename , std::ifstream::in );
+
+  if (ifs.is_open()){
+    //first read the placement and group sizes
+    getline(ifs, line);
+    stringstream strstr(line);
+    strstr >> placement>>groupsize;
+    
+    strstr.clear();
+    strstr.str(std::string());
+    getline(ifs, line);
+    strstr << line;
+    strstr >> grnfile1 >> grnfile2;
+    //strcpy(char_array1,grnfile1.c_str());
+    //strcpy(char_array2,grnfile2.c_str());
+
+    strstr.clear();
+    strstr.str(std::string());
+    getline(ifs, line);
+    strstr << line;
+    strstr >> key1 >> key2;
+    
+    strstr.clear();
+    strstr.str(std::string());
+    getline(ifs, line);
+    strstr << line;
+    strstr >> lock1 >> lock2;
+  }
+  else{
+    return 1;
+  }
+ 
+  //place cells
+  CPM->Place2Groups(placement,par.size_init_cells, groupsize);
+  CPM->ConstructInitCells(*this);
+
+  for(auto &c: cell) {
+    if(c.Sigma()){
+      //cerr<<"Setting competition for cell "<<c.Sigma()<<endl;
+      c.setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
+      c.dividecounter=0;
+      c.SetTargetArea(par.target_area); //sets target area
+      if (c.getXpos()<=par.sizex/2){
+        c.ReadGenomeFromFile(grnfile1);
+        //read the key and lock into the cell
+        for (char& k : key1){
+          c.jkey.push_back(k - '0');
+          //cout<<"key1 "<<k<<endl;
+        }
+        for (char& l : lock1){
+          c.jlock.push_back(l - '0');
+          //cout<<"lock1 "<<l<<endl;
+        }
+      }else{
+        c.ReadGenomeFromFile(grnfile2);
+        for (char& k : key2){
+          c.jkey.push_back(k - '0');
+          //cout<<"key2 "<<k<<endl;
+        }
+        for (char& l : lock2){
+          c.jlock.push_back(l - '0');
+          //cout<<"lock2 "<<l<<endl;
+        }
+      }
+      c.ClearGenomeState();
+    }
+  }
+  return 0;
+}
+
 
 int Dish::ReadBackup(char *filename){
   //for file reading

@@ -77,6 +77,7 @@ class Parameter {
   bool store;
   bool divisioncolour;
   char * genomefile;
+  char * competitionfile;
   int nr_regnodes; //how many regulatory nodes in genomes
   int divtime; //how many steps does it take before a cell can start dividing?
   int divdur; //duration once a cell starts division program

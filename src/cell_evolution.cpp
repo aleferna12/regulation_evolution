@@ -66,7 +66,7 @@ INIT {
     //CPM->PlaceOneCellsAtXY(par.sizex/2,par.sizey/2., par.size_init_cells, 1);
     //CPM->PlaceOneCellsAtXY(par.sizex/4,par.sizey/4, par.size_init_cells, 2);
 
-    if (! strlen(par.backupfile)) {
+    if (! strlen(par.backupfile) && !strlen(par.competitionfile)) {
 
       //THIS IS TO USE FOR NORMAL INITIALISATION
       if(par.scatter_cells){
@@ -133,6 +133,26 @@ INIT {
       UpdateCellParameters(0);//update cell status //UpdateCellParameters2();
       par.starttime=0;
     }
+    else if (strlen(par.competitionfile)){
+      ReadCompetitionFile(par.competitionfile);
+      CPM->InitializeEdgeList(false);
+      cout << "done initialising edge list for competition"<<endl;
+      InitContactLength();
+      cout << "done initialising contacts for competition"<<endl;
+      InitVectorJ();
+      cout << "done initialising Jvalues for competition"<<endl;
+     Food->InitIncreaseVal(CPM); //a pointer to CPM is an argument to InitIncreaseVal
+     // Initialises food plane (now the gradient plane)
+      Food->IncreaseVal(*(Food));
+      for(int init_time=0;init_time<10;init_time++){
+        CPM->AmoebaeMove2(PDEfield);  //this changes neighs
+      }
+      cout<<"done with update"<<endl;
+      InitCellMigration();
+      UpdateCellParameters(0);//update cell status //UpdateCellParameters2();
+      par.starttime=0;
+    }
+
     else {
       cout<<"backup file is "<<par.backupfile<<endl;
       par.starttime=ReadBackup(par.backupfile);
