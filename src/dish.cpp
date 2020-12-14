@@ -1299,6 +1299,7 @@ void Dish::UpdateCellParameters(int Time)
             c->setMu(0.);
             c->setChemMu(0.0);
             c->setTau(2); //basically only for color right now...
+            
           }
         }
         //this is a migratory cell

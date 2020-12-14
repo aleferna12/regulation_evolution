@@ -129,6 +129,7 @@ void Cell::CellBirth(Cell &mother_cell) {
   chemmu=mother_cell.chemmu;
   chemvecx=mother_cell.chemvecx;
   chemvecy=mother_cell.chemvecy;
+  grad_conc=mother_cell.grad_conc;
 
   grad[0]=mother_cell.grad[0];
   grad[1]=mother_cell.grad[1];

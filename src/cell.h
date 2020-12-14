@@ -115,6 +115,7 @@ public:
     chemmu=src.chemmu;
     chemvecx=src.chemvecx;
     chemvecy=src.chemvecy;
+    grad_conc=src.grad_conc;
 
     owner=src.owner;
     particles=src.particles;
@@ -185,6 +186,7 @@ public:
     chemvecx=src.chemvecx;
     chemvecy=src.chemvecy;
 
+    grad_conc=src.grad_conc;
     sum_x=src.sum_x;
     sum_y=src.sum_y;
     sum_xx=src.sum_xx;
