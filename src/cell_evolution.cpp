@@ -109,7 +109,7 @@ INIT {
             c.ReadGenomeFromFile(par.genomefile);
           }
           else{
-            c.CreateRandomGenome(2, par.nr_regnodes, 2);
+            c.CreateRandomGenome(2, par.nr_regnodes, 1); //important! we only have one output node, but used to make 2 (one unused)
           }
           c.ClearGenomeState();
         }

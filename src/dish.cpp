@@ -882,7 +882,7 @@ void Dish::CellsEat2(void)
         xv=fsumx[c.sigma]/(double)ftotal[c.sigma]-c.meanx;
         yv=fsumy[c.sigma]/(double)ftotal[c.sigma]-c.meany;
 
-        c.grad_conc=ftotal[c.sigma]; //set the cell gradient amount
+        c.grad_conc=ftotal[c.sigma]/c.Area(); //set the cell gradient amount
         double hyphyp=hypot(xv,yv);
 
         // in a homogeneous medium, gradient is zero
