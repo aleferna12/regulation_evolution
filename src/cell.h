@@ -87,6 +87,7 @@ public:
     date_of_birth=src.date_of_birth;
     //cerr<<"this?: "<<date_of_birth<<endl;
     colour_of_birth=src.colour_of_birth;
+    colour=src.colour;
     dividecounter=src.dividecounter;
     genome=src.genome;
     gextiming=src.gextiming;
@@ -263,8 +264,8 @@ public:
   //! Returns the cell colour.
   inline int Colour(void) const {
 
-    return tau+1;
-
+    //return tau+1;
+    return colour;
   };
 
 //this function maps migration vector angle to a colour in radial_colour array (see misc.cpp)

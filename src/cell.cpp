@@ -71,6 +71,7 @@ Cell::~Cell(void) {
 void Cell::CellBirth(Cell &mother_cell) {
 
   colour = mother_cell.colour;
+  //cerr<< "daughter colour is "<<colour<<" mother colour is "<<mother_cell.colour<<endl;
   alive = mother_cell.alive;
   v[0] = mother_cell.v[0];
   v[1] = mother_cell.v[1];

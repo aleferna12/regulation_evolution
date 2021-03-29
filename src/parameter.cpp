@@ -104,6 +104,7 @@ Parameter::Parameter() {
   ardecay=0.;
   gradnoise=0.1;
   gradscale=1.0;
+  nodivisions=false;
   min_contact_duration_for_preying = 10;
   frac_contlen_eaten = 1.;
   metabolic_conversion = 0.5;
@@ -128,6 +129,7 @@ Parameter::Parameter() {
   season_experiment = true;
   season_duration = 100000;
   init_cell_config = 0;
+  cell_placement = 0;
 }
 
 Parameter::~Parameter() {
@@ -187,6 +189,7 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<" -nofood # No food distributed in the simulation"<<endl;
   cerr<<" -noevolreg # No evolution of regulation parameters"<<endl;
   cerr<<" -scatter # spread cells after a season"<<endl;
+  cerr<<" -nodivisions # do not execute divisions -> number of cells remains the same"<<endl;
   cerr<<" -backupfile path/to/backupfile # to start simulation from backup"<<endl;
   cerr<<" -season [INT_NUMBER] # season duration"<<endl;
   cerr<<" -foodinflux [FLOAT_NUMBER] # howmuchfood"<<endl;
@@ -197,7 +200,8 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<" -genomefile [string] starting genome with which to seed the field"<<endl;
   cerr<<" -competitionfile [string] information for competition experiment"<<endl;
   cerr<<" -target_area [INT_NUMBER] that (initial) target area of cells"<<endl;
-  cerr<<" -init_cell_config [0-3] initial configuration of cells, see ca.cpp"<<endl;
+  cerr<<" -init_cell_config [0-3] initial configuration of cells when placed in center, see ca.cpp"<<endl;
+  cerr<<" -cell_placement [1-4] field position of cells, (0=center) see ca.cpp"<<endl;
   cerr<<endl<<"Will not execute if datafile and datadir already exist"<<endl;
   cerr<<"Also, parameter file and Jtable should be in the same directory (unless you used option -keylockfilename)"<<endl;
   cerr<<"Have fun!"<<endl;
@@ -385,6 +389,9 @@ int Parameter::ReadArguments(int argc, char *argv[])
     }else if( 0==strcmp(argv[i],"-scatter") ){
       scatter_cells = true;
       cerr<<"Cells will be scattered at the end of the season, before reproduction"<<endl;
+    }else if( 0==strcmp(argv[i],"-nodivisions") ){
+      nodivisions = true;
+      cerr<<"Cells will not actually divide"<<endl;
     }else if( 0==strcmp(argv[i],"-store") ){
       store = true;
       cerr<<"pictures will be stored"<<endl;
@@ -433,6 +440,13 @@ int Parameter::ReadArguments(int argc, char *argv[])
       }
       init_cell_config = atoi( argv[i] );
       cerr<<"New value for init_cell_config: "<<init_cell_config<<endl;
+    }else if( 0==strcmp(argv[i],"-cell_placement") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in cell_placement?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      cell_placement = atoi( argv[i] );
+      cerr<<"New value for cell_placement: "<<cell_placement<<endl;
     }else if( 0==strcmp(argv[i],"-gradnoise") ){
       i++; if(i==argc){
         cerr<<"Something odd in gradnoise?"<<endl;
@@ -562,6 +576,7 @@ void Parameter::Read(const char *filename) {
   divisioncolour = bgetpar(fp, "divisioncolour", false, true);
   genomefile = sgetpar(fp, "genomefile", "", true);
   competitionfile = sgetpar(fp, "competitionfile", "", true);
+  nodivisions = bgetpar(fp, "nodivisions", false, true);
   nr_regnodes = igetpar(fp, "nr_regnodes", 0, true);
   mu = fgetpar(fp, "mu", 0., true);
   mustd = fgetpar(fp, "mustd", 0., true);
@@ -609,6 +624,7 @@ void Parameter::Read(const char *filename) {
   season_experiment= bgetpar(fp,"season_experiment",false, true);
   season_duration= igetpar(fp, "season_duration", 1, true);
   init_cell_config = igetpar(fp, "init_cell_config", 0, true);
+  cell_placement = igetpar(fp, "cell_placement", 0, true);
 }
 
 //creates a rule for lookup table, by setting values,
@@ -821,6 +837,8 @@ void Parameter::Write(ostream &os) const {
   os << " growth = " << growth << endl;
   os << " gradnoise = " << gradnoise << endl;
   os << " gradscale = " << gradscale << endl;
+  os << " divisioncolour = " << divisioncolour << endl;
+  os << " nodivisions = " << nodivisions << endl;
   os << " motiledeath = " << motiledeath << endl;
   os << " dividingdeath = " << dividingdeath << endl;
   os << " min_contact_duration_for_preying = " << min_contact_duration_for_preying;
@@ -849,6 +867,7 @@ void Parameter::Write(ostream &os) const {
   os<< " season_experiment = " << season_experiment << endl;
   os<< " season_duration = " << season_duration << endl;
   os<< " init_cell_config = "<< init_cell_config << endl;
+  os<< " cell_placement = "<< cell_placement << endl;
 }
 
 ostream &operator<<(ostream &os, Parameter &p) {

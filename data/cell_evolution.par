@@ -137,7 +137,7 @@ mu = 0.02
 mustd = 0.05
 
 #should cells be scattered at the end of the season?
-scatter_cells = true
+scatter_cells = false
 
 #death rates for different cell types
 motiledeath = 0.5
@@ -196,7 +196,7 @@ metabolic_conversion = 0.5
 storage_stride = 1000
 graphics = false
 store = true
-divisioncolour = true
+divisioncolour = false
 datadir = data_film2
 save_text_file_period = 1000
 datafile = data_cellcount.txt

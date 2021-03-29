@@ -1,5 +1,16 @@
 #!/bin/bash
 
+### to run 3 competition experiments
+for i in {1..3}; do echo "run nr $i"; ./cell_evolution shortcompetition.par -name <simname>_$i -competitionfile <compfile>.txt; wait; done
+# concatenate files
+python ~/origins_postdoc/multicell/regulation_evolution/scripts/cat_datafiles_multicell.py <outfile> <storage interval(2500)> <infiles>
+# plot concatenated file (violin plot)
+python3 ~/origins_postdoc/multicell/regulation_evolution/scripts/plot_competition.py <picture>.pdf <label1> <label2> <data>
+
+### Grab consensus networks of last pop in the simulations
+for fi in movie_sim*; do name=$(tail -1 $fi/networks/consensusdata.txt | awk '{print $7".txt"}'); cp $fi/networks/${name#states_*} ${fi#movie_*}_${name#states_*}; done
+tar -zcf sim2_nets.tgz sim*t*c*.txt
+
 ### for all simulations in a directory, get the average timing of the first division for the last x seasons (in file irstdivision_endseason_allsims.dat) 
 ### and the violin plots of all three divisions for each simulation
 echo -n "">firstdivision_endseason_allsims.dat; 

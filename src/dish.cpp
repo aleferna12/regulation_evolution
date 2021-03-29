@@ -1282,7 +1282,12 @@ void Dish::UpdateCellParameters(int Time)
             //divide
             if(c->Area()>30){
               //cout<<"cell "<<c->Sigma()<<" will divide"<<endl;
-              which_cells[c->sigma]=TRUE;
+              if (!par.nodivisions){
+                which_cells[c->sigma]=TRUE;
+              }
+              else{
+                c->AddTimesDivided();
+              }
               divvs=1;
             }
             //we already set the target area back to normal. We won't run any AmoebaeMove in between this and division
@@ -2334,6 +2339,7 @@ int Dish::SaveData(int Time)
     ofs << icell->grad_conc<< " ";
     // ... and all this seems to work fine. except here...
     ofs << icell->GetTimeSinceBirth() << " "; // used to be date of birth, now it's time since birth
+    ofs << icell->Colour() << " "; //used during competition experiments, to delineate groups
     for( auto x: icell->getJkey() ) ofs<<x; //key
     ofs << " ";
     for( auto x: icell->getJlock() ) ofs<<x; //lock
@@ -2504,6 +2510,7 @@ int Dish::ReadCompetitionFile(char *filename){
           c.jlock.push_back(l - '0');
           //cout<<"lock1 "<<l<<endl;
         }
+        c.SetColour(2);
       }else{
         c.ReadGenomeFromFile(grnfile2);
         for (char& k : key2){
@@ -2514,6 +2521,7 @@ int Dish::ReadCompetitionFile(char *filename){
           c.jlock.push_back(l - '0');
           //cout<<"lock2 "<<l<<endl;
         }
+        c.SetColour(3);
       }
       c.ClearGenomeState();
     }

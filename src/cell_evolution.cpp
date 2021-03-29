@@ -75,7 +75,8 @@ INIT {
         cout << "done initialising edge list"<<endl;
       }else{
         CPM->PlaceCellsOrderly(par.n_init_cells,par.size_init_cells);
-        CPM->InitializeEdgeList(true);
+        if (par.cell_placement) CPM->InitializeEdgeList(false);
+        else CPM->InitializeEdgeList(true);
         cout << "done initialising edge list"<<endl;
       }
 
@@ -237,16 +238,17 @@ TIMESTEP {
           std::cout << "End of season: Gradient switching at time (+/- 25 MCS) = "<< i << '\n';
         }
       }else{
-        //not evolutionary simulation
-        if( ((strcmp(par.food_influx_location,"boundarygradient") == 0) && dish->CheckWhoMadeitLinear() ) ||
-            ((strcmp(par.food_influx_location,"specified_experiment") == 0) && dish->CheckWhoMadeitRadial() )){
-          //for printing switching times
-          //write switching time to file
-          static char timename[300];
-          sprintf(timename,"%s/finaltime.txt",par.datadir);
-          static ofstream myfile(timename, ios::out | ios::app);
-          myfile << i << endl;
-          myfile.close();
+        // //not evolutionary simulation: before, used to check when enough cells passed an arbitrary boundary. don't want that now
+        // if( ((strcmp(par.food_influx_location,"boundarygradient") == 0) && dish->CheckWhoMadeitLinear() ) ||
+        //     ((strcmp(par.food_influx_location,"specified_experiment") == 0) && dish->CheckWhoMadeitRadial() )){
+        //   //for printing switching times
+        //   //write switching time to file
+        //   static char timename[300];
+        //   sprintf(timename,"%s/finaltime.txt",par.datadir);
+        //   static ofstream myfile(timename, ios::out | ios::app);
+        //   myfile << i << endl;
+        //   myfile.close();
+        if (i>par.starttime && i%par.season_duration==0){
           exit(0);
         }
       }

@@ -98,6 +98,7 @@ class Parameter {
   double ardecay;
   double gradnoise;
   double gradscale;
+  bool nodivisions; //whether to NOT execute divisions
   int min_contact_duration_for_preying;
   double frac_contlen_eaten;
   double metabolic_conversion;
@@ -128,6 +129,7 @@ class Parameter {
   bool season_experiment;
   int season_duration;
   int init_cell_config;
+  int cell_placement;
 
   struct key_lock_pair{
     int tau;

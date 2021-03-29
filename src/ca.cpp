@@ -1559,7 +1559,8 @@ int **CellularPotts::SearchNandPlot(Graphics *g, bool get_neighbours)
         colour=0;
       }else{
         if(!par.divisioncolour){
-          colour = (*cell)[sigma[i][j]].Colour();
+          colour = (*cell)[sigma[i][j]].Colour()+7*((*cell)[sigma[i][j]].getTau()-1);
+          // if (colour !=2 && colour !=3) cerr<<" Wrong colour! "<< colour<<endl;
         }else{
           colour = (*cell)[sigma[i][j]].getTau()+1+( (*cell)[sigma[i][j]].getTau()-1 ) *4+(*cell)[sigma[i][j]].TimesDivided();
         }
@@ -2670,7 +2671,7 @@ vector<int> CellularPotts::DivideCells(vector<bool> which_cells)
 	    {
 	      Cell *motherp=&((*cell)[sigma[i][j]]); //mother points to the cell holding this pixel
 	      Cell *daughterp;
-
+        //if(motherp->colour!=2 &&motherp->colour!=3) cerr<<"mother has wrong colour: "<<motherp->colour<<" "<<motherp->Sigma()<<endl;
 	      // Divide if NOT medium and if DIV bit set or divide_always is set; if which_cells is given  divide only if the cell is listed
 	      if( !which_cells.size() || which_cells[motherp->sigma] ){
           //divflags is a vector that works like this: divflags[ mother_sigma ] = daughter_sigma
@@ -2696,12 +2697,14 @@ vector<int> CellularPotts::DivideCells(vector<bool> which_cells)
               // THIS USED TO BE ABOVE, WHERE THE SIGN *** IS !!!
               //MAKES NEW CELL AT THE END OF ARRAY
               daughterp=new Cell(*(motherp->owner));  //this calls  Cell(...){ owner=&who; ConstructorBody()}
+              int momcol=motherp->colour;
               daughterp->CellBirth(*motherp);
               cell->push_back(*daughterp);  //this calls default copy constructor Cell(const Cell &src)
                                             // prints "Tomato"
                                             //this puts new cells at the end of array if there was no space to recycle
               // renew pointer to mother (because after push_back memory might be relocated)
               motherp=&((*cell)[sigma[i][j]]);
+              if(motherp->colour!=momcol) cerr<<"this is the problem"<<endl;
             }
 
         divflags[ motherp->Sigma() ]=daughterp->Sigma(); //daughtersigma is set to newest sigma in ConstructorBody of Cell
@@ -2985,7 +2988,8 @@ int CellularPotts::PlaceCellsOrderly(int n_cells,int size_cells)
 {
     int count=0;
     int a_little_bit=2;
-
+    int beginx, endx, beginy, endy;
+    int step, avrg_area;
     int smaller_dimension=( par.sizex < par.sizey)?par.sizex:par.sizey;
     int sqrt_n_cells = 1+sqrt(n_cells);
     //to avoid having 49 cells when you want 50, I'm rounding sqrt(n_cells) to +1
@@ -2994,18 +2998,9 @@ int CellularPotts::PlaceCellsOrderly(int n_cells,int size_cells)
       exit(1);
     }
 
-    // int begin = (smaller_dimension-  sqrt(n_cells)*(sqrt(size_cells) + a_little_bit))/2;
-    // int end = (smaller_dimension +  sqrt(n_cells)*(sqrt(size_cells) + a_little_bit))/2;
+    step = ( sqrt(size_cells) + a_little_bit );
 
-    int beginx = (par.sizex -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
-    int endx =   (par.sizex +  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
-    int beginy = (par.sizey -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
-    int endy =   (par.sizey +  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
-
-
-    int step = ( sqrt(size_cells) + a_little_bit );
-
-    int avrg_area=0;
+    avrg_area=0;
 
     // each x,y point denotes the upper left corner of a cell
     // with i,j we run through the cell
@@ -3014,37 +3009,80 @@ int CellularPotts::PlaceCellsOrderly(int n_cells,int size_cells)
     vector<int> v_order_x;
     vector<int> v_order_y;
 
-    switch( par.init_cell_config ){
-      case 0: {
-        for(int x = beginx ; x < endx ; x += step ) v_order_x.push_back( x );
-        for(int y = beginy ; y < endy ; y += step ) v_order_y.push_back( y );
-        }
-        break;
-      case 1: {
-        for(int x = endx ; x > beginx ; x -= step ) v_order_x.push_back( x );
-        for(int y = beginy ; y < endy ; y += step ) v_order_y.push_back( y );
-        }
-        break;
-      case 2: {
-        for(int x = beginx ; x < endx ; x += step ) v_order_x.push_back( x );
-        for(int y = endy ; y > beginy ; y -= step ) v_order_y.push_back( y );
-        }
-        break;
-      case 3: {
-        for(int x = endx ; x > beginx ; x -= step ) v_order_x.push_back( x );
-        for(int y = endy ; y > beginy ; y -= step ) v_order_y.push_back( y );
-        }
-        break;
+    if(par.cell_placement){
+      std::cerr << "yay, placing cells where I want!"<<endl;
+      switch( par.cell_placement ){  
+        case 1:
+          beginx = a_little_bit;
+          endx =   a_little_bit + sqrt_n_cells*(sqrt(size_cells) + a_little_bit);
+          beginy = (par.sizey -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+          endy =   (par.sizey +  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+          break;
+        case 2:
+          beginx = (par.sizex -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+          endx =   (par.sizex +  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+          beginy = a_little_bit;
+          endy =   a_little_bit + sqrt_n_cells*(sqrt(size_cells) + a_little_bit);
+          break;
+        case 3:
+          beginx = par.sizex -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit)- a_little_bit;
+          endx =   par.sizex - a_little_bit;
+          beginy = (par.sizey -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+          endy =   (par.sizey +  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+          break;
+        case 4:
+          beginx = (par.sizex -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+          endx =   (par.sizex +  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+          beginy = par.sizey -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit) - a_little_bit;
+          endy =   par.sizey - a_little_bit;
+          break;
       default:
-        std::cerr << "PlaceCellsOrderly(): Error. Got an unusable value for par.init_config" << '\n';
-        exit(1);
+          std::cerr << "PlaceCellsOrderly(): Error. Got an unusable value for par.cell_placement" << '\n';
+          exit(1);  
+      }
+      for(int x = beginx ; x < endx ; x += step ) v_order_x.push_back( x );
+      for(int y = beginy ; y < endy ; y += step ) v_order_y.push_back( y );
+    }
+    else{
+      beginx = (par.sizex -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+      endx =   (par.sizex +  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+      beginy = (par.sizey -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+      endy =   (par.sizey +  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
+    
+      
+      switch( par.init_cell_config ){
+        case 0: {
+          for(int x = beginx ; x < endx ; x += step ) v_order_x.push_back( x );
+          for(int y = beginy ; y < endy ; y += step ) v_order_y.push_back( y );
+          }
+          break;
+        case 1: {
+          for(int x = endx ; x > beginx ; x -= step ) v_order_x.push_back( x );
+          for(int y = beginy ; y < endy ; y += step ) v_order_y.push_back( y );
+          }
+          break;
+        case 2: {
+          for(int x = beginx ; x < endx ; x += step ) v_order_x.push_back( x );
+          for(int y = endy ; y > beginy ; y -= step ) v_order_y.push_back( y );
+          }
+          break;
+        case 3: {
+          for(int x = endx ; x > beginx ; x -= step ) v_order_x.push_back( x );
+          for(int y = endy ; y > beginy ; y -= step ) v_order_y.push_back( y );
+          }
+          break;
+        default:
+          std::cerr << "PlaceCellsOrderly(): Error. Got an unusable value for par.init_config" << '\n';
+          exit(1);
+      }
     }
 
     for(auto x: v_order_x){
       for(auto y: v_order_y){
     // for(int x = beginx ; x < endx ; x += step ){
     //   for(int y = beginy ; y < endy ; y += step ){
-        // std::cerr << "Cell will be placed at: "<< x<<","<<y << '\n';
+        std::cerr << "Cell will be placed at: "<< x<<","<<y << '\n';
+      
         count++;
         int this_area=0;
         for(int i=0; i<sqrt(size_cells); i++){
@@ -3101,6 +3139,13 @@ int CellularPotts::Place2Groups(int placement,int size_cells, int groupsize)
     if(placement==1){//the far end of the field
       beginy = (par.sizey -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit));
       endy =   par.sizey-1;
+    }else if (placement==2){
+      beginy = (par.sizey -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit));
+      endy =   par.sizey-1;
+      beginx1 = (par.sizex-2*sqrt_n_cells*(sqrt(size_cells)+a_little_bit))/2;
+      endx1 =   par.sizex/2 -(sqrt(size_cells)-a_little_bit);
+      beginx2 = par.sizex/2;
+      endx2 =   (par.sizex+2*sqrt_n_cells*(sqrt(size_cells)+a_little_bit))/2;
     }else{
       beginy = (par.sizey -  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
       endy =   (par.sizey +  sqrt_n_cells*(sqrt(size_cells) + a_little_bit))/2;
