@@ -193,7 +193,7 @@ TIMESTEP {
     static Info *info=new Info(*dish, *this);
     static int i=par.starttime; //starttime is set in Dish. Not the prettiest solution, but let's hope it works.
     static int sum=0, nr=0;
-
+    int extinct=0;
 
     if( !(i%100000) ) cerr<<"TIME: "<<i<<endl;
 
@@ -236,6 +236,15 @@ TIMESTEP {
           //cout<<"done updating"<<endl;
           dish->Food->IncreaseVal(*(dish->Food)); //this has to be last thing to do here
           std::cout << "End of season: Gradient switching at time (+/- 25 MCS) = "<< i << '\n';
+          if(strlen(par.competitionfile)){
+            //check if one of the groups is extinct. if yes, end simulation
+            extinct=dish->CountCellGroups();
+            
+            if(extinct){
+              std::cout << "Group extinct after "<< i <<" time steps. ending simulation..."<< endl;
+              exit(0);
+            }
+          }
         }
       }else{
         // //not evolutionary simulation: before, used to check when enough cells passed an arbitrary boundary. don't want that now

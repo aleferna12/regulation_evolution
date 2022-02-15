@@ -677,41 +677,48 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
   }
   else{
     static int gradient_dir=-1;
-    //static int here_time=-1; //so that it ++ to zero and sets the gradient
+    static int here_time=0; //so that it ++ to zero and sets the gradient
     //int peakx,peaky;
 
     // here_time++;
     // if(here_time%45000 != 0) return;
+    if (!here_time){
+      peakx=sizex/2;
+      peaky=1;
+      maxdist=sqrt(0.25*sizex*sizex+sizey*sizey);
+      here_time++;
+      gradient_dir=0;
+    }
+    else{
+      // else we re-set the gradient to a random direction
+      int rn = (int)(4.*RANDOM());
+      while(rn == gradient_dir) rn = (int)(4.*RANDOM());
+      gradient_dir=rn;
 
-
-    // else we re-set the gradient to a random direction
-    int rn = (int)(4.*RANDOM());
-    while(rn == gradient_dir) rn = (int)(4.*RANDOM());
-    gradient_dir=rn;
-
-    switch (gradient_dir) {
-      case 0 : peakx = sizex/2;
-               peaky = 1;
-               maxdist=sqrt(0.25*sizex*sizex+sizey*sizey);
-               break;
-      case 1 : peakx = sizex/2;
-               peaky = sizey-1;
-               maxdist=sqrt(0.25*sizex*sizex+sizey*sizey);
-               break;
-      case 2 : peakx = 1;
-               peaky = sizey/2;
-               maxdist=sqrt(0.25*sizey*sizey+sizex*sizex);
-               break;
-      case 3 : peakx = sizex-1;
-               peaky = sizey/2;
-               maxdist=sqrt(0.25*sizey*sizey+sizex*sizex);
-               break;
-      default: peakx = sizex/2;
-               peaky = sizey/2;
-               maxdist=sqrt(0.25*sizex*sizex+0.25*sizey*sizey);
-               cerr<<"How could you possibly get an error here?"<<endl;
-               exit(1);
-               break;
+      switch (gradient_dir) {
+        case 0 : peakx = sizex/2;
+                 peaky = 1;
+                 maxdist=sqrt(0.25*sizex*sizex+sizey*sizey);
+                 break;
+        case 1 : peakx = sizex/2;
+                 peaky = sizey-1;
+                 maxdist=sqrt(0.25*sizex*sizex+sizey*sizey);
+                 break;
+        case 2 : peakx = 1;
+                peaky = sizey/2;
+                maxdist=sqrt(0.25*sizey*sizey+sizex*sizex);
+                break;
+       case 3 : peakx = sizex-1;
+                 peaky = sizey/2;
+                 maxdist=sqrt(0.25*sizey*sizey+sizex*sizex);
+                 break;
+        default: peakx = sizex/2;
+                 peaky = sizey/2;
+                 maxdist=sqrt(0.25*sizex*sizex+0.25*sizey*sizey);
+                 cerr<<"How could you possibly get an error here?"<<endl;
+                 exit(1);
+                break;
+      }
     }
   }
   // std::cerr<< '\n'<< '\n' << "HELLO"<< '\n' << '\n';

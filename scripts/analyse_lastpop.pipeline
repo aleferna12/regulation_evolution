@@ -1,5 +1,11 @@
 #!/bin/bash
 
+### to make super snazzy division plots:
+all_ims=(); for im in newcont_decsim10_noad/data*txt; do all_ims+=( "sim_10 0 $im" ); ((count++)); done
+for im in newcont_decsim4_noad/data*txt; do all_ims+=( "sim_4 0 $im" ); ((count++)); done  
+# .... etc. Arguments added are: label, whether adhesion can evolve, and file name. loop adds all 8 data files
+python3 ~/origins_postdoc/multicell/regulation_evolution/scripts/plot_popsize2.py allpopsizes.pdf 250000 10 ${all_ims[@]}
+
 ### to run 3 competition experiments
 for i in {1..3}; do echo "run nr $i"; ./cell_evolution shortcompetition.par -name <simname>_$i -competitionfile <compfile>.txt; wait; done
 # concatenate files

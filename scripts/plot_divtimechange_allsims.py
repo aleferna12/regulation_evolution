@@ -50,7 +50,7 @@ colcount=0
 with open(sys.argv[3]) as fi:
     for line in fi:
         line=line.split(' ')
-        div=float(line[1])
+        div= float(line[1])  #float(line[2]) line 1 is av, line2 is mdeian
         check=0
         for el in startdivs.values():
             if math.sqrt((div-el)**2)<1000:
@@ -63,11 +63,14 @@ with open(sys.argv[3]) as fi:
 ##read data from file: store division data
 count=0
 colcount=-1
+previouswhich=-1
 for filename in sys.argv[4:]:
     if (not(count%3)):
         whichstart=int(filename)
-        colcount+=1
-        colcount=colcount%simnum
+        if previouswhich is not whichstart:
+            colcount+=1
+            colcount=colcount%simnum
+            previouswhich=whichstart
     elif (count%3)==1:
         pos=int(filename) #whether it is evolved with adhesion or without
         #print (pos)

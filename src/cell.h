@@ -584,7 +584,7 @@ al. 2000). The current version of TST does not include such functionality.
 
   inline void AddTimesDivided(void){  times_divided++; }
 
-  inline void ResetTimesDivided(void){  times_divided=0; }
+  inline void ResetTimesDivided(void){  times_divided=0; dividecounter=0; }
 
   //! Returns Monte Carlo Step (MCS) when this cell originated.
   inline int DateOfBirth(void) const { return date_of_birth; }

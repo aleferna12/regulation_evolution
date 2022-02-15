@@ -32,11 +32,12 @@ fig, ax0 = plt.subplots()
 
 if len(sys.argv) <2:
     print ("This is the program 'plot_division_time_gatherseasons.py'")
-    print ("Usage: ./plot_division_time.py <figure name> filename")
+    print ("Usage: ./plot_division_time.py <figure name> <which division (1, 2, 3)> filename")
     sys.exit(1)
 else:
     figname=sys.argv[1]
-    filename=sys.argv[2]
+    div=int(sys.argv[2])
+    filename=sys.argv[3]
 
 ##read data from file: store division data
 with open(filename,"r") as fin:
@@ -48,7 +49,7 @@ with open(filename,"r") as fin:
     for line in fin:
       line=line.split(' ')
       labels.append(line[0])
-      xpos.append(float(line[1]))
+      xpos.append(float(line[div]))
       
 
 

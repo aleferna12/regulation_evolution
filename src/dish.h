@@ -95,6 +95,9 @@ public:
   //! Returns the number of cells in the dish, excluding apoptosed cells.
   int CountCells(void) const;
 
+//count how many cells of each group there are (when running competition), return 1 when one is extinct
+  int CountCellGroups(void) const;
+
   /*! \brief Stretched induced cell growth and division.
 
   See Hogeweg (2000), Journal of Theoretical Biology.

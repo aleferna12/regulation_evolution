@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+##!/usr/bin/python2.7
 
 '''
 take jvalues and return key lock file only for ONE cell type
@@ -21,28 +21,28 @@ def Distance(current,target):
   return sum([ abs(x-y) for x,y in zip(target,current) ])
 
 def PrintSuccess(target,current,k1,l1):
-  print
-  print "Success"
+  print ("")
+  print ("Success")
   PrintResult(target,current,k1,l1)
   
 def Print5000(target,current,k1,l1):
-  print
-  print howmanysteps,"steps passed, this is what I got"
+  print ("")
+  print (howmanysteps,"steps passed, this is what I got")
   PrintResult(target,current,k1,l1)
   
 def PrintResult(target,current,k1,l1):
-  print "targ:", target
-  print "curr:",current
-  print "distance", Distance(current,target)
-  print "with following K1,L1 (for KL...dat file)"
-  print 
-  print '3'
+  print ("targ:", target)
+  print ("curr:",current)
+  print ("distance", Distance(current,target))
+  print ("with following K1,L1 (for KL...dat file)")
+  print ("")
+  print ("3")
   for x in k1:
-    print x,
-  print  
+    print (x,end = '')
+  print ("") 
   for x in l1:
-    print x,
-  print 
+    print (x,end = '')
+  print ("")
 
 
 def RandomiseKL(k1,l1,mutrate):
@@ -116,7 +116,7 @@ l1=[ int(2.*np.random.rand()) for _ in range(klam.lenkl) ]
 
 #init_targetJ = [hj1m,j11 ,j12 ,hj2m ,j21 ,j22 ]
 init_targetJ = [hj1m,j11 ]
-print "Target: ", [hj1m,j11 ], "pos 0 -> +5, pos 2,4 -> +6, pos 5 -> +3"
+print ("Target: ", [hj1m,j11 ], "pos 0 -> +5, pos 2,4 -> +6, pos 5 -> +3")
 currentJ = [ klam.JWithMedium(k1,klam.lookuptable_Jmedium), 
              klam.JWithOtherTau(( k1,l1 ),( k1,l1 ))
            ]
@@ -138,7 +138,7 @@ counter=0
 distance=klam.Distance(targetJ,currentJ) 
 
 while True:
-          if counter%10000==0: print counter,
+          if counter%10000==0: print (counter) #,end = '')
           if distance==0:
             lresults.append( [ distance, currentJ, k1,l1] )
             break
@@ -146,6 +146,7 @@ while True:
           if counter>=howmanysteps:
             #Print5000(targetJ,currentJ,k1,l1,k2,l2)
             lresults.append( [ distance, currentJ, k1,l1] )
+            print (lresults[-1])
             #print "Got :", distance, currentJ
             break
           
@@ -163,11 +164,12 @@ while True:
           if rdistance<=distance:
             k1=rk1[:]
             l1=rl1[:]
+            print (k1, l1)
             distance=rdistance
             currentJ=rcurrentJ[:]
             
             
-print
+print ("I'm here!")
 best=[[100000,'bla']]
 for result in lresults:
   if result[0]<best[0][0]:
@@ -175,13 +177,14 @@ for result in lresults:
   elif result[0]==best[0][0]:
     best.append( result[:] )
     
-
+print ("")
 for bla in best:
-  print bla[0]
-  print bla[1]
+  print (bla[0])
+  print (bla[1])
+  print ("here2")
   for x in bla[2:]:
-    for y in x: print y,
-    print
-  print
+    for y in x: print (y,end = '')
+    print ("")
+  print ("")
 
 j11+=1

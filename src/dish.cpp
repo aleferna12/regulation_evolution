@@ -1833,6 +1833,7 @@ void Dish::GradientBasedCellKill(int popsize)
     else if (cell[n.first].AliveP()){
       cell[n.first].ResetTimesDivided();
       cell[n.first].ClearGenomeState();
+      cell[n.first].setTau(1);
     }
   }
 
@@ -1914,6 +1915,7 @@ void Dish::GradientBasedCellKill2(int popsize)
      if (c.AliveP() && c.Sigma()){
        c.ResetTimesDivided();
        c.ClearGenomeState();
+       c.setTau(1);
      }
    }
 
@@ -2253,7 +2255,24 @@ int Dish::CountCells(void) const {
   return amount;
 }
 
+int Dish::CountCellGroups(void) const {
 
+  int amount2=0, amount3=0;
+  vector<Cell>::const_iterator i;
+  for ( (i=cell.begin(),++i); i!=cell.end(); ++i) {
+    if (i->AliveP() && i->Colour()==2) {
+      amount2++;
+    } 
+    if (i->AliveP() && i->Colour()==3) {
+      amount3++;
+    } 
+
+  }
+  if (amount2==0 || amount3==0){
+    return 1;
+  }
+  return 0;
+}
 
 int Dish::Area(void) const {
 
