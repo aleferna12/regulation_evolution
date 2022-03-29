@@ -87,7 +87,6 @@ mutrate=0.0500
 howmanysteps=50000
 
 k1=klam.lenkl*[0]
-#k2=lenkl*[0]
 
 k1=klam.ReverseKeyForMedium(hj1m,klam.lenkl,klam.lookuptable_Jmedium)
 #k2=ReverseKeyForMedium(hj2m,lenkl,lookuptable_Jmedium)
@@ -98,6 +97,11 @@ k1=[ int(2.*np.random.rand()) if i>=keypos_formedium else x for i,x in enumerate
 l1=[ int(2.*np.random.rand()) for _ in range(klam.lenkl) ]
 #l2=[ int(2.*np.random.rand()) for _ in range(lenkl) ]
 
+print (k1)
+print("\n")
+print (l1)
+print("\n")
+print("\n")
 #print k1,k2,l1,l2
 #exit(1)
 
@@ -146,7 +150,7 @@ while True:
           if counter>=howmanysteps:
             #Print5000(targetJ,currentJ,k1,l1,k2,l2)
             lresults.append( [ distance, currentJ, k1,l1] )
-            print (lresults[-1])
+            #print (lresults[-1])
             #print "Got :", distance, currentJ
             break
           
@@ -164,12 +168,12 @@ while True:
           if rdistance<=distance:
             k1=rk1[:]
             l1=rl1[:]
-            print (k1, l1)
+            #print (k1, l1)
             distance=rdistance
             currentJ=rcurrentJ[:]
             
             
-print ("I'm here!")
+#print ("I'm here!")
 best=[[100000,'bla']]
 for result in lresults:
   if result[0]<best[0][0]:
@@ -179,8 +183,8 @@ for result in lresults:
     
 print ("")
 for bla in best:
-  print (bla[0])
-  print (bla[1])
+  #print (bla[0])
+  #print (bla[1])
   print ("here2")
   for x in bla[2:]:
     for y in x: print (y,end = '')
