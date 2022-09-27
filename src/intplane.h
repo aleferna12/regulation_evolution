@@ -29,6 +29,12 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "graph.h"
 #include "random.h"
 
+struct PeakInfo {
+    int x;
+    int y;
+    double maxdist;
+};
+
 class IntPlane; //forward declaration
 
 class CellularPotts;
@@ -45,7 +51,7 @@ class IntPlane {
    * \param sizey: vertical size of PDE planes
   */
 
-  IntPlane(const int sizex, const int sizey);
+  IntPlane(const int sizex, const int sizey, int gradient_dir, int gradient_dir2);
 
 
   // destructor must also be virtual
@@ -235,14 +241,23 @@ class IntPlane {
     peaky=py;
   }
 
+  int RandomizeGradientDirection(int cur_dir);
+
+  PeakInfo PeakMaxDistFromGradDir(int grad_dir);
+
  protected:
 
   int **sigma;
+
+  int here_time;
 
   int sizex;
   int sizey;
   int peakx,peaky; // location of peak of gradient,
                    // for gradient experiments
+  int peakx2, peaky2;
+  int gradient_dir;
+  int gradient_dir2;
 
   // Protected member functions
 

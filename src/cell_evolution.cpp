@@ -142,8 +142,8 @@ INIT {
       cout << "done initialising contacts for competition"<<endl;
       InitVectorJ();
       cout << "done initialising Jvalues for competition"<<endl;
-     Food->InitIncreaseVal(CPM); //a pointer to CPM is an argument to InitIncreaseVal
-     // Initialises food plane (now the gradient plane)
+      Food->InitIncreaseVal(CPM); //a pointer to CPM is an argument to InitIncreaseVal
+      // Initialises food plane (now the gradient plane)
       Food->IncreaseVal(*(Food));
       for(int init_time=0;init_time<10;init_time++){
         CPM->AmoebaeMove2(PDEfield);  //this changes neighs

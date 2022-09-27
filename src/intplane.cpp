@@ -42,12 +42,14 @@ extern Parameter par;
 
 /** PRIVATE **/
 
-IntPlane::IntPlane(const int sx, const int sy) {
-
+IntPlane::IntPlane(const int sx, const int sy, int gd, int gd2) {
   sigma=0;
   thetime=0;
   sizex=sx;
   sizey=sy;
+  gradient_dir = gd;
+  gradient_dir2 = gd2;
+  here_time = 0;
 
   sigma=AllocateSigma(sx,sy);
 }
@@ -58,6 +60,8 @@ IntPlane::IntPlane(void) {
   sigma=0;
   sizex=0; sizey=0;
   thetime=0;
+  gradient_dir = 0;
+  here_time = 0;
 
 }
 
@@ -661,6 +665,32 @@ void IntPlane::IncreaseValBoundaryGrad(CellularPotts *cpm)
 
 
 }
+
+
+int IntPlane::RandomizeGradientDirection(int cur_dir) {
+  int rn = (int) (4. * RANDOM());
+  while (rn == cur_dir) rn = (int) (4. * RANDOM());
+  return rn;
+}
+
+
+PeakInfo IntPlane::PeakMaxDistFromGradDir(int grad_dir) {
+  switch (grad_dir) {
+    case 0 :
+      return PeakInfo {sizex/2, 1, sqrt(0.25*sizex*sizex+sizey*sizey)};
+    case 1 :
+      return PeakInfo {sizex/2, sizey-1, sqrt(0.25*sizex*sizex+sizey*sizey)};
+    case 2 :
+      return PeakInfo {1, sizey/2, sqrt(0.25*sizey*sizey+sizex*sizex)};
+    case 3 :
+      return PeakInfo {sizex-1, sizey/2, sqrt(0.25*sizey*sizey+sizex*sizex)};
+    default:
+      cerr<<"How could you possibly get an error here?"<<endl;
+      exit(1);
+  }
+}
+
+
 // I am going to change the direction of the gradient every so often
 void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
 {
@@ -668,59 +698,25 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
   // static int first_time=1;
   // if(!first_time) return;
   // first_time=0;
-
-  double maxdist;
-  if(!par.evolsim){
-    peakx=sizex/2;
-    peaky=1;
-    maxdist=sqrt(0.25*sizex*sizex+sizey*sizey);
+  //int peakx,peaky;
+    // else we re-set the gradient to a random direction
+  if (here_time) {
+    gradient_dir = RandomizeGradientDirection(gradient_dir);
+    gradient_dir2 = RandomizeGradientDirection(gradient_dir2);
+  } else {
+    here_time++;
   }
-  else{
-    static int gradient_dir=-1;
-    static int here_time=0; //so that it ++ to zero and sets the gradient
-    //int peakx,peaky;
-
-    // here_time++;
-    // if(here_time%45000 != 0) return;
-    if (!here_time){
-      peakx=sizex/2;
-      peaky=1;
-      maxdist=sqrt(0.25*sizex*sizex+sizey*sizey);
-      here_time++;
-      gradient_dir=0;
-    }
-    else{
-      // else we re-set the gradient to a random direction
-      int rn = (int)(4.*RANDOM());
-      while(rn == gradient_dir) rn = (int)(4.*RANDOM());
-      gradient_dir=rn;
-
-      switch (gradient_dir) {
-        case 0 : peakx = sizex/2;
-                 peaky = 1;
-                 maxdist=sqrt(0.25*sizex*sizex+sizey*sizey);
-                 break;
-        case 1 : peakx = sizex/2;
-                 peaky = sizey-1;
-                 maxdist=sqrt(0.25*sizex*sizex+sizey*sizey);
-                 break;
-        case 2 : peakx = 1;
-                peaky = sizey/2;
-                maxdist=sqrt(0.25*sizey*sizey+sizex*sizex);
-                break;
-       case 3 : peakx = sizex-1;
-                 peaky = sizey/2;
-                 maxdist=sqrt(0.25*sizey*sizey+sizex*sizex);
-                 break;
-        default: peakx = sizex/2;
-                 peaky = sizey/2;
-                 maxdist=sqrt(0.25*sizex*sizex+0.25*sizey*sizey);
-                 cerr<<"How could you possibly get an error here?"<<endl;
-                 exit(1);
-                break;
-      }
-    }
-  }
+  PeakInfo peakinfo = PeakMaxDistFromGradDir(gradient_dir);
+  PeakInfo peakinfo2 = PeakMaxDistFromGradDir(gradient_dir2);
+  peakx = peakinfo.x;
+  peaky = peakinfo.y;
+  peakx2 = peakinfo2.x;
+  peaky2 = peakinfo2.y;
+  cout << "HERE" << endl;
+  cout << peakinfo.y << "|" << peakinfo2.y << endl;
+  cout << gradient_dir << gradient_dir2 << endl;
+  cout << peakx << " " << peaky << " " << peakx2 << " " << peaky2 << endl;
+  double maxdist = max(peakinfo.maxdist, peakinfo2.maxdist);
   // std::cerr<< '\n'<< '\n' << "HELLO"<< '\n' << '\n';
   //we go from right border to left
   // for(int i=1;i<sizex-1;i++)for(int j=sizey -2;j>0;j--){
@@ -728,10 +724,12 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
     sigma[i][j]=0;
     //center point is at coordinates (sizex/2, sizey)
 
-    double dist_from_peak;
+    double dist_from_peak1, dist_from_peak2;
 
     // Different definitions of distance from peak will give you different gradients
-    dist_from_peak= sqrt( (peaky-j)*(peaky-j) + (peakx-i)*(peakx-i) );
+    dist_from_peak1 = sqrt( (peaky-j)*(peaky-j) + (peakx-i)*(peakx-i) );
+    dist_from_peak2 = sqrt( (peaky2-j)*(peaky2-j) + (peakx2-i)*(peakx2-i) );
+    double dist_from_peak = min(dist_from_peak1, dist_from_peak2);
     //dist_from_peak = peaky/2;
 
     // int maxfood = 1.+9.*RANDOM();

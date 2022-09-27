@@ -55,7 +55,7 @@ Dish::Dish(void) {
   ConstructorBody();
 
   CPM=new CellularPotts(&cell, par.sizex, par.sizey);
-  Food= new IntPlane(par.sizex, par.sizey);
+  Food= new IntPlane(par.sizex, par.sizey, 0, 1);
 
   if (par.n_chem)
     PDEfield=new PDE(par.n_chem,par.sizex, par.sizey);
@@ -511,6 +511,8 @@ void Dish::PrintCellParticles(void)
     cerr<<" sigma: "<<c.sigma<<", particles: "<<c.particles<<endl;
   }
 }
+
+
 
 // Colors for food are indicised from 10 to 60, with some simple calculations it should be easy
 // to make them pretty
