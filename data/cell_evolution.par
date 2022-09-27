@@ -66,12 +66,13 @@ min_area_for_life = 4
 ## Key-Lock Data ##
 
 #Jtable = ../data/Jcellevol.dat  THIS IS NOT USED ANY MORE, USE KEYLOCK FILE INSTEAD
-#keylock_list_filename = ../data/KL_l24_14_28.dat
+keylock_list_filename = ../data/KL_l24_14_28.dat
 #keylock_list_filename = ../data/KL_l25_12_24.dat
 #keylock_list_filename = ../data/KL_l25_12_48.dat
 #keylock_list_filename = ../data/newKL_12_12_g6.dat
 #keylock_list_filename = ../data/newKL_14_28_g0.dat
-keylock_list_filename = ../data/newKL_14_36_g-4.dat
+# This was default but file is missing
+#keylock_list_filename = ../data/newKL_14_36_g-4.dat
 
 #lookup table for J val with medium:
 # e.g if I get 10o4_3_2_1 -> J(tau,medium) = 10 + sum(4*key[0],3*key[1],2*key[2],1*key[3])
