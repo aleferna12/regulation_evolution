@@ -29,12 +29,6 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "graph.h"
 #include "random.h"
 
-struct PeakInfo {
-    int x;
-    int y;
-    double maxdist;
-};
-
 class IntPlane; //forward declaration
 
 class CellularPotts;
@@ -51,7 +45,7 @@ class IntPlane {
    * \param sizey: vertical size of PDE planes
   */
 
-  IntPlane(const int sizex, const int sizey, int gradient_dir, int gradient_dir2);
+  IntPlane(const int sizex, const int sizey, int grad_sources);
 
 
   // destructor must also be virtual
@@ -134,6 +128,21 @@ class IntPlane {
   typedef std::function<void(IntPlane&)> my_fun_t; //apparently this is legal declaration
   my_fun_t IncreaseVal;
 
+  // Get distance of coordinate to the closest source of resources
+  double DistClosestResourcePeak(int x, int y, int upto=-1);
+  // Food in relation to the distance from a single peak F(x)
+  double FoodEquation(double dist_from_peak);
+  // Determines how much food is in a specific position
+  double FoodAtPostition(int x, int y);
+  // Iterates lattice and finds max food
+  // Cant use FoodEquation(0) for that because the gradients interact (unless we cap maxfood to it)
+  int MaxFood();
+  // Writes a few rows of the sigma lattice to par.peaksdatafile
+  int WritePeaksData();
+  // Randomize location of peaks based on min_resource_dist
+  void RandomizeResourcePeaks();
+  // Finds the most isolated point in the grid (farthest away from closest resource peak)
+  double DistMostIsolatedPoint();
   // Add values to random positions in plane (e.g. food influx)
   int SetNextVal(int sig);
   void IncreaseValEverywhere(void);
@@ -227,12 +236,19 @@ class IntPlane {
   inline double TheTime(void) const {
     return thetime;
   }
-
-  inline int GetPeakx(void){
-    return peakx;
+  // TODO: get rid of references to this
+  // Used when we had a single grad
+  //  inline int GetPeakx(void){
+  //    return peakx;
+  //  }
+  //  inline int GetPeaky(void){
+  //    return peaky;
+  //  }
+  inline int GetPeakx(int i) {
+    return peaksx[i];
   }
-  inline int GetPeaky(void){
-    return peaky;
+  inline int GetPeaky(int i) {
+    return peaksy[i];
   }
   inline void SetPeakx(int px){
     peakx=px;
@@ -240,10 +256,6 @@ class IntPlane {
   inline void SetPeaky(int py){
     peaky=py;
   }
-
-  int RandomizeGradientDirection(int cur_dir);
-
-  PeakInfo PeakMaxDistFromGradDir(int grad_dir);
 
  protected:
 
@@ -253,11 +265,26 @@ class IntPlane {
 
   int sizex;
   int sizey;
-  int peakx,peaky; // location of peak of gradient,
-                   // for gradient experiments
-  int peakx2, peaky2;
-  int gradient_dir;
-  int gradient_dir2;
+
+  // TODO: remove support for hardcoded single peak
+  int peakx, peaky;
+
+  // TODO: turn into a parameter
+  // Number of resource sources
+  int grad_sources;
+  // Coefficient for how the resources decrease according to their distance from the sources
+  // TODO: Should this be a parameter? Probably not, find out how average distance to sources increase
+  double dist_coef;
+  // TODO: Decide while true or false, this shouldnt be a parameter
+  bool interference;
+  // Maximum distance from any point in the gradient to the closest source (calculated)
+  double dist_most_isolated;
+  // Diagonal length of the lattice (calculated)
+  double diagonal;
+  //
+  double min_resource_dist;
+  int *peaksx;
+  int *peaksy;
 
   // Protected member functions
 

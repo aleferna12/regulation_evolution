@@ -89,6 +89,7 @@ class Parameter {
   double fitscale;
   char * datadir;
   char * datafile;
+  char * peaksdatafile;
   int save_text_file_period;
   char *food_influx_location;
   int initial_food_amount;
@@ -98,6 +99,7 @@ class Parameter {
   double ardecay;
   double gradnoise;
   double gradscale;
+  int gradsources;
   bool nodivisions; //whether to NOT execute divisions
   int min_contact_duration_for_preying;
   double frac_contlen_eaten;

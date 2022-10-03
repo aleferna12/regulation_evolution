@@ -96,6 +96,7 @@ Parameter::Parameter() {
   fitscale=100.;
   datadir = strdup("data_film");
   datafile = strdup("data_cellcount.txt");
+  peaksdatafile = strdup("peaks_data.csv");
   save_text_file_period = 100;
   food_influx_location = strdup("nowhere");
   foodinflux=0.;
@@ -104,6 +105,7 @@ Parameter::Parameter() {
   ardecay=0.;
   gradnoise=0.1;
   gradscale=1.0;
+  gradsources=1;
   nodivisions=false;
   min_contact_duration_for_preying = 10;
   frac_contlen_eaten = 1.;
@@ -167,8 +169,9 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<"Usage is: "<<endl;
   cerr<<"./cell_evolution path/to/data [optional arguments]"<<endl;
   cerr<<"Arguments: "<<endl;
-  cerr<<" -name path/to/name_for_all_output # gives a name to all output, alternative to -datafile -datadir -backupdir" <<endl;
+  cerr<<" -name path/to/name_for_all_output # gives a name to all output, alternative to -datafile -datadir -backupdir -peaksdatafile" <<endl;
   cerr<<" -datafile path/to/datafile # output file" <<endl;
+  cerr<<" -peaksdatafile path/to/peaksdatafile # output file" <<endl;
   cerr<<" -datadir path/to/datadir # output movie dir"<<endl;
   cerr<<" -backupdir path/to/backupdir # output backup dir"<<endl;
   cerr<<" -store # store pictures"<<endl;
@@ -194,6 +197,7 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<" -season [INT_NUMBER] # season duration"<<endl;
   cerr<<" -foodinflux [FLOAT_NUMBER] # howmuchfood"<<endl;
   cerr<<" -gradscale [FLOAT_NUMBER] slope of the gradient (in percent units)"<<endl;
+  cerr<<" -gradsources [INT_NUMBER] number of gradient sources in the lattice"<<endl;
   cerr<<" -gradnoise [FLOAT_NUMBER] chances that any grid point has gradient, rather than being empty"<<endl;
   cerr<<" -chemmu [FLOAT_NUMBER] scaling factor for chemotaxis in the Hamiltonian"<<endl;
   cerr<<" -fitscale [FLOAT_NUMBER] point in field where deathrate is half value"<<endl;
@@ -223,7 +227,18 @@ int Parameter::ReadArguments(int argc, char *argv[])
       datafile = strdup(argv[i]);
       cerr<<"New value for datafile: "<<datafile<<endl;
 //       exit(1);
-    }else if( 0==strcmp(argv[i],"-datadir") ){
+    } else if( 0==strcmp( argv[i],"-peaksdatafile") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in peaksdatafile?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      //strcpy(datafile, argv[i]); //this can be buggy because it copies over a dynamically allocated char* (datafile) that can be a lot shorter
+      free(peaksdatafile);
+      peaksdatafile = (char *)malloc( 5+strlen(argv[i])*sizeof(char) )  ; //strlen(argv[i]) is ok because argv[i] is null terminated
+      peaksdatafile = strdup(argv[i]);
+      cerr<<"New value for peaksdatafile: "<<peaksdatafile<<endl;
+//       exit(1);
+    } else if( 0==strcmp(argv[i],"-datadir") ){
       i++; if(i==argc) {
         cerr<<"Something odd in datadir?"<<endl;
         return 1;  //check if end of arguments, exit with error in case
@@ -412,6 +427,13 @@ int Parameter::ReadArguments(int argc, char *argv[])
       }
       gradscale = atof( argv[i] );
       cerr<<"New value for gradscale: "<<gradscale<<endl;
+    }else if( 0==strcmp(argv[i],"-gradsources") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in gradsources?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      gradsources = atoi( argv[i] );
+      cerr<<"New value for gradsources: "<<gradsources<<endl;
     }else if( 0==strcmp(argv[i],"-chemmu") ){
       i++; if(i==argc){
         cerr<<"Something odd in chemmu?"<<endl;
@@ -470,6 +492,7 @@ int Parameter::ReadArguments(int argc, char *argv[])
       }
       // I'm just going to work in c++ strings - a lot easier
       free(datafile);
+      free(peaksdatafile);
       free(datadir);
       free(backupdir);
 
@@ -506,8 +529,10 @@ int Parameter::ReadArguments(int argc, char *argv[])
 
       datafile = (char *)malloc( 50+strlen(argv[i])*sizeof(char) ); //strlen(argv[i]) is ok because argv[i] is null terminated
       datadir = (char *)malloc( 50+strlen(argv[i])*sizeof(char) );
+      peaksdatafile = (char *)malloc( 50+strlen(argv[i])*sizeof(char) );
       backupdir = (char *)malloc( 50+strlen(argv[i])*sizeof(char) );
       datafile = strdup(name_outfile.c_str());
+      peaksdatafile = strdup(name_outfile.c_str());
       datadir = strdup(name_moviedir.c_str());
       backupdir = strdup(name_backupdir.c_str());
       // this took a while to code :P
@@ -591,6 +616,7 @@ void Parameter::Read(const char *filename) {
   fitscale = fgetpar(fp, "fitscale", 100., true);
   datadir = sgetpar(fp, "datadir", "data_film", true);
   datafile = sgetpar(fp,"datafile" , "data_cellcount.txt",true);
+  peaksdatafile = sgetpar(fp,"peaksdatafile" , "peaks_data.csv",true);
   save_text_file_period = igetpar(fp, "save_text_file_period", 100, true);
   food_influx_location = sgetpar(fp,"food_influx_location" , "nowhere",true);
   initial_food_amount = fgetpar(fp, "initial_food_amount", 0, true);
@@ -600,6 +626,7 @@ void Parameter::Read(const char *filename) {
   growth = fgetpar(fp, "growth", 0., true);
   gradnoise = fgetpar(fp, "gradnoise", 0.1, true); //did I put these in?
   gradscale = fgetpar(fp, "gradscale", 1.0, true);
+  gradsources = fgetpar(fp, "gradsources", 1, true);
   min_contact_duration_for_preying = fgetpar(fp, "min_contact_duration_for_preying", 1., true);
   frac_contlen_eaten = fgetpar(fp, "frac_contlen_eaten", 1., true);
   metabolic_conversion = fgetpar(fp, "metabolic_conversion", 0.5, true);
@@ -837,6 +864,7 @@ void Parameter::Write(ostream &os) const {
   os << " growth = " << growth << endl;
   os << " gradnoise = " << gradnoise << endl;
   os << " gradscale = " << gradscale << endl;
+  os << " gradsources = " << gradsources << endl;
   os << " divisioncolour = " << divisioncolour << endl;
   os << " nodivisions = " << nodivisions << endl;
   os << " motiledeath = " << motiledeath << endl;
@@ -846,6 +874,7 @@ void Parameter::Write(ostream &os) const {
   os << " metabolic_conversion = " << metabolic_conversion << endl;
   os << " chancemediumcopied = " << chancemediumcopied << endl;
   os << " datafile = " << datafile << endl;
+  os << " peaksdatafile = " << peaksdatafile << endl;
   os << " save_text_file_period = " << save_text_file_period << endl;
   os << " readcolortable = " << readcolortable <<endl;
   os << " colortable_filename = " << colortable_filename <<endl;

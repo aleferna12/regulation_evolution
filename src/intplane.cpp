@@ -24,6 +24,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <math.h>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <functional> // for bind, see InitIncreaseVal()
 #include "crash.h"
 #include "parameter.h"
@@ -42,14 +43,27 @@ extern Parameter par;
 
 /** PRIVATE **/
 
-IntPlane::IntPlane(const int sx, const int sy, int gd, int gd2) {
+IntPlane::IntPlane(const int sx, const int sy, int grad_srcs) {
   sigma=0;
   thetime=0;
   sizex=sx;
   sizey=sy;
-  gradient_dir = gd;
-  gradient_dir2 = gd2;
-  here_time = 0;
+
+  grad_sources = grad_srcs;
+  // Needs more work, grad_sources scale too much with distance and not enough with area
+  min_resource_dist = sqrt(sizex*sizey) / (sqrt(grad_sources) + 1);
+  diagonal = sqrt(sizex*sizex + sizey*sizey);
+  peaksx = new int[grad_sources] {};
+  peaksy = new int[grad_sources] {};
+
+  // This should be always 1 if we keep the gradients linear
+  dist_coef = 1;
+  // This should be always 1 if we keep the gradients independent from each other
+  interference = false;
+
+  // TODO: Remove
+  peakx = 1;
+  peaky = sizey/2;
 
   sigma=AllocateSigma(sx,sy);
 }
@@ -60,8 +74,6 @@ IntPlane::IntPlane(void) {
   sigma=0;
   sizex=0; sizey=0;
   thetime=0;
-  gradient_dir = 0;
-  here_time = 0;
 
 }
 
@@ -662,93 +674,128 @@ void IntPlane::IncreaseValBoundaryGrad(CellularPotts *cpm)
     pfood_j = par.gradnoise;
     if(RANDOM() < pfood_j)  sigma[i][j]=maxfood;
   }
-
-
 }
 
 
-int IntPlane::RandomizeGradientDirection(int cur_dir) {
-  int rn = (int) (4. * RANDOM());
-  while (rn == cur_dir) rn = (int) (4. * RANDOM());
-  return rn;
-}
-
-
-PeakInfo IntPlane::PeakMaxDistFromGradDir(int grad_dir) {
-  switch (grad_dir) {
-    case 0 :
-      return PeakInfo {sizex/2, 1, sqrt(0.25*sizex*sizex+sizey*sizey)};
-    case 1 :
-      return PeakInfo {sizex/2, sizey-1, sqrt(0.25*sizex*sizex+sizey*sizey)};
-    case 2 :
-      return PeakInfo {1, sizey/2, sqrt(0.25*sizey*sizey+sizex*sizex)};
-    case 3 :
-      return PeakInfo {sizex-1, sizey/2, sqrt(0.25*sizey*sizey+sizex*sizex)};
-    default:
-      cerr<<"How could you possibly get an error here?"<<endl;
-      exit(1);
+double IntPlane::DistClosestResourcePeak(int x, int y, int upto) {
+  if (upto == -1) {
+    upto = grad_sources;
   }
+  long mindist_sq = (long) INFINITY;
+  for (int src = 0; src < upto; src++) {
+    // - ensures always finding smaller value
+    int dx = peaksx[src] - x;
+    int dy = peaksy[src] - y;
+    long dist_sq = dx * dx + dy * dy;
+    mindist_sq = min(dist_sq, mindist_sq);
+  }
+  return sqrt(mindist_sq);
+}
+
+
+double IntPlane::DistMostIsolatedPoint() {
+  double dist = 0;
+  for(int i=1;i<sizex-1;i++)for(int j=1;j<sizey-1;j++) {
+    double closest_dist = DistClosestResourcePeak(i, j);
+    if (closest_dist > dist) {
+      dist = closest_dist;
+    }
+  }
+  return dist;
+}
+
+
+void IntPlane::RandomizeResourcePeaks() {
+  peaksx[0] = (int) RandomNumber(sizex);
+  peaksy[0] = (int) RandomNumber(sizey);
+  for (int src = 1; src < grad_sources; src++) {
+    int x = 0;
+    int y = 0;
+    double dist = 0;
+    while (dist < min_resource_dist) {
+      x = (int) RandomNumber(sizex);
+      y = (int) RandomNumber(sizey);
+      dist = DistClosestResourcePeak(x, y, src);
+    }
+    peaksx[src] = x;
+    peaksy[src] = y;
+  }
+  dist_most_isolated = DistMostIsolatedPoint();
+}
+
+
+double IntPlane::FoodEquation(double dist_from_peak) {
+  // Prevents negative value generation from resource sources too far away
+  dist_from_peak = min(dist_from_peak, dist_most_isolated);
+  return par.gradscale * diagonal/100 * pow(1 - dist_from_peak/dist_most_isolated, dist_coef);
+}
+
+
+double IntPlane::FoodAtPostition(int x, int y) {
+  // double pfood_j = 0.125;
+
+  // makes gradient
+  // int maxfood = 3;
+  // int maxfood = 1+5.* (1. - dist_from_peak/(double)sizey);
+
+  //This is how it was before, worked for field size of 500
+  // double dfood = 1+5.* (1. - dist_from_peak/(double)sizey); //this the usable line
+  // so maybe - to standardize gradients across field sizes, I could do:
+  // dfood = 1 + sizey/100 * (1. - dist_from_peak/(double)sizey)
+  // so that the local slope of the gradient stays the same?
+  // also- the 1+ part of the equation could go...
+  // or even better counter balanced by a lesser gradient in the variable part
+  double dfood = 0;
+  if (not interference) {
+    double dist_from_peak = DistClosestResourcePeak(x, y);
+    dfood = FoodEquation(dist_from_peak);
+  } else {
+    for (int src = 0; src < grad_sources; src++) {
+      int dx = peaksx[src] - x;
+      int dy = peaksy[src] - y;
+      double dist_from_peak = sqrt(dx * dx + dy * dy);
+      dfood += FoodEquation(dist_from_peak);
+    }
+  }
+  // Make sure grad is never 0 (has to do with builtin color generation)
+  dfood++;
+  return dfood;
+}
+
+
+int IntPlane::WritePeaksData() {
+  int num_rows = 5;
+  ofstream file;
+  file.open(par.peaksdatafile);
+  for (int i = 0; i < num_rows; i++) {
+    int row = i * sizex / num_rows + 1;
+    cout << row << endl;
+    for (int col = 1; col < sizey - 1; col++) {
+      file << sigma[row][col] << ",";
+    }
+    file << endl;
+  }
+  file.close();
+  return 0;
+}
+
+
+int IntPlane::MaxFood() {
+  int maxfood = 0;
+  for(int i=1;i<sizex-1;i++)for(int j=1;j<sizey-1;j++){
+    maxfood = max(maxfood, Sigma(i, j));
+  }
+  return maxfood;
 }
 
 
 // I am going to change the direction of the gradient every so often
 void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
 {
-  // THIS IS FOR ONE GRADIENT ONCE
-  // static int first_time=1;
-  // if(!first_time) return;
-  // first_time=0;
-  //int peakx,peaky;
-    // else we re-set the gradient to a random direction
-  if (here_time) {
-    gradient_dir = RandomizeGradientDirection(gradient_dir);
-    gradient_dir2 = RandomizeGradientDirection(gradient_dir2);
-  } else {
-    here_time++;
-  }
-  PeakInfo peakinfo = PeakMaxDistFromGradDir(gradient_dir);
-  PeakInfo peakinfo2 = PeakMaxDistFromGradDir(gradient_dir2);
-  peakx = peakinfo.x;
-  peaky = peakinfo.y;
-  peakx2 = peakinfo2.x;
-  peaky2 = peakinfo2.y;
-  cout << "HERE" << endl;
-  cout << peakinfo.y << "|" << peakinfo2.y << endl;
-  cout << gradient_dir << gradient_dir2 << endl;
-  cout << peakx << " " << peaky << " " << peakx2 << " " << peaky2 << endl;
-  double maxdist = max(peakinfo.maxdist, peakinfo2.maxdist);
-  // std::cerr<< '\n'<< '\n' << "HELLO"<< '\n' << '\n';
-  //we go from right border to left
-  // for(int i=1;i<sizex-1;i++)for(int j=sizey -2;j>0;j--){
+  RandomizeResourcePeaks();
   for(int i=1;i<sizex-1;i++)for(int j=1;j<sizey-1;j++){
-    sigma[i][j]=0;
-    //center point is at coordinates (sizex/2, sizey)
-
-    double dist_from_peak1, dist_from_peak2;
-
-    // Different definitions of distance from peak will give you different gradients
-    dist_from_peak1 = sqrt( (peaky-j)*(peaky-j) + (peakx-i)*(peakx-i) );
-    dist_from_peak2 = sqrt( (peaky2-j)*(peaky2-j) + (peakx2-i)*(peakx2-i) );
-    double dist_from_peak = min(dist_from_peak1, dist_from_peak2);
-    //dist_from_peak = peaky/2;
-
-    // int maxfood = 1.+9.*RANDOM();
-    // double pfood_j = 0.125;
-
-    // makes gradient
-    // int maxfood = 3;
-    // int maxfood = 1+5.* (1. - dist_from_peak/(double)sizey);
-
-    //This is how it was before, worked for field size of 500
-    // double dfood = 1+5.* (1. - dist_from_peak/(double)sizey); //this the usable line
-    // so maybe - to standardize gradients across field sizes, I could do:
-    // dfood = 1 + sizey/100 * (1. - dist_from_peak/(double)sizey)
-    // so that the local slope of the gradient stays the same?
-    // also- the 1+ part of the equation could go...
-    // or even better counter balanced by a lesser gradient in the variable part
-    //final formula:
-    double dfood = 1.+ par.gradscale*((double)maxdist/100.) * (1. - dist_from_peak/(double)maxdist); //this the usable line
-
+    double dfood = FoodAtPostition(i, j);
+    sigma[i][j] = dfood;
     int maxfood = (int)dfood;
     if(RANDOM() < dfood - maxfood) maxfood++; //finer gradient made with a little unbiased noise
 
@@ -784,11 +831,7 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
       if(RANDOM()<par.foodinflux) sigma[i][j]=-1; //food
     }
   }
-
-  cerr << "peak x,y = " <<peakx <<", "<< peaky << endl;
-
-  return;
-
+  WritePeaksData();
 }
 
 

@@ -55,7 +55,7 @@ Dish::Dish(void) {
   ConstructorBody();
 
   CPM=new CellularPotts(&cell, par.sizex, par.sizey);
-  Food= new IntPlane(par.sizex, par.sizey, 0, 1);
+  Food= new IntPlane(par.sizex, par.sizey, par.gradsources);
 
   if (par.n_chem)
     PDEfield=new PDE(par.n_chem,par.sizex, par.sizey);
@@ -519,8 +519,9 @@ void Dish::PrintCellParticles(void)
 void Dish::FoodPlot(Graphics *g)
 {
   // cpm->sigma[x][y] returns sigma, which I can use to indicise the vector of cells... can I? yes_
-  double maxfood = 1.+ par.gradscale*((double)par.sizey/100.);
-  double food_to_index_convfact = 28./maxfood;
+  double maxfood = Food->MaxFood();
+  int startcolorindex = 16;
+  int ncolors = 28;
 
   // suspend=true suspends calling of DrawScene
   for(int x=1;x<par.sizex-1;x++)
@@ -531,12 +532,14 @@ void Dish::FoodPlot(Graphics *g)
           if(Food->Sigma(x,y)<0){
             cerr<<"foodplane below zero!!"<<endl;
           }
+          // To change where first color is and how many colors to use modify parameters of this equation
+          int colori = startcolorindex + ncolors * Food->Sigma(x, y) / maxfood;
           // Make the pixel four times as large
           // to fit with the CPM plane
-          g->Point(16+food_to_index_convfact*Food->Sigma(x,y),2*x,2*y);
-          g->Point(16+food_to_index_convfact*Food->Sigma(x,y),2*x+1,2*y);
-          g->Point(16+food_to_index_convfact*Food->Sigma(x,y),2*x,2*y+1);
-          g->Point(16+food_to_index_convfact*Food->Sigma(x,y),2*x+1,2*y+1);
+          g->Point(colori,2*x,2*y);
+          g->Point(colori,2*x+1,2*y);
+          g->Point(colori,2*x,2*y+1);
+          g->Point(colori,2*x+1,2*y+1);
         }else{
           ;
           // it's getting a bit cumbersome to look at this, for now I'll do without
@@ -1813,7 +1816,7 @@ void Dish::GradientBasedCellKill(int popsize)
   for(auto &c: cell){
     if(c.Sigma()>0 && c.AliveP()){
       current_popsize++;
-      distance=sqrt((Food->GetPeakx()-c.getXpos())*(Food->GetPeakx()-c.getXpos())+(Food->GetPeaky()-c.getYpos())*(Food->GetPeaky()-c.getYpos()));
+      distance=Food->DistClosestResourcePeak((int) round(c.getXpos()), (int) round(c.getYpos()));
       //fitness=1./(1.+pow(distance,3.)/par.fitscale); //for relative version
       //totalfit+=fitness; //for relative version
       //sig_dist.push_back(make_pair(c.Sigma(),totalfit)); //for relative version
@@ -1880,7 +1883,7 @@ void Dish::GradientBasedCellKill2(int popsize)
   for(auto c: cell){
     if(c.Sigma()>0 && c.AliveP()){
       current_popsize++;
-      distance=sqrt((Food->GetPeakx()-c.getXpos())*(Food->GetPeakx()-c.getXpos())+(Food->GetPeaky()-c.getYpos())*(Food->GetPeaky()-c.getYpos()));
+      distance=Food->DistClosestResourcePeak((int) round(c.getXpos()), (int) round(c.getYpos()));
       deathprob=par.mindeathprob+(par.maxdeathprob-par.mindeathprob)*pow(distance,3.)/(pow(par.fitscale,3.)+pow(distance,3.));
       totalfit+=deathprob; //for relative version
       //cerr<<"distance is "<<distance<<", deathprob is "<<deathprob<<endl;
