@@ -23,8 +23,8 @@ class Genome
 
   //Storage of the the GRN state
   //vector < Gene > inputnodes;
-  vector < Gene > regnodes;
-  vector < Gene > outputnodes;
+  vector<Gene> regnodes;
+  vector<Gene> outputnodes;
 
   //constructor and destructor
   Genome();

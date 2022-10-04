@@ -29,6 +29,12 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "graph.h"
 #include "random.h"
 
+struct peakinfo {
+  int x;
+  int y;
+  double dist;
+};
+
 class IntPlane; //forward declaration
 
 class CellularPotts;
@@ -129,7 +135,10 @@ class IntPlane {
   my_fun_t IncreaseVal;
 
   // Get distance of coordinate to the closest source of resources
-  double DistClosestResourcePeak(int x, int y, int upto=-1);
+  peakinfo ClosestPeak(int x, int y, int upto=-1);
+  // Determines the minimum separation distance between gradient source peaks so that its always safe
+  // to place as many as gradient_sources peaks without running out of space
+  double DetermineMinDist();
   // Food in relation to the distance from a single peak F(x)
   double FoodEquation(double dist_from_peak);
   // Determines how much food is in a specific position
@@ -236,25 +245,38 @@ class IntPlane {
   inline double TheTime(void) const {
     return thetime;
   }
-  // TODO: get rid of references to this
   // Used when we had a single grad
-  //  inline int GetPeakx(void){
-  //    return peakx;
-  //  }
-  //  inline int GetPeaky(void){
-  //    return peaky;
-  //  }
+  [[deprecated]]
+  inline int GetPeakx(void){
+    return peakx;
+  }
+  [[deprecated]]
+  inline int GetPeaky(void){
+    return peaky;
+  }
+
   inline int GetPeakx(int i) {
     return peaksx[i];
   }
   inline int GetPeaky(int i) {
     return peaksy[i];
   }
+  [[deprecated]]
   inline void SetPeakx(int px){
     peakx=px;
   }
+  [[deprecated]]
   inline void SetPeaky(int py){
     peaky=py;
+  }
+  inline void SetPeakx(int i, int px){
+    peaksx[i] = px;
+  }
+  inline void SetPeaky(int i, int py){
+    peaksy[i] = py;
+  }
+  inline int GetGradSources() {
+    return grad_sources;
   }
 
  protected:

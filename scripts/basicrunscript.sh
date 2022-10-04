@@ -7,8 +7,9 @@ nrruns=$2
 parfile=$3
 nrcores=$4
 
-exewrap="~/Cell_Evolution_stickymoves/scripts/exewrap.sh"
-exe="./cell_evolution"
+root="$HOME/CProjects/Projects/regulation_evolution"
+exewrap="$root/scripts/exewrap.sh"
+exe="$root/src/cell_evolution"
 
 if [ -d $rundir ]; then
   echo "Directory $rundir already exists. Exiting..."

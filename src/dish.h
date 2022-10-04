@@ -120,7 +120,10 @@ public:
   void UpdateCellParameters(int Time);
   void UpdateCellParameters2(void);
   double NeighInputCalc(Cell &c);
+  // TODO: Ask if needed (multiple grad sources make these function annoying to optimize)
+  [[deprecated]]
   int CheckWhoMadeitLinear(void);
+  [[deprecated]]
   int CheckWhoMadeitRadial(void);
   void ScatterEndOfSeason(void);
   double FitnessFunction(int particles, double meanx, double meany);
@@ -155,6 +158,7 @@ public:
   int SaveData(int Time);
   void SaveNetworks(int Time);
   void MakeBackup(int Time);
+  // TODO: Test if it is working with multiple peaks
   int ReadBackup(char *filename);
   int ReadCompetitionFile(char *filename);
 

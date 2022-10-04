@@ -5,7 +5,7 @@ mcs = 100000000
 
 #cells in blobs move at 0.0055 px/mcs
 # duration of season could then be larger than field size/ speed
-season_duration = 8000
+season_duration = 180000
 
 ### grid size ###
 sizex = 1000
@@ -156,12 +156,12 @@ n_chem = 0
 ### IntPlane parameter ###
 ##########################
 
-#food_influx_location options: everywhere, notonprey, nowhere, patchy, somewhere, somewhere_notonprey, patchy_random, patchy_random_persistence, food_growth, specified_experiment,boundarygradient
+#food_influx_location options: specified_experiment
 # notice that nowhere zeroes foodinflux
 food_influx_location = specified_experiment
 gradnoise = 1.0
 gradscale = 5
-gradsources = 20
+gradsources = 5
 
 # only used in specified_experiment, if true it puts 1 food randomly, with probability foodinflux = 0.05
 is_there_food = 0

@@ -30,7 +30,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "parameter.h"
 #include "ca.h"
 #include "intplane.h"
-#include "conrec.h"
+#include "misc.h"
 
 using std::placeholders::_1;
 
@@ -51,7 +51,8 @@ IntPlane::IntPlane(const int sx, const int sy, int grad_srcs) {
 
   grad_sources = grad_srcs;
   // Needs more work, grad_sources scale too much with distance and not enough with area
-  min_resource_dist = sqrt(sizex*sizey) / (sqrt(grad_sources) + 1);
+  min_resource_dist = DetermineMinDist();
+  cout << "MINDIST" << min_resource_dist << endl;
   diagonal = sqrt(sizex*sizex + sizey*sizey);
   peaksx = new int[grad_sources] {};
   peaksy = new int[grad_sources] {};
@@ -84,6 +85,25 @@ IntPlane::~IntPlane(void) {
     free(sigma);
     sigma=0;
   }
+}
+
+
+// Alternatively, we could use the most isolated point to know where to put next peak at each iteration
+// I think that doing this would be worse, as it is more computationally intensive and probably will tend to accumulate
+// peaks in the corners (?), which may be problematic for small grad_sources numbers
+double IntPlane::DetermineMinDist() {
+  // Subtract two because I think positions 0 and size are forbidden (?) - yes, they seem to be
+  double ratio = (sizey - 2) / (sizex - 2);
+  // ratio * sepx = sepy
+  // sepx = sepy / ratio
+  // (sepx + 1) * (sepy + 1) = grad_sources - 1
+  // ratio * pow(sepx, 2) + sepx * (1 + ratio) + 2 - grad_sources = 0
+  // Do the same for sepy and solve quadradic equations
+  double sepx = SolveQuadradic(ratio, 1 + ratio, 2 - grad_sources);
+  double sepy = SolveQuadradic(1/ratio, 1 + 1/ratio, 2 - grad_sources);
+  double mindistx = (sizex - 2) / (sepx * 2 + 2);
+  double mindisty = (sizey - 2) / (sepy * 2 + 2);
+  return sqrt(mindistx * mindistx + mindisty * mindisty);
 }
 
 int **IntPlane::AllocateSigma(const int sx, const int sy) {
@@ -272,61 +292,9 @@ void IntPlane::InitIncreaseVal(CellularPotts *cpm) {
 
   // change values of initial_food_amount and others
   // if food_influx_location== "nowhere"
-  if( strcmp(par.food_influx_location,"everywhere") == 0 ){
-    cerr<<"Hello, got food influx location: "<<par.food_influx_location<<endl;
-    IncreaseVal = std::bind(&IntPlane::IncreaseValEverywhere, this);
-
-    //exit(1);
-  }else if(strcmp(par.food_influx_location,"nowhere") == 0){
-    cerr<<"Hello, got food influx location: "<<par.food_influx_location<<endl;
-    par.foodinflux=0.; //this is not necessary, because NotIncreaseVal is an empty function, bu well...
-    IncreaseVal = std::bind(&IntPlane::NotIncreaseVal, this);
-//     exit(1);
-    ;
-  }else if(strcmp(par.food_influx_location,"notonprey") == 0){
-    cerr<<"Hello, got food influx location: "<<par.food_influx_location<<endl;
-    IncreaseVal = std::bind(&IntPlane::IncreaseValIfEmpty, this, cpm);
-//     exit(1);
-    ;
-  }else if(strcmp(par.food_influx_location,"patchy") == 0){
-    cerr<<"Hello, got food influx location: "<<par.food_influx_location<<endl;
-    IncreaseVal = std::bind(&IntPlane::IncreaseValPatchy, this, cpm);
-    //     exit(1);
-    ;
-  }else if(strcmp(par.food_influx_location,"somewhere") == 0){
-    cerr<<"Hello, got food influx location: "<<par.food_influx_location<<endl;
-    IncreaseVal = std::bind(&IntPlane::IncreaseValSomewhere, this, cpm);
-    //     exit(1);
-    ;
-  }else if(strcmp(par.food_influx_location,"somewhere_notonprey") == 0){
-    cerr<<"Hello, got food influx location: "<<par.food_influx_location<<endl;
-    IncreaseVal = std::bind(&IntPlane::IncreaseValSomewhereIfEmpty, this, cpm);
-    //     exit(1);
-    ;
-  }else if(strcmp(par.food_influx_location,"patchy_random") == 0){
-    cerr<<"Hello, got food influx location: "<<par.food_influx_location<<endl;
-    IncreaseVal = std::bind(&IntPlane::IncreaseValPatchyRandom, this, cpm);
-    //     exit(1);
-    ;
-  }else if(strcmp(par.food_influx_location,"patchy_random_persistence") == 0){
-    cerr<<"Hello, got food influx location: "<<par.food_influx_location<<endl;
-    IncreaseVal = std::bind(&IntPlane::IncreaseValPatchyRandomPersistence, this, cpm);
-    //     exit(1);
-    ;
-  }else if(strcmp(par.food_influx_location,"food_growth") == 0){
-    cerr<<"Hello, got food influx location: "<<par.food_influx_location<<endl;
-    IncreaseVal = std::bind(&IntPlane::IncreaseValSelfGrowth, this, cpm);
-    //     exit(1);
-    ;
-  }else if(strcmp(par.food_influx_location,"specified_experiment") == 0){
+  if(strcmp(par.food_influx_location,"specified_experiment") == 0){
     cerr<<"Hello, got food influx location: "<<par.food_influx_location<<endl;
     IncreaseVal = std::bind(&IntPlane::IncreaseValSpecifiedExp, this, cpm);
-    //     exit(1);
-    ;
-  }
-  else if(strcmp(par.food_influx_location,"boundarygradient") == 0){
-    cerr<<"Hello, got food influx location: "<<par.food_influx_location<<endl;
-    IncreaseVal = std::bind(&IntPlane::IncreaseValBoundaryGrad, this, cpm);
     //     exit(1);
     ;
   }
@@ -338,365 +306,36 @@ void IntPlane::InitIncreaseVal(CellularPotts *cpm) {
   //exit(1);
 }
 
-// we check beforeahand how many grid points we update and then radnomly generate coordinates.
-// Typically, scaling_cell_to_ca_time>1, so foodinflux/scaling_cell_to_ca_time < 1/2,
-// so we update less than half of the pixels, so this method is better
-void IntPlane::IncreaseValEverywhere(void)
-{
-  static double prob_food_influx = par.foodinflux/ double(par.scaling_cell_to_ca_time);
-  //if(prob_food_influx)<0.5{
-    int totalpixels= (sizex-1)*(sizey-1);
-    double howmany_pixels_updated = BinomialDeviate( totalpixels, prob_food_influx );
-    for(int i=0; i<howmany_pixels_updated; i++){
-      int posi = RandomNumber(sizex-2); //in the interval [1,sizex-1[
-      int posj = RandomNumber(sizey-2);
-      if(sigma[posi][posj]<10) sigma[posi][posj]++;
-    }
-//   }else{
-//     for (int i=1; i<sizex-1; i++)
-//       for (int j=1; j<sizey-1;j++){
-//         if(RANDOM()<prob_food_influx && sigma[i][j]<10) //replace random() with proper function
-//           sigma[i][j]++;
-//       }
-//   }
 
-
-}
-
-void IntPlane::NotIncreaseVal(void)
-{
-  return;
-}
-
-void IntPlane::IncreaseValIfEmpty(CellularPotts *cpm)
-{
-  static double prob_food_influx = par.foodinflux/ double(par.scaling_cell_to_ca_time);
-  int totalpixels= (sizex-1)*(sizey-1);
-  double howmany_pixels_updated = BinomialDeviate( totalpixels, prob_food_influx );
-  for(int i=0; i<howmany_pixels_updated; i++){
-    int posi = RandomNumber(sizex-2); //in the interval [1,sizex-1[
-    int posj = RandomNumber(sizey-2);
-    if(sigma[posi][posj]<10 && !cpm->Sigma(posi,posj)) sigma[posi][posj]++;
-  }
-
-//     for (int i=1; i<sizex-1; i++)
-//         for (int j=1; j<sizey-1;j++)
-//         {
-//             if(RANDOM()<par.foodinflux && sigma[i][j]<10 && !cpm->Sigma(i,j)) //replace random() with proper function
-//                 sigma[i][j]++;
-// //                 cerr<<"Hello food increased"<<endl;
-//         }
-}
-
-void IntPlane::IncreaseValPatchy(CellularPotts *cpm)
-{
-  static double prob_food_influx = par.foodinflux/ double(par.scaling_cell_to_ca_time);
-  //if(prob_food_influx)<0.5{
-  int totalpixels= (sizex-1)*(sizey-1);
-  double howmany_pixels_updated = BinomialDeviate( totalpixels, prob_food_influx );
-  for(int i=0; i<howmany_pixels_updated; i++){
-    int posi = RandomNumber(sizex-2); //in the interval [1,sizex-1] both included
-    int posj = RandomNumber(sizey-2);
-    for(int ii=-1;ii<=1;ii++)for(int jj=-1;jj<=1;jj++){
-      int posii=posi+ii;
-      int posjj=posj+jj;
-      if(posii >= sizex-1 || posii < 1) continue;
-      if(posjj >= sizey-1 || posjj < 1) continue;
-      if(sigma[posi+ii][posj+jj]<10) sigma[posi+ii][posj+jj]=10;
-    }
-  }
-  //   }else{
-  //     for (int i=1; i<sizex-1; i++)
-  //       for (int j=1; j<sizey-1;j++){
-  //         if(RANDOM()<prob_food_influx && sigma[i][j]<10) //replace random() with proper function
-  //           sigma[i][j]++;
-  //       }
-  //   }
-
-
-}
-
-// food increases everwhere, but somewhere it's a lot, always there
-// this is a 3x3 grid
-void IntPlane::IncreaseValSomewhere(CellularPotts *cpm){
-
-//   std::vector<int> meanposx = {sizex/8, sizex/4, 3*sizex/8, sizex/2, 5*sizex/8, 3*sizex/4, 7*sizex/8};
-//   std::vector<int> meanposy = {sizey/8, sizey/4, 3*sizey/8, sizey/2, 5*sizey/8, 3*sizey/4, 7*sizey/8};
-//
-
-  std::vector<int> meanposx = {sizex/4, sizex/2, 3*sizex/4};
-  std::vector<int> meanposy = {sizey/4, sizey/2, 3*sizey/4};
-
-//   std::vector<int> meanposx = {sizex/4,  3*sizex/4};
-//   std::vector<int> meanposy = {sizey/4,  3*sizey/4};
-
-//   std::vector<int> meanposx = {sizex/2};
-//   std::vector<int> meanposy = {sizey/2};
-
-  static double prob_food_influx = par.foodinflux/ double(par.scaling_cell_to_ca_time);
-  //if(prob_food_influx)<0.5{
-  int totalpixels= (sizex-1)*(sizey-1);
-  double howmany_pixels_updated = BinomialDeviate( totalpixels, prob_food_influx );
-  for(int i=0; i<howmany_pixels_updated; i++){
-    int posi = RandomNumber(sizex-2); //in the interval [1,sizex-1] both included
-    int posj = RandomNumber(sizey-2);
-    if(sigma[posi][posj]<10) sigma[posi][posj]++;
-  }
-
-  for(auto mpx: meanposx){
-    for(int k=-10; k<10;k++){
-      for(auto mpy: meanposy){
-        for(int l=-10; l<10;l++){
-          if( mpx+k >= sizex-1 || mpx+k < 1 || mpy+l >= sizey-1 || mpy+l < 1 ) continue;
-
-//           if( sigma[ mpx+k ][ mpy+l ]<10 && RANDOM()<par.foodinflux/double(par.scaling_cell_to_ca_time) ) {
-          if( sigma[ mpx+k ][ mpy+l ]<10 && RANDOM()<0.2/double(par.scaling_cell_to_ca_time) ) {
-//             cerr<<"Updating: "<< meanposx[i]+k <<" "<< meanposy[i]+l <<endl;
-            sigma[ mpx+k ][ mpy+l ]++;
-          }
-
-        }
-      }
-    }
-
-  }
-
-}
-
-void IntPlane::IncreaseValPatchyRandom(CellularPotts *cpm){
-
-  // standard trickling-in of food
-  static double prob_food_influx = par.foodinflux/ double(par.scaling_cell_to_ca_time);
-  //if(prob_food_influx)<0.5{
-  int totalpixels= (sizex-1)*(sizey-1);
-  double howmany_pixels_updated = BinomialDeviate( totalpixels, prob_food_influx );
-  for(int i=0; i<howmany_pixels_updated; i++){
-    int posi = RandomNumber(sizex-2); //in the interval [1,sizex-1] both included
-    int posj = RandomNumber(sizey-2);
-    if(sigma[posi][posj]<10) sigma[posi][posj]++;
-  }
-
-  DiffuseParticles();
-
-  double food_patch_frequency = 0.002;
-
-  if( RANDOM() < food_patch_frequency/double(par.scaling_cell_to_ca_time) ){
-    int mpx = RandomNumber(sizex-2); //mean position x of patch
-    int mpy = RandomNumber(sizey-2);
-    for(int k=-100; k<100;k++){
-      for(int l=-100; l<100;l++){
-        int distsquare= k*k+l*l;
-        if(distsquare > 100*100) continue; //makes a circle
-        int px=mpx+k;
-        int py=mpy+l;
-        //boundary wrapping
-        if( mpx+k >= sizex-1) px -= (sizex-1);
-        else if(mpx+k < 1) px += (sizex-1);
-        if (mpy+l >= sizey-1) py -= (sizey-1);
-        else if( mpy+l < 1 ) py += (sizey-1);
-
-        if( distsquare<25*25)
-          sigma[ px ][ py ] = 10;
-        else if( distsquare< 50*50  && RANDOM()< 0.25 )
-          sigma[ px ][ py ] = 10;
-        else if( distsquare< 75*75  && RANDOM()< 0.5 )
-          sigma[ px ][ py ] = 10;
-        else if(RANDOM()< 0.25)
-          sigma[ px ][ py ] =  10;
-
-        // if( distsquare>75*75  && RANDOM()< 0.25 )
-        //   sigma[ px ][ py ] +=  (10. - sigma[ px ][ py ])*RANDOM();
-        // else if( distsquare>50*50  && RANDOM()< 0.5 )
-        //   sigma[ px ][ py ] +=  (10. - sigma[ px ][ py ])*RANDOM();
-        // else if( distsquare>25*25  && RANDOM()< 0.75 )
-        //   sigma[ px ][ py ] +=  (10. - sigma[ px ][ py ])*RANDOM();
-        //
-        // else if( distsquare>10*10  && RANDOM()< 0.75 )
-        // sigma[ px ][ py ] +=  (10. - sigma[ px ][ py ])*RANDOM();
-        // else
-        //   sigma[ px ][ py ] =  10;
-
-      }
-    }
-  }
-
-}
-
-//like above, but lower increase rate, and longer time
-void IntPlane::IncreaseValPatchyRandomPersistence(CellularPotts *cpm){
-  int food_update_persistence=10000; //every 1000 time steps food will update somewhere else
-  static int time_since_update=0;
-  // double food_patch_frequency = 0.02;
-  double food_patch_prob=0.2;
-  int food_radius =25;
-  int food_radius_square =food_radius*food_radius;
-
-  // static vector<int> v_time_since_update={0,0,0};
-  // static vector<int> meanposx = {0,0,0};
-  // static vector<int> meanposy = {0,0,0};
-  //
-
-  // int mpx,mpy;
-  static vector<vector<int>> v_t_since_update_mposxy(3, vector<int>(3,0) );
-
-
-  //
-  // static int mpx=0,mpy=0;
-
-  // standard trickling-in of food
-  static double prob_food_influx = par.foodinflux/ double(par.scaling_cell_to_ca_time);
-  //if(prob_food_influx)<0.5{
-  int totalpixels= (sizex-1)*(sizey-1);
-  double howmany_pixels_updated = BinomialDeviate( totalpixels, prob_food_influx );
-  for(int i=0; i<howmany_pixels_updated; i++){
-    int posi = RandomNumber(sizex-2); //in the interval [1,sizex-1] both included
-    int posj = RandomNumber(sizey-2);
-    if(sigma[posi][posj]<10) sigma[posi][posj]++;
-  }
-
-  for(vector<vector<int>>::iterator it = v_t_since_update_mposxy.begin() ; it != v_t_since_update_mposxy.end(); ++it){
-    if( (*it)[0] % food_update_persistence == 0){
-      (*it)[0]= food_update_persistence/2 + RANDOM()*food_update_persistence/2; //5000 + random(0,5000) timesteps
-      (*it)[1]= RandomNumber(sizex-2);
-      (*it)[2]= RandomNumber(sizey-2);
-
-    }
-  // }
-
-
-  // if(time_since_update%food_update_persistence == 0){
-  //   time_since_update=0;
-  //   mpx = RandomNumber(sizex-2); //mean position x of patch
-  //   mpy = RandomNumber(sizey-2);
-  //
-  // }
-
-
-  // if( RANDOM() < food_patch_frequency/double(par.scaling_cell_to_ca_time) ){
-    int mpx = (*it)[1];
-    int mpy = (*it)[2];
-
-
-    for(int k=-food_radius; k<food_radius;k++){
-      for(int l=-food_radius; l<food_radius;l++){
-        int distsquare= k*k+l*l;
-        if(distsquare > food_radius*food_radius) continue; //makes a circle
-        int px=mpx+k;
-        int py=mpy+l;
-        //boundary wrapping
-        if( mpx+k >= sizex-1) px -= (sizex-1);
-        else if(mpx+k < 1) px += (sizex-1);
-        if (mpy+l >= sizey-1) py -= (sizey-1);
-        else if( mpy+l < 1 ) py += (sizey-1);
-
-        if( distsquare<food_radius_square/(4*4) && RANDOM()< food_patch_prob/double(par.scaling_cell_to_ca_time) ){
-          if(sigma[ px ][ py ] <10) sigma[ px ][ py ] ++;}
-        else if( distsquare< food_radius_square/(2*2)  && RANDOM()< 0.25*food_patch_prob/double(par.scaling_cell_to_ca_time) ) {
-          if(sigma[ px ][ py ] <10) sigma[ px ][ py ] ++;}
-        else if( distsquare< food_radius_square/((4./3.) * (4./3.) )  && RANDOM()< 0.5*food_patch_prob/double(par.scaling_cell_to_ca_time) ) {
-          if(sigma[ px ][ py ] <10) sigma[ px ][ py ] ++;}
-        else if(RANDOM()< 0.25*food_patch_prob/double(par.scaling_cell_to_ca_time)){
-          if(sigma[ px ][ py ] <10) sigma[ px ][ py ] ++;}
-
-        // if( distsquare>75*75  && RANDOM()< 0.25 )
-        //   sigma[ px ][ py ] +=  (10. - sigma[ px ][ py ])*RANDOM();
-        // else if( distsquare>50*50  && RANDOM()< 0.5 )
-        //   sigma[ px ][ py ] +=  (10. - sigma[ px ][ py ])*RANDOM();
-        // else if( distsquare>25*25  && RANDOM()< 0.75 )
-        //   sigma[ px ][ py ] +=  (10. - sigma[ px ][ py ])*RANDOM();
-        //
-        // else if( distsquare>10*10  && RANDOM()< 0.75 )
-        // sigma[ px ][ py ] +=  (10. - sigma[ px ][ py ])*RANDOM();
-        // else
-        //   sigma[ px ][ py ] =  10;
-
-      }
-    }
-
-    (*it)[0]++; // increase time in the counter
-  }
-
-
-
-}
-
-//the idea is a population of bacteria like things that selfreplicate locally
-void IntPlane::IncreaseValSelfGrowth(CellularPotts *cpm)
-{
-  double bacteria_birthrate=0.01;
-  for(int i=1;i<sizex;i++)for(int j=1;j<sizey;j++){
-    if(sigma[i][j]!=0){
-      // there are so many bacteria, each with their birth rate, so:
-      int new_borns = BinomialDeviate( sigma[i][j] , bacteria_birthrate/double(par.scaling_cell_to_ca_time) );
-      if(new_borns==0) continue;
-
-      while(new_borns>0){
-        //where does it replicate? randomly in the 9 neighbourhood (including self)
-        int xpos = -1 + (int)( 3.*RANDOM() ); // int number in [-1,1]
-        int ypos = -1 + (int)( 3.*RANDOM() ); // int number in [-1,1]
-        xpos+=i;
-        ypos+=j;
-        if(xpos>=sizex-1) xpos -= sizex-2;
-        if(xpos<=0) xpos += sizex-2;
-        if(ypos>=sizey-1) ypos -= sizey-2;
-        if(ypos<=0) ypos += sizey-2;
-        //std::cerr << "Hello3" << '\n';
-        if(sigma[xpos][ypos]<2) sigma[xpos][ypos]++;
-        //std::cerr << "Hello4" << '\n';
-
-        new_borns--;
-      }
-    }
-
-  }
-  // return;
-}
-
-//a gradient emanating from one of the boundaries (north)
-void IntPlane::IncreaseValBoundaryGrad(CellularPotts *cpm)
-{
-  int maxfood;
-  double pfood_j, dfood;
-
-  peakx=sizex/2;
-  peaky=1;
-
-  for(int i=1;i<sizex-1;i++)for(int j=1;j<sizey-1;j++){
-    sigma[i][j]=0;
-
-    dfood = par.gradscale*( (double)sizey/100.) * (1. - j/(double)sizey); //this the usable line
-
-    maxfood=(int)dfood;
-    if(RANDOM() < dfood - maxfood) maxfood++; //finer gradient made with a little unbiased noise
-
-    //maxfood = 1+5.* (1 - (double)j/par.gradlength);
-    // pfood_j =par.gradnoise+ (1.-par.gradnoise)* (1 - (double)j/(double)sizey);
-    pfood_j = par.gradnoise;
-    if(RANDOM() < pfood_j)  sigma[i][j]=maxfood;
-  }
-}
-
-
-double IntPlane::DistClosestResourcePeak(int x, int y, int upto) {
+peakinfo IntPlane::ClosestPeak(int x, int y, int upto) {
   if (upto == -1) {
     upto = grad_sources;
   }
+
+  peakinfo res;
   long mindist_sq = (long) INFINITY;
+
   for (int src = 0; src < upto; src++) {
     // - ensures always finding smaller value
     int dx = peaksx[src] - x;
     int dy = peaksy[src] - y;
     long dist_sq = dx * dx + dy * dy;
-    mindist_sq = min(dist_sq, mindist_sq);
+    if (dist_sq < mindist_sq) {
+      mindist_sq = dist_sq;
+      res.x = peaksx[src];
+      res.y = peaksy[src];
+    }
   }
-  return sqrt(mindist_sq);
+
+  res.dist = sqrt(mindist_sq);
+  return res;
 }
 
 
 double IntPlane::DistMostIsolatedPoint() {
   double dist = 0;
   for(int i=1;i<sizex-1;i++)for(int j=1;j<sizey-1;j++) {
-    double closest_dist = DistClosestResourcePeak(i, j);
+    double closest_dist = ClosestPeak(i, j).dist;
     if (closest_dist > dist) {
       dist = closest_dist;
     }
@@ -706,16 +345,16 @@ double IntPlane::DistMostIsolatedPoint() {
 
 
 void IntPlane::RandomizeResourcePeaks() {
-  peaksx[0] = (int) RandomNumber(sizex);
-  peaksy[0] = (int) RandomNumber(sizey);
+  peaksx[0] = (int) RandomNumber(sizex - 1);
+  peaksy[0] = (int) RandomNumber(sizey - 1);
   for (int src = 1; src < grad_sources; src++) {
     int x = 0;
     int y = 0;
     double dist = 0;
     while (dist < min_resource_dist) {
-      x = (int) RandomNumber(sizex);
-      y = (int) RandomNumber(sizey);
-      dist = DistClosestResourcePeak(x, y, src);
+      x = (int) RandomNumber(sizex - 1);
+      y = (int) RandomNumber(sizey - 1);
+      dist = ClosestPeak(x, y, src).dist;
     }
     peaksx[src] = x;
     peaksy[src] = y;
@@ -747,7 +386,7 @@ double IntPlane::FoodAtPostition(int x, int y) {
   // or even better counter balanced by a lesser gradient in the variable part
   double dfood = 0;
   if (not interference) {
-    double dist_from_peak = DistClosestResourcePeak(x, y);
+    double dist_from_peak = ClosestPeak(x, y).dist;
     dfood = FoodEquation(dist_from_peak);
   } else {
     for (int src = 0; src < grad_sources; src++) {
@@ -832,50 +471,4 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
     }
   }
   WritePeaksData();
-}
-
-
-void IntPlane::IncreaseValSomewhereIfEmpty(CellularPotts *cpm){
-
-  //   std::vector<int> meanposx = {sizex/8, sizex/4, 3*sizex/8, sizex/2, 5*sizex/8, 3*sizex/4, 7*sizex/8};
-  //   std::vector<int> meanposy = {sizey/8, sizey/4, 3*sizey/8, sizey/2, 5*sizey/8, 3*sizey/4, 7*sizey/8};
-  //
-
-  std::vector<int> meanposx = {sizex/4, sizex/2, 3*sizex/4};
-  std::vector<int> meanposy = {sizey/4, sizey/2, 3*sizey/4};
-
-  //   std::vector<int> meanposx = {sizex/4,  3*sizex/4};
-  //   std::vector<int> meanposy = {sizey/4,  3*sizey/4};
-
-  //   std::vector<int> meanposx = {sizex/2};
-  //   std::vector<int> meanposy = {sizey/2};
-
-  static double prob_food_influx = par.foodinflux/ double(par.scaling_cell_to_ca_time);
-  //if(prob_food_influx)<0.5{
-  int totalpixels= (sizex-1)*(sizey-1);
-  double howmany_pixels_updated = BinomialDeviate( totalpixels, prob_food_influx );
-  for(int i=0; i<howmany_pixels_updated; i++){
-    int posi = RandomNumber(sizex-2); //in the interval [1,sizex-1] both included
-    int posj = RandomNumber(sizey-2);
-    if(sigma[posi][posj]<10 && !cpm->Sigma(posi,posj)) sigma[posi][posj]++;
-  }
-
-  for(auto mpx: meanposx){
-    for(int k=-10; k<10;k++){
-      for(auto mpy: meanposy){
-        for(int l=-10; l<10;l++){
-          if( mpx+k >= sizex-1 || mpx+k < 1 || mpy+l >= sizey-1 || mpy+l < 1 ) continue;
-
-          //           if( sigma[ mpx+k ][ mpy+l ]<10 && RANDOM()<par.foodinflux/double(par.scaling_cell_to_ca_time) ) {
-          if( sigma[ mpx+k ][ mpy+l ]<10 && RANDOM()<0.2/double(par.scaling_cell_to_ca_time) && !cpm->Sigma(mpx+k,mpy+l)) {
-            //             cerr<<"Updating: "<< meanposx[i]+k <<" "<< meanposy[i]+l <<endl;
-            sigma[ mpx+k ][ mpy+l ]++;
-          }
-
-        }
-      }
-    }
-
-  }
-
 }
