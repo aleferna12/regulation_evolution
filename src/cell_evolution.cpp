@@ -198,7 +198,7 @@ TIMESTEP {
     if( !(i%100000) ) cerr<<"TIME: "<<i<<endl;
 
     //auto start = high_resolution_clock::now();
-    dish->CellsEat2();
+    dish->CellsEat2(i);
     //auto stop = high_resolution_clock::now();
     //auto duration = duration_cast<microseconds>(stop - start);
     //sum+=duration.count();
@@ -225,6 +225,7 @@ TIMESTEP {
           std::cerr << "Time = "<<i << '\n';
           std::cerr << "End of season: there are "<< dish->CountCells() <<" cells" << '\n';
           dish->SaveNetworks(i);
+          dish->SaveAdheringNeighbours(i);
           dish->GradientBasedCellKill(par.popsize);
           //dish->RemoveMotileCells(par.popsize); //kill all nondividing cells and more if necessary; for noncontinuous reproduction
           std::cerr << "After remove there are "<< dish->CountCells() <<" cells" << '\n';
@@ -379,11 +380,7 @@ int main(int argc, char *argv[]) {
     //check if directory for movies exists, create it if not, exit otherwise
     DoesDirExistsIfNotMakeit(par.datadir);  //see output.cpp
     DoesDirExistsIfNotMakeit(par.backupdir);  //see output.cpp
-    if(par.evolreg){
-      char fname[300];
-      sprintf(fname,"%s/networks",par.datadir);
-      DoesDirExistsIfNotMakeit(fname);  //see output.cpp
-    }
+    DoesDirExistsIfNotMakeit(par.networkdir);  //see output.cpp
 
     //check if data file exists, if not exit
     if(FileExistsP(par.datafile)){

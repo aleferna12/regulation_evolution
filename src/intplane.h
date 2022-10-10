@@ -142,7 +142,7 @@ class IntPlane {
   // Food in relation to the distance from a single peak F(x)
   double FoodEquation(double dist_from_peak);
   // Determines how much food is in a specific position
-  double FoodAtPostition(int x, int y);
+  double FoodAtPosition(int x, int y);
   // Iterates lattice and finds max food
   // Cant use FoodEquation(0) for that because the gradients interact (unless we cap maxfood to it)
   int MaxFood();

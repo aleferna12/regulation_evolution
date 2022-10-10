@@ -305,7 +305,7 @@ void Dish::MutateCells(vector<int> sigma_to_update)
       cell[upd_sigma].MutateKeyAndLock();
       //assign new gextiming
       cell[upd_sigma].setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
-      if(par.evolreg == true){
+      if(par.evolreg){
         cell[upd_sigma].MutateGenome(par.mu, par.mustd);
       }
     }
@@ -521,7 +521,7 @@ void Dish::FoodPlot(Graphics *g)
   // cpm->sigma[x][y] returns sigma, which I can use to indicise the vector of cells... can I? yes_
   double maxfood = Food->MaxFood();
   int startcolorindex = 16;
-  int ncolors = 28;
+  int ncolors = 29;
 
   // suspend=true suspends calling of DrawScene
   for(int x=1;x<par.sizex-1;x++)
@@ -533,7 +533,7 @@ void Dish::FoodPlot(Graphics *g)
             cerr<<"foodplane below zero!!"<<endl;
           }
           // To change where first color is and how many colors to use modify parameters of this equation
-          int colori = startcolorindex + ncolors * Food->Sigma(x, y) / maxfood;
+          int colori = startcolorindex + (ncolors - 1) * (Food->Sigma(x, y) - 1) / (maxfood - 1);
           // Make the pixel four times as large
           // to fit with the CPM plane
           g->Point(colori,2*x,2*y);
@@ -819,7 +819,7 @@ void Dish::CellsEat(void)
 }
 
 //changes cells direction vector based on where more food is
-void Dish::CellsEat2(void)
+void Dish::CellsEat2(int time)
 {
   // if(par.periodic_boundaries)
   // {
@@ -854,6 +854,11 @@ void Dish::CellsEat2(void)
             fsumx[cell_sigma]+=fx*Food->Sigma(x,y);
             fsumy[cell_sigma]+=fy*Food->Sigma(x,y);
             ftotal[cell_sigma]+=Food->Sigma(x,y);
+            // Allow cells to move for a few MCSs (80) without degrading the grad so they have a better understanding
+            // of their surroundings
+            if (par.degradeprob && time % 100 == 0 && RANDOM() < par.degradeprob) {
+              Food->addtoValue(x, y, -1);
+            }
           }else{
             int howmuchfood = BinomialDeviate( -1*Food->Sigma(x,y) , cell[cell_sigma].GetEatProb()/(double)par.scaling_cell_to_ca_time );
             Food->addtoValue(x,y,-1*-howmuchfood);
@@ -866,7 +871,6 @@ void Dish::CellsEat2(void)
             // std::cerr << " therefore it now has: "<< cell[cell_sigma].particles << '\n';
             // ADD SIGNAL for regulation
           }
-
         }
       }
     }
@@ -2051,11 +2055,36 @@ void Dish::SaveNetworks(int Time)
 
   for (auto &c: cell){
     if(c.AliveP()){
-      sprintf(fname,"%s/networks/t%010d_c%04d.txt",par.datadir,Time,c.Sigma());
+      sprintf(fname,"%s/t%010d_c%04d.txt",par.networkdir,Time,c.Sigma());
       c.WriteGenomeToFile(fname);
     }
   }
 
+}
+
+void Dish::SaveAdheringNeighbours(int Time) {
+  char fname[300];
+  sprintf(fname,"%s/neigh_t%010d.txt", par.networkdir, Time);
+
+  ofstream ofs;
+  ofs.open(fname, ofstream::out);
+  for (auto &c : cell) {
+    if (c.AliveP()) {
+      ofs << c.Sigma();
+      double e_medium = c.EnergyDifference(cell[0]);
+      for (auto& n : c.neighbours) {
+        // Skip cell 0 (medium)
+        if (n.first == 0)
+          continue;
+        Cell& nc = cell[n.first];
+        double e_cell = c.EnergyDifference(nc);
+        if (nc.AliveP() and e_cell <= e_medium)
+          ofs << " " << nc.Sigma();
+      }
+      ofs << endl;
+    }
+  }
+  ofs.close();
 }
 
 void Dish::MakeBackup(int Time){

@@ -106,7 +106,7 @@ public:
   Find enlarged cells, and divide them.*/
   void CellGrowthAndDivision(void);
   void CellsEat(void);
-  void CellsEat2(void); //chenges cells direction vector based on where more food is
+  void CellsEat2(int time); //chenges cells direction vector based on where more food is
   void CellsEat3(void); //hopefully more efficient version of cellseat2
 
   void UpdateCellExpression(void);
@@ -157,6 +157,7 @@ public:
 
   int SaveData(int Time);
   void SaveNetworks(int Time);
+  void SaveAdheringNeighbours(int Time);
   void MakeBackup(int Time);
   // TODO: Test if it is working with multiple peaks
   int ReadBackup(char *filename);

@@ -104,6 +104,7 @@ Parameter::Parameter() {
   growth=0;
   ardecay=0.;
   gradnoise=0.1;
+  degradeprob=0.5;
   gradscale=1.0;
   gradsources=1;
   nodivisions=false;
@@ -117,6 +118,7 @@ Parameter::Parameter() {
   persduration=0;
   scaling_cell_to_ca_time = 1;
   backupdir=strdup("backup");
+  networkdir=strdup("networks");
   save_backup_period=0;
   init_chemmu=0.;
   backupfile=strdup("");
@@ -159,6 +161,8 @@ void Parameter::CleanUp(void) {
      free(genomefile);
   if (backupdir)
      free(backupdir);
+  if (networkdir)
+    free(networkdir);
   if (backupfile)
         free(backupfile);
 
@@ -169,11 +173,12 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<"Usage is: "<<endl;
   cerr<<"./cell_evolution path/to/data [optional arguments]"<<endl;
   cerr<<"Arguments: "<<endl;
-  cerr<<" -name path/to/name_for_all_output # gives a name to all output, alternative to -datafile -datadir -backupdir -peaksdatafile" <<endl;
+  cerr<<" -name path/to/name_for_all_output # gives a name to all output, alternative to -datafile -datadir -backupdir -networkdir -peaksdatafile" <<endl;
   cerr<<" -datafile path/to/datafile # output file" <<endl;
   cerr<<" -peaksdatafile path/to/peaksdatafile # output file" <<endl;
   cerr<<" -datadir path/to/datadir # output movie dir"<<endl;
   cerr<<" -backupdir path/to/backupdir # output backup dir"<<endl;
+  cerr<<" -networkdir path/to/networkdir # output network dir"<<endl;
   cerr<<" -store # store pictures"<<endl;
   cerr<<" -keylockfilename path/to/keylockfilename"<<endl;
   cerr<<" -seed INT_NUMBER # for random number generator"<<endl;
@@ -199,6 +204,7 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<" -gradscale [FLOAT_NUMBER] slope of the gradient (in percent units)"<<endl;
   cerr<<" -gradsources [INT_NUMBER] number of gradient sources in the lattice"<<endl;
   cerr<<" -gradnoise [FLOAT_NUMBER] chances that any grid point has gradient, rather than being empty"<<endl;
+  cerr<<" -degradeprob [FLOAT_NUMBER] chance that a cell will degrade the gradient bellow it (for each site)"<<endl;
   cerr<<" -chemmu [FLOAT_NUMBER] scaling factor for chemotaxis in the Hamiltonian"<<endl;
   cerr<<" -fitscale [FLOAT_NUMBER] point in field where deathrate is half value"<<endl;
   cerr<<" -genomefile [string] starting genome with which to seed the field"<<endl;
@@ -261,6 +267,19 @@ int Parameter::ReadArguments(int argc, char *argv[])
       backupdir = strdup(argv[i]);
 
       cerr<<"New value for backupdir: "<<backupdir<<endl;
+
+    }else if( 0==strcmp(argv[i],"-networkdir") ){
+      i++; if(i==argc) {
+        cerr<<"Something odd in networkdir?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      //strcpy(datadir, argv[i]);
+      free(networkdir);
+      networkdir = (char *)malloc( 5+strlen(argv[i])*sizeof(char) )  ; //strlen(argv[i]) is ok because argv[i] is null terminated
+      networkdir = strdup(argv[i]);
+
+      cerr<<"New value for networkdir: "<<networkdir<<endl;
+
 
     }else if( 0==strcmp(argv[i],"-keylockfilename") ){
       i++; if(i==argc) {
@@ -476,6 +495,13 @@ int Parameter::ReadArguments(int argc, char *argv[])
       }
       gradnoise = atof( argv[i] );
       cerr<<"New value for gradnoise: "<<gradnoise<<endl;
+    }else if( 0==strcmp(argv[i],"-degradeprob") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in degradeprob?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      degradeprob = atof( argv[i] );
+      cerr<<"New value for degradeprob: "<<degradeprob<<endl;
     }else if( 0==strcmp(argv[i],"-fitscale") ){
       i++; if(i==argc){
         cerr<<"Something odd in fitscale?"<<endl;
@@ -495,6 +521,7 @@ int Parameter::ReadArguments(int argc, char *argv[])
       free(peaksdatafile);
       free(datadir);
       free(backupdir);
+      free(networkdir);
 
       string maybepath_and_name(argv[i]);
       size_t botDirPos = maybepath_and_name.find_last_of("/");
@@ -523,18 +550,25 @@ int Parameter::ReadArguments(int argc, char *argv[])
       name_backupdir.append("backup_");
       name_backupdir.append(name);
 
+      string name_networkdir = dir;
+      name_networkdir.append("networkdir_");
+      name_networkdir.append(name);
+
       std::cerr << "New value for output filename: "<< name_outfile<< '\n';
       std::cerr << "New value for name_moviedir: "<< name_moviedir<< '\n';
       std::cerr << "New value for name_backupdir: "<< name_backupdir<< '\n';
+      std::cerr << "New value for name_networkdir: "<< name_networkdir<< '\n';
 
       datafile = (char *)malloc( 50+strlen(argv[i])*sizeof(char) ); //strlen(argv[i]) is ok because argv[i] is null terminated
       datadir = (char *)malloc( 50+strlen(argv[i])*sizeof(char) );
       peaksdatafile = (char *)malloc( 50+strlen(argv[i])*sizeof(char) );
       backupdir = (char *)malloc( 50+strlen(argv[i])*sizeof(char) );
+      networkdir = (char *)malloc( 50+strlen(argv[i])*sizeof(char) );
       datafile = strdup(name_outfile.c_str());
       peaksdatafile = strdup(name_outfile.c_str());
       datadir = strdup(name_moviedir.c_str());
       backupdir = strdup(name_backupdir.c_str());
+      networkdir = strdup(name_networkdir.c_str());
       // this took a while to code :P
     }else{
       cerr<<"Something went wrong reading the commandline arguments"<<endl; 
@@ -624,7 +658,8 @@ void Parameter::Read(const char *filename) {
   eatprob = fgetpar(fp, "eatprob", 0., true);
   ardecay = fgetpar(fp, "ardecay", 0., true);
   growth = fgetpar(fp, "growth", 0., true);
-  gradnoise = fgetpar(fp, "gradnoise", 0.1, true); //did I put these in?
+  gradnoise = fgetpar(fp, "gradnoise", 0.1, true);
+  degradeprob = fgetpar(fp, "degradeprob", 0.5, true);
   gradscale = fgetpar(fp, "gradscale", 1.0, true);
   gradsources = fgetpar(fp, "gradsources", 1, true);
   min_contact_duration_for_preying = fgetpar(fp, "min_contact_duration_for_preying", 1., true);
@@ -641,6 +676,7 @@ void Parameter::Read(const char *filename) {
   Jmed_rule_input = sgetpar(fp, "Jmed_rule_input", "0a0", true);
   scaling_cell_to_ca_time = igetpar(fp, "scaling_cell_to_ca_time", 1, true);
   backupdir = sgetpar(fp, "backupdir", "backup", true);
+  networkdir = sgetpar(fp, "networkdir", "networks", true);
   save_backup_period = igetpar(fp, "save_backup_period", 0, true);
   howmany_makeit_for_nextgen = igetpar(fp, "howmany_makeit_for_nextgen", 1, true);
   popsize = igetpar(fp, "popsize", 1, true);
@@ -863,6 +899,7 @@ void Parameter::Write(ostream &os) const {
   os << " ardecay = " << ardecay << endl;
   os << " growth = " << growth << endl;
   os << " gradnoise = " << gradnoise << endl;
+  os << " degradeprob = " << degradeprob << endl;
   os << " gradscale = " << gradscale << endl;
   os << " gradsources = " << gradsources << endl;
   os << " divisioncolour = " << divisioncolour << endl;
@@ -884,6 +921,7 @@ void Parameter::Write(ostream &os) const {
   os << " startmu = " << startmu <<endl;
   os << " scaling_cell_to_ca_time = " << scaling_cell_to_ca_time <<endl;
   os << " backupdir = " << backupdir <<endl;
+  os << " networkdir = " << networkdir <<endl;
   os << " save_backup_period = " << save_backup_period <<endl;
   if (datadir)
     os << " datadir = " << datadir << endl;

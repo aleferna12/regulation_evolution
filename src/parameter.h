@@ -88,6 +88,7 @@ class Parameter {
   double maxdeathprob;
   double fitscale;
   char * datadir;
+  char * networkdir;
   char * datafile;
   char * peaksdatafile;
   int save_text_file_period;
@@ -100,6 +101,7 @@ class Parameter {
   double gradnoise;
   double gradscale;
   int gradsources;
+  double degradeprob;
   bool nodivisions; //whether to NOT execute divisions
   int min_contact_duration_for_preying;
   double frac_contlen_eaten;

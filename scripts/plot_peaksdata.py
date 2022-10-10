@@ -5,19 +5,26 @@ from colorir import *
 
 config.DEFAULT_COLOR_FORMAT = ColorFormat(sRGB)
 STARTCOLORINDEX = 0
-NCOLORS = 49
+NCOLORS = 29
 INPUT = "../run/peaks_data.csv"
 OUTPUT = "../run/peaks_data.pdf"
-PALETTE = "../data/yl_rd.ctb"
+PALETTE = "../data/default.ctb"
 
-with open(PALETTE) as file:
-    pal_raw = file.read()
-pal = StackPalette()
-for row in pal_raw.split("\n")[STARTCOLORINDEX:NCOLORS + 1]:
-    if row:
-        color = tuple(int(x) for x in row.split(" ")[1:])
-        pal.add(color)
 
+def read_colortable(name):
+    with open(name) as file:
+        pal_raw = file.read()
+    pal = StackPalette(color_format=ColorFormat(sRGB))
+    for row in pal_raw.split("\n"):
+        if row:
+            color = tuple(int(x) for x in row.split()[1:])
+            pal.add(color)
+    return pal
+
+
+pal = read_colortable(PALETTE)
+swatch(pal)
+pal = pal[STARTCOLORINDEX:STARTCOLORINDEX + NCOLORS]
 colorscale = []
 for i, j in zip(range(0, len(pal) - 1), range(1, len(pal))):
     colorscale.append((i / (len(pal) - 1), pal[i].hex()))

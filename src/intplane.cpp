@@ -366,11 +366,11 @@ void IntPlane::RandomizeResourcePeaks() {
 double IntPlane::FoodEquation(double dist_from_peak) {
   // Prevents negative value generation from resource sources too far away
   dist_from_peak = min(dist_from_peak, dist_most_isolated);
-  return par.gradscale * diagonal/100 * pow(1 - dist_from_peak/dist_most_isolated, dist_coef);
+  return par.gradscale * dist_most_isolated/100 * pow(1 - dist_from_peak/dist_most_isolated, dist_coef);
 }
 
 
-double IntPlane::FoodAtPostition(int x, int y) {
+double IntPlane::FoodAtPosition(int x, int y) {
   // double pfood_j = 0.125;
 
   // makes gradient
@@ -402,6 +402,7 @@ double IntPlane::FoodAtPostition(int x, int y) {
 }
 
 
+[[deprecated]]
 int IntPlane::WritePeaksData() {
   int num_rows = 5;
   ofstream file;
@@ -433,7 +434,7 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
 {
   RandomizeResourcePeaks();
   for(int i=1;i<sizex-1;i++)for(int j=1;j<sizey-1;j++){
-    double dfood = FoodAtPostition(i, j);
+    double dfood = FoodAtPosition(i, j);
     sigma[i][j] = dfood;
     int maxfood = (int)dfood;
     if(RANDOM() < dfood - maxfood) maxfood++; //finer gradient made with a little unbiased noise
@@ -470,5 +471,6 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
       if(RANDOM()<par.foodinflux) sigma[i][j]=-1; //food
     }
   }
-  WritePeaksData();
+  // If we want to see transversal profiles of the plane
+  // WritePeaksData();
 }

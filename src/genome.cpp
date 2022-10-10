@@ -1,5 +1,6 @@
 #include "genome.h"
 #include "random.h"
+#include "output.h"
 
 //default constructor required for init in other class
 Genome::Genome()
@@ -155,7 +156,6 @@ void Genome::ReadFromFile(char *filename)
 void Genome::WriteToFile(char *filename)
 {
   std::ofstream ofs;
-
   ofs.open( filename , std::ofstream::out);
 
   //first read the nr of nodes
@@ -237,7 +237,6 @@ void Genome::UpdateGeneExpression(const array<double,2> &input, bool sync_cells)
 
   //only update BoolState if we update cells asynchronously
   if(!sync_cells) FinishUpdate();
-
 }
 
 //this function puts the NewBool state of nodes into BoolState
