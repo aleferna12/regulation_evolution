@@ -4,11 +4,12 @@ from pathlib import Path
 from dataclasses import dataclass
 
 
-NETWORKS_PATH = "../runs/evolreg_false/networks"
+NETWORKS_PATH = "../runs/neigh_info/networkdir_"
 
 
 def main():
     networks = read_networks(NETWORKS_PATH)
+    neighs = read_neighbours(NETWORKS_PATH)
     print(networks)
 
 
@@ -55,7 +56,7 @@ class Cell:
 def read_networks(path):
     path = Path(path)
     networks = {}
-    for filepath in path.glob("*.txt"):
+    for filepath in path.glob("t*.txt"):
         cell_i = int(re.search(r"(?<=c)\d+", filepath.name).group())
         if cell_i == 0:
             continue
@@ -104,6 +105,24 @@ def read_networks(path):
         season[cell_i] = cell
 
     return networks
+
+
+def read_neighbours(path):
+    seasons = {}
+    path = Path(path)
+    for filepath in path.glob("neigh*.txt"):
+        season_i = int(re.search(r"(?<=t)\d+", filepath.name).group())
+        neighbours = {}
+        with open(filepath) as file:
+            lines = file.read().split("\n")
+
+        for line in lines:
+            if not line:
+                continue
+            info = line.split(" ")
+            neighbours[int(info[0])] = [int(n) for n in info[1:]]
+        seasons[season_i] = neighbours
+    return seasons
 
 
 if __name__ == "__main__":
