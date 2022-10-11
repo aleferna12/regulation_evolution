@@ -69,16 +69,9 @@ INIT {
     if (! strlen(par.backupfile) && !strlen(par.competitionfile)) {
 
       //THIS IS TO USE FOR NORMAL INITIALISATION
-      if(par.scatter_cells){
-        CPM->PlaceCellsRandomly(par.n_init_cells,par.size_init_cells);
-        CPM->InitializeEdgeList(false);
-        cout << "done initialising edge list"<<endl;
-      }else{
-        CPM->PlaceCellsOrderly(par.n_init_cells,par.size_init_cells);
-        if (par.cell_placement) CPM->InitializeEdgeList(false);
-        else CPM->InitializeEdgeList(true);
-        cout << "done initialising edge list"<<endl;
-      }
+      CPM->PlaceCellsRandomly(par.n_init_cells,par.size_init_cells);
+      CPM->InitializeEdgeList(false);
+      cout << "done initialising edge list"<<endl;
 
       CPM->ConstructInitCells(*this); //within an object, 'this' is the object itself
 

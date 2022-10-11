@@ -8,9 +8,7 @@ NETWORKS_PATH = "../runs/neigh_info/networkdir_"
 
 
 def main():
-    networks = read_networks(NETWORKS_PATH)
-    neighs = read_neighbours(NETWORKS_PATH)
-    print(networks)
+    pass
 
 
 @dataclass
@@ -107,11 +105,30 @@ def read_networks(path):
     return networks
 
 
+def exhaust_cluster(neigh, neights, cluster):
+    if neigh not in cluster:
+        cluster.add(neigh)
+        for next_neigh in neights[neigh]:
+            exhaust_cluster(next_neigh, neights, cluster)
+    return cluster
+
+
+def get_clusters(neighs):
+    clusters = []
+    neigh_list = list(neighs)
+    for neigh in neigh_list:
+        cluster = exhaust_cluster(neigh, neighs, set())
+        for found_neigh in cluster:
+            neigh_list.remove(found_neigh)
+        clusters.append(cluster)
+
+    return clusters
+
+
 def read_neighbours(path):
     seasons = {}
     path = Path(path)
     for filepath in path.glob("neigh*.txt"):
-        season_i = int(re.search(r"(?<=t)\d+", filepath.name).group())
         neighbours = {}
         with open(filepath) as file:
             lines = file.read().split("\n")
@@ -121,6 +138,9 @@ def read_neighbours(path):
                 continue
             info = line.split(" ")
             neighbours[int(info[0])] = [int(n) for n in info[1:]]
+
+        get_clusters(neighbours)
+        season_i = int(re.search(r"(?<=t)\d+", filepath.name).group())
         seasons[season_i] = neighbours
     return seasons
 
