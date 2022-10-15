@@ -385,6 +385,7 @@ double IntPlane::FoodAtPosition(int x, int y) {
   // also- the 1+ part of the equation could go...
   // or even better counter balanced by a lesser gradient in the variable part
   double dfood = 0;
+  // TODO: Solve the interference (can it be safely implemented as parameter? Do we even want that?)
   if (not interference) {
     double dist_from_peak = ClosestPeak(x, y).dist;
     dfood = FoodEquation(dist_from_peak);

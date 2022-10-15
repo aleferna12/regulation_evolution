@@ -81,6 +81,7 @@ public:
     target_area = src.target_area;
     target_length=src.target_length;
 
+    ancestor = src.ancestor;
     mother=src.mother;
     daughter=src.daughter;
     times_divided=src.times_divided;
@@ -208,6 +209,8 @@ public:
     jlock = src.jlock;
     jkey = src.jkey;
     vJ = src.vJ;
+
+    ancestor = src.ancestor;
 
     chem = new double[par.n_chem];
     for (int ch=0;ch<par.n_chem;ch++)
@@ -573,6 +576,12 @@ al. 2000). The current version of TST does not include such functionality.
     return --target_area;
   }
 
+  //! This is the oldest ancestor of this cell in the current season
+  inline int getAncestor() const { return ancestor; }
+  //! Resets the ancestor to the itself. Called at the beginning of a new season.
+  inline void resetAncestor() {
+    ancestor = Sigma();
+  }
   //! Cell lineage tracking: get the cell's parent
   inline int Mother(void) const { return mother; }
 
@@ -1105,7 +1114,8 @@ protected:
   static int capacity;
   static int maxsigma; // the last cell identity number given out
 
-
+  // This is the oldest ancestor of this cell in the current season
+  int ancestor;
   // indices of mother and daughter
   // (Note: no pointers, cells may be relocated)
   int mother;

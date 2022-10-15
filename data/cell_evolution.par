@@ -67,6 +67,7 @@ min_area_for_life = 4
 
 #Jtable = ../data/Jcellevol.dat  THIS IS NOT USED ANY MORE, USE KEYLOCK FILE INSTEAD
 keylock_list_filename = ../data/KL_l24_14_28.dat
+#keylock_list_filename = ../data/KL_l24_14_28_compl.dat
 #keylock_list_filename = ../data/KL_l25_12_24.dat
 #keylock_list_filename = ../data/KL_l25_12_48.dat
 #keylock_list_filename = ../data/newKL_12_12_g6.dat
@@ -137,6 +138,8 @@ mustd = 0.05
 
 #should cells be scattered at the end of the season?
 scatter_cells = false
+#should cells be scattered at the start of the first season?
+scatter_start = true
 
 #death rates for different cell types
 motiledeath = 0.5

@@ -291,13 +291,12 @@ class IntPlane {
   // TODO: remove support for hardcoded single peak
   int peakx, peaky;
 
-  // TODO: turn into a parameter
   // Number of resource sources
   int grad_sources;
   // Coefficient for how the resources decrease according to their distance from the sources
-  // TODO: Should this be a parameter? Probably not, find out how average distance to sources increase
+  // TODO: Should this be a parameter?
   double dist_coef;
-  // TODO: Decide while true or false, this shouldnt be a parameter
+  // TODO: Can this be safely implemented as a paramer? Do we want to do so?
   bool interference;
   // Maximum distance from any point in the gradient to the closest source (calculated)
   double dist_most_isolated;

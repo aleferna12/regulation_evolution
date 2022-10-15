@@ -158,6 +158,7 @@ public:
   int SaveData(int Time);
   void SaveNetworks(int Time);
   void SaveAdheringNeighbours(int Time);
+  void SaveAncestry(int Time);
   void MakeBackup(int Time);
   // TODO: Test if it is working with multiple peaks
   int ReadBackup(char *filename);

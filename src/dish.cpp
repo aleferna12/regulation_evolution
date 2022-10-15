@@ -2049,6 +2049,20 @@ int Dish::SaveData(int Time)
   return (prey+pred);
 }
 
+void Dish::SaveAncestry(int Time) {
+  char fname[300];
+  sprintf(fname,"%s/anc_t%010d.txt", par.networkdir, Time);
+
+  ofstream ofs;
+  ofs.open(fname, ofstream::out);
+  for (auto &c: cell) {
+    if (c.AliveP()) {
+      ofs << c.Sigma() << " " << c.getAncestor() << endl;
+      c.resetAncestor();
+    }
+  }
+}
+
 void Dish::SaveNetworks(int Time)
 {
   char fname[300];
@@ -2078,7 +2092,7 @@ void Dish::SaveAdheringNeighbours(int Time) {
           continue;
         Cell& nc = cell[n.first];
         double e_cell = c.EnergyDifference(nc);
-        if (nc.AliveP() and e_cell <= e_medium)
+        if (nc.AliveP() and e_cell <= e_medium / 2.0)
           ofs << " " << nc.Sigma();
       }
       ofs << endl;

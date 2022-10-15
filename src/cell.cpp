@@ -77,6 +77,7 @@ void Cell::CellBirth(Cell &mother_cell) {
   v[1] = mother_cell.v[1];
 
   // Administrate ancestry
+  ancestor = mother_cell.ancestor;
   mother_cell.daughter=this->sigma;
   mother=mother_cell.sigma;
   mother_cell.AddTimesDivided();
@@ -182,6 +183,8 @@ void Cell::ConstructorBody(int settau,int setrecycledsigma) {
     sigma=setrecycledsigma;
     //cout<<"check: YES recycling, new sigma is "<<sigma<<endl;
   }
+
+  ancestor = sigma;
 
   //if (!J) {
   //  ReadStaticJTable(par.Jtable);

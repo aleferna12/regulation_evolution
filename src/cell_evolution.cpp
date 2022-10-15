@@ -69,7 +69,11 @@ INIT {
     if (! strlen(par.backupfile) && !strlen(par.competitionfile)) {
 
       //THIS IS TO USE FOR NORMAL INITIALISATION
-      CPM->PlaceCellsRandomly(par.n_init_cells,par.size_init_cells);
+      if(par.scatter_start){
+        CPM->PlaceCellsRandomly(par.n_init_cells,par.size_init_cells);
+      }else{
+        CPM->PlaceCellsOrderly(par.n_init_cells,par.size_init_cells);
+      }
       CPM->InitializeEdgeList(false);
       cout << "done initialising edge list"<<endl;
 
@@ -220,6 +224,7 @@ TIMESTEP {
           dish->SaveNetworks(i);
           dish->SaveAdheringNeighbours(i);
           dish->GradientBasedCellKill(par.popsize);
+          dish->SaveAncestry(i);
           //dish->RemoveMotileCells(par.popsize); //kill all nondividing cells and more if necessary; for noncontinuous reproduction
           std::cerr << "After remove there are "<< dish->CountCells() <<" cells" << '\n';
 

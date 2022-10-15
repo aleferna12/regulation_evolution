@@ -91,6 +91,7 @@ Parameter::Parameter() {
   mindeathprob=0.;
   maxdeathprob=1.;
   scatter_cells=false;
+  scatter_start=true;
   motiledeath=1.0;
   dividingdeath=0.;
   fitscale=100.;
@@ -423,6 +424,9 @@ int Parameter::ReadArguments(int argc, char *argv[])
     }else if( 0==strcmp(argv[i],"-scatter") ){
       scatter_cells = true;
       cerr<<"Cells will be scattered at the end of the season, before reproduction"<<endl;
+    }else if( 0==strcmp(argv[i],"-noscatter_start") ){
+      scatter_start = false;
+      cerr<<"Cells will not be scattered at the start of the first season"<<endl;
     }else if( 0==strcmp(argv[i],"-nodivisions") ){
       nodivisions = true;
       cerr<<"Cells will not actually divide"<<endl;
@@ -645,6 +649,7 @@ void Parameter::Read(const char *filename) {
   mindeathprob = fgetpar(fp, "mindeathprob", 0., true);
   maxdeathprob = fgetpar(fp, "maxdeathprob", 1.0, true);
   scatter_cells = bgetpar(fp, "scatter_cells", false, true);
+  scatter_start = bgetpar(fp, "scatter_start", true, true);
   motiledeath = fgetpar(fp, "motiledeath", 1.0, true);
   dividingdeath = fgetpar(fp, "dividingdeath", 0.0, true);
   fitscale = fgetpar(fp, "fitscale", 100., true);
