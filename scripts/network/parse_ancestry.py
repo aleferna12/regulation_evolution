@@ -38,7 +38,8 @@ def make_trees(seasons, dead_ends=True, names=True):
             node = Tree(name=str(cell_sigma) if names else "")
             node.add_feature("season", season)
             if cell_sigma in prev_anc_child:
-                node.children = prev_anc_child[cell_sigma]
+                for child in prev_anc_child[cell_sigma]:
+                    node.add_child(child)
             if anc_sigma not in next_anc_child:
                 next_anc_child[anc_sigma] = []
             next_anc_child[anc_sigma].append(node)
@@ -51,6 +52,7 @@ def make_trees(seasons, dead_ends=True, names=True):
         # The roots date from the start of the first season
         # This is represented as 0 as not to get confused with the end of the first season
         root.add_feature("season", 0)
-        root.children = children
+        for child in children:
+            root.add_child(child)
         trees.append(root)
     return trees
