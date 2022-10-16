@@ -1,4 +1,5 @@
 import re
+import logging
 from pathlib import Path
 from ete3 import Tree
 
@@ -36,7 +37,7 @@ def make_trees(seasons, dead_ends=True, names=True):
             if not dead_ends and prev_anc_child and cell_sigma not in prev_anc_child:
                 continue
             node = Tree(name=str(cell_sigma) if names else "")
-            node.add_feature("season", season)
+            node.add_feature("time", season)
             if cell_sigma in prev_anc_child:
                 for child in prev_anc_child[cell_sigma]:
                     node.add_child(child)
@@ -51,7 +52,7 @@ def make_trees(seasons, dead_ends=True, names=True):
         root = Tree(name=anc_sigma if names else "")
         # The roots date from the start of the first season
         # This is represented as 0 as not to get confused with the end of the first season
-        root.add_feature("season", 0)
+        root.add_feature("time", 0)
         for child in children:
             root.add_child(child)
         trees.append(root)
