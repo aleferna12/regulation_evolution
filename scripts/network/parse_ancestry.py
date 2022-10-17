@@ -1,10 +1,43 @@
 import re
 import logging
+import sys
+import os
 from pathlib import Path
 from ete3 import Tree
 
 
-def read_ancestry(path, dead_ends=True):
+def main():
+    logging.basicConfig(level=logging.INFO)
+    netpath = Path(sys.argv[1]).resolve()
+    outdir = Path(sys.argv[2]).resolve()
+    if not os.path.isdir(outdir):
+        raise ValueError("second argument is not a valid existing directory")
+    dead_ends = False if len(sys.argv) >= 4 and sys.argv[3] in ["0", "false"] else True
+    print(dead_ends)
+    names = False if len(sys.argv) >= 5 and sys.argv[4] in ["0", "false"] else True
+
+    logging.info(f"Writing trees to '{outdir}'")
+    longest = []
+    longest_gen = 0
+    for i, tree in enumerate(read_ancestry(netpath, dead_ends, names)):
+        tree_name = "tree" + str(i)
+        gens = len(tree.get_farthest_leaf()[0].get_ancestors())
+        if gens > longest_gen:
+            longest = [tree_name]
+            longest_gen = gens
+        elif gens == longest_gen:
+            longest.append(tree_name)
+        tree.write(
+            outfile=str(outdir / (tree_name + ".newick")),
+            format=5,
+            features=["time"]
+        )
+    logging.info("Longest lineages are: " + ", ".join(longest))
+    logging.info(f"These lineages survived for {longest_gen} seasons")
+    logging.info("Finished")
+
+
+def read_ancestry(path, dead_ends=True, names=True, single_leaf=False):
     path = Path(path)
     seasons = {}
     for filepath in path.glob("anc_*.txt"):
@@ -20,12 +53,13 @@ def read_ancestry(path, dead_ends=True):
             cells.append((int(cell_sigma), int(anc_sigma)))
         season_i = int(re.search(r"(?<=t)\d+", filepath.name).group())
         seasons[season_i] = cells
-    return make_trees(seasons, dead_ends)
+    return make_trees(seasons, dead_ends, names, single_leaf)
 
 
 # Remember that although the sigmas are added as names, the same id can refer to DIFFERENT cells
-def make_trees(seasons, dead_ends=True, names=True):
+def make_trees(seasons, dead_ends=True, names=True, single_leaf=False):
     # Order by time backwards
+    # This is needed to deal with dead-ends
     seasons = {k: seasons[k] for k in sorted(seasons, reverse=True)}
     # This dict holds the descendents of the current season of cells
     prev_anc_child = {}
@@ -55,5 +89,13 @@ def make_trees(seasons, dead_ends=True, names=True):
         root.add_feature("time", 0)
         for child in children:
             root.add_child(child)
-        trees.append(root)
+        # Exclude trees that only have a single leaf due to being part of an exclusively
+        # migrating lineage or because the lineage only has one survivor and dead_ends=False
+        # These single-leaf lineages can cause problems in some newick parsers
+        if single_leaf or len(root.get_leaves()) > 1:
+            trees.append(root)
     return trees
+
+
+if __name__ == "__main__":
+    main()

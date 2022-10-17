@@ -29,8 +29,8 @@ def exhaust_cluster(neigh, neights, cluster):
 def get_clusters(neighs):
     clusters = []
     neigh_list = list(neighs)
-    for neigh in neigh_list:
-        cluster = list(exhaust_cluster(neigh, neighs, set()))
+    while neigh_list:
+        cluster = list(exhaust_cluster(neigh_list[0], neighs, set()))
         for found_neigh in cluster:
             if found_neigh in neigh_list:
                 neigh_list.remove(found_neigh)
@@ -54,6 +54,8 @@ def read_neighbours(path, season_filter: List[int] = None):
             if not line:
                 continue
             info = line.split(" ")
+            if info[0] == '0':
+                continue
             neighbours[int(info[0])] = [int(n) for n in info[1:]]
 
         clusters = get_clusters(neighbours)
