@@ -2091,8 +2091,8 @@ void Dish::SaveAdheringNeighbours(int Time) {
         if (n.first == 0)
           continue;
         Cell& nc = cell[n.first];
-        double e_cell = c.EnergyDifference(nc);
-        if (nc.AliveP() and e_cell <= e_medium / 2.0)
+        double e_cell = c.EnergyDifference(nc) / 2.0;
+        if (nc.AliveP() and e_cell <= e_medium)
           ofs << " " << nc.Sigma();
       }
       ofs << endl;
