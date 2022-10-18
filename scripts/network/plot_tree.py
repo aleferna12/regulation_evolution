@@ -58,10 +58,9 @@ def get_cluster_colors(clusters, min_cluster):
 def plot_tree(tree: Tree, clusters, outpath, min_cluster=2, colored=True):
     colors = get_cluster_colors(clusters, min_cluster)
     leaf_color = {}
-    if colored:
-        for cluster, color in zip(clusters, colors):
-            for leaf in cluster:
-                leaf_color[str(leaf)] = color
+    for cluster, color in zip(clusters, colors):
+        for leaf in cluster:
+            leaf_color[str(leaf)] = color
 
     last_season = getattr(tree.get_farthest_leaf()[0], "time", None)
     for node in tree.traverse():
@@ -70,7 +69,7 @@ def plot_tree(tree: Tree, clusters, outpath, min_cluster=2, colored=True):
             # rapidnj adds these for no reason
             node.name = node.name.strip("\'")
             # Color unicellular nodes black and doesn't color dead-end nodes
-            if getattr(node, "time", None) == last_season:
+            if colored and getattr(node, "time", None) == last_season:
                 node.img_style["bgcolor"] = leaf_color.get(node.name, _cs.black)
 
     ts = TreeStyle()
