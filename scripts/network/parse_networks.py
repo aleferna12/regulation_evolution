@@ -21,6 +21,7 @@ def main():
 
 @dataclass
 class InNode:
+    __slots__ = ("gene_id", "scaling")
     gene_id: int
     scaling: float
 
@@ -30,6 +31,7 @@ class InNode:
 
 @dataclass
 class RegNode:
+    __slots__ = ("gene_id", "threshold")
     gene_id: int
     threshold: float
 
@@ -39,6 +41,7 @@ class RegNode:
 
 @dataclass
 class OutNode:
+    __slots__ = ("gene_id", "threshold")
     gene_id: int
     threshold: float
 
@@ -48,6 +51,7 @@ class OutNode:
 
 @dataclass
 class Cell:
+    __slots__ = ("cell_sigma", "in_nr", "reg_nr", "out_nr", "id_map", "network")
     cell_sigma: int
     in_nr: int
     reg_nr: int
