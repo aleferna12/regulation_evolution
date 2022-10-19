@@ -67,7 +67,6 @@ INIT {
     //CPM->PlaceOneCellsAtXY(par.sizex/4,par.sizey/4, par.size_init_cells, 2);
 
     if (! strlen(par.backupfile) && !strlen(par.competitionfile)) {
-
       //THIS IS TO USE FOR NORMAL INITIALISATION
       if(par.scatter_start){
         CPM->PlaceCellsRandomly(par.n_init_cells,par.size_init_cells);
@@ -152,6 +151,7 @@ INIT {
     }
 
     else {
+      cout << "Reading backfile" << endl;
       cout<<"backup file is "<<par.backupfile<<endl;
       par.starttime=ReadBackup(par.backupfile);
       int networktime=par.starttime;
@@ -166,7 +166,6 @@ INIT {
           //c.dividecounter=0;
           //c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
           sprintf(fname,"%s/t%010d_c%04d.txt",par.genomefile,networktime,c.Sigma());
-          cout<<"network file is "<<fname<<endl;
           c.ReadGenomeFromFile(fname);
         }
       }

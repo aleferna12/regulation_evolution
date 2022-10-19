@@ -85,8 +85,8 @@ def make_trees(seasons, dead_ends=True, names=True, single_leaf=False):
     for anc_sigma, children in prev_anc_child.items():
         root = Tree(name=anc_sigma if names else "")
         # The roots date from the start of the first season
-        # This is represented as 0 as not to get confused with the end of the first season
-        root.add_feature("time", 0)
+        # Unfortunately, root attributes can't be saved in NHX, so adding it as a feature is
+        # futile
         for child in children:
             root.add_child(child)
         # Exclude trees that only have a single leaf due to being part of an exclusively
