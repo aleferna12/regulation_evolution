@@ -144,8 +144,6 @@ class IntPlane {
   // Determines how much food is in a specific position
   double FoodAtPosition(int x, int y);
   // Iterates lattice and finds max food
-  // Cant use FoodEquation(0) for that because the gradients interact (unless we cap maxfood to it)
-  int MaxFood();
   // Writes a few rows of the sigma lattice to par.peaksdatafile
   int WritePeaksData();
   // Randomize location of peaks based on min_resource_dist
@@ -245,14 +243,9 @@ class IntPlane {
   inline double TheTime(void) const {
     return thetime;
   }
-  // Used when we had a single grad
-  [[deprecated]]
-  inline int GetPeakx(void){
-    return peakx;
-  }
-  [[deprecated]]
-  inline int GetPeaky(void){
-    return peaky;
+
+  inline int getMaxFood() const {
+    return maxfood;
   }
 
   inline int GetPeakx(int i) {
@@ -260,14 +253,6 @@ class IntPlane {
   }
   inline int GetPeaky(int i) {
     return peaksy[i];
-  }
-  [[deprecated]]
-  inline void SetPeakx(int px){
-    peakx=px;
-  }
-  [[deprecated]]
-  inline void SetPeaky(int py){
-    peaky=py;
   }
   inline void SetPeakx(int i, int px){
     peaksx[i] = px;
@@ -288,9 +273,6 @@ class IntPlane {
   int sizex;
   int sizey;
 
-  // TODO: remove support for hardcoded single peak
-  int peakx, peaky;
-
   // Number of resource sources
   int grad_sources;
   // Coefficient for how the resources decrease according to their distance from the sources
@@ -300,6 +282,8 @@ class IntPlane {
   bool interference;
   // Maximum distance from any point in the gradient to the closest source (calculated)
   double dist_most_isolated;
+  // Maximum food at any position of the gradient. Recalculated every time gradient positions change
+  int maxfood;
   // Diagonal length of the lattice (calculated)
   double diagonal;
   //

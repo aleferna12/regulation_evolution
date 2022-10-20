@@ -62,10 +62,6 @@ IntPlane::IntPlane(const int sx, const int sy, int grad_srcs) {
   // This should be always 1 if we keep the gradients independent from each other
   interference = false;
 
-  // TODO: Remove
-  peakx = 1;
-  peaky = sizey/2;
-
   sigma=AllocateSigma(sx,sy);
 }
 
@@ -421,35 +417,21 @@ int IntPlane::WritePeaksData() {
 }
 
 
-int IntPlane::MaxFood() {
-  int maxfood = 0;
-  for(int i=1;i<sizex-1;i++)for(int j=1;j<sizey-1;j++){
-    maxfood = max(maxfood, Sigma(i, j));
-  }
-  return maxfood;
-}
-
-
 // I am going to change the direction of the gradient every so often
 void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
 {
   RandomizeResourcePeaks();
+
+  maxfood = 0;
   for(int i=1;i<sizex-1;i++)for(int j=1;j<sizey-1;j++){
     double dfood = FoodAtPosition(i, j);
-    sigma[i][j] = dfood;
-    int maxfood = (int)dfood;
-    if(RANDOM() < dfood - maxfood) maxfood++; //finer gradient made with a little unbiased noise
-
-    // noise
-    // double pfood_j = 0.1+ 0.9* (1. - dist_from_peak/(double)sizey);  // this is the usable one
-    //double pfood_j = 1.;
-    //pfood_j = 0.3; // also like this is works... but why?
-
-    //sigma[i][j]+=maxfood;
-    double pfood_j = par.gradnoise;
-
-    if(RANDOM() < pfood_j)
-      sigma[i][j]=maxfood;
+    int local_maxfood = (int)dfood;
+    sigma[i][j] = local_maxfood;
+    if(RANDOM() < dfood - local_maxfood) local_maxfood++;
+    if(RANDOM() < par.gradnoise)
+      sigma[i][j]=local_maxfood;
+    if (sigma[i][j] > maxfood)
+      maxfood = local_maxfood;
       //sigma[i][j]+=10; //else already set to zero
     // else
     //   sigma[i][j]=0;
@@ -462,9 +444,9 @@ void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
     // double dist_from_peak;
     // dist_from_peak= (sizey-j)/(double)(sizey); //linear gradient
     // // dist_from_peak= sqrt( (sizey-j)*(sizey-j) + (sizex/2-i)*(sizex/2-i) );
-    // int maxfood = 3+7.* dist_from_peak/sizey;
+    // int local_maxfood = 3+7.* dist_from_peak/sizey;
     // double pfood_j = 0.5+ 0.5* (sizey-j)/(double)(sizey);
-    // if(RANDOM() < pfood_j) sigma[i][j]=maxfood;
+    // if(RANDOM() < pfood_j) sigma[i][j]=local_maxfood;
     // else sigma[i][j]=0;
 
     //bool is_there_food = false;

@@ -8,8 +8,8 @@ mcs = 100000000
 season_duration = 30000
 
 ### grid size ###
-sizex = 200
-sizey = 200
+sizex = 500
+sizey = 500
 
 
 
@@ -161,7 +161,10 @@ n_chem = 0
 # notice that nowhere zeroes foodinflux
 food_influx_location = specified_experiment
 gradnoise = 1.0
-gradscale = 5.0
+# Diameter for a cell with area = 50 is approx. 10
+# gradscale = 100 / gradient_step_size
+# gradscale = 5 results in steps that are approx. double the diameter of the cells (assuming t_area = 50)
+gradscale = 5
 gradsources = 10
 # Probability that a cell will degrade a lattice site every few (100) MCS
 degradeprob = 0.0

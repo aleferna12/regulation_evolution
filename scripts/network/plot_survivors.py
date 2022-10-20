@@ -1,53 +1,54 @@
 """This is an alternative way to plot a genealogy tree."""
 
-import plotly.express as px
 import plotly.graph_objects as go
-from typing import List
-from plotly.subplots import make_subplots
 from ete3 import Tree
+from colorir import *
+
+_cs = Palette.load()
 
 
 def main():
     tree = Tree("./data/genealogy_test/trees/tree2.newick")
-    plot_survivors([tree])
+    plot_survivors(tree)
 
 
-def plot_survivors(trees: List[Tree]):
-    fig = make_subplots(len(trees), 1)
-    for i, tree in enumerate(trees, start=1):
-        # Add time to root here since it can't be saved in NHX
-        tree.add_feature("time", 0)
+def plot_survivors(tree, marker_size=5):
+    # Add time to root here since it can't be saved in NHX
+    tree.add_feature("time", 0)
 
-        season_size = {}
-        for node in tree.traverse():
-            if node.time not in season_size:
-                season_size[node.time] = 0
-            season_size[node.time] += 1
+    season_size = {}
+    for node in tree.traverse():
+        if node.time not in season_size:
+            season_size[node.time] = 0
+        season_size[node.time] += 1
+        node.add_feature("index", season_size[node.time])
+    survivors = max(season_size.values())
 
-        # Reiterate tree to set plot positions
-        for node in tree.traverse(strategy="levelorder"):
-            node.add_feature("pos", (int(node.time), season_size[node.time]))
-            season_size[node.time] -= 1
+    xs = []
+    ys = []
+    # Reiterate tree to set plot positions
+    for node in tree.traverse(strategy="levelorder"):
+        x = int(node.time)
+        step = (survivors + 1) / (season_size[node.time] + 1)
+        y = step * node.index
+        # Next gen will need this
+        node.add_feature("pos", (x, y))
 
-        xs = []
-        ys = []
-        for node in tree.iter_descendants():
-            x, y = node.pos
+        if not node.is_root():
             anc_x, anc_y = node.up.pos
             xs += [x, anc_x, None]
             ys += [y, anc_y, None]
-
-        trace = go.Scatter(
-            x=xs,
-            y=ys,
-            mode="markers+lines",
-            marker_size=10,
-            line_width=1,
-            line_color="#000000",
-            marker_color="#0000ff"
-        )
-        fig.add_trace(trace, row=i, col=1)
-    fig.update_layout(height=2500)
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=xs,
+        y=ys,
+        mode="markers+lines",
+        marker_size=marker_size,
+        line_width=1,
+        line_color=_cs.black,
+        marker_color=_cs.blue
+    ))
+    fig.update_layout(height=2 * marker_size * survivors)
     fig.show()
 
 

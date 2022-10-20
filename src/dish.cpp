@@ -519,7 +519,6 @@ void Dish::PrintCellParticles(void)
 void Dish::FoodPlot(Graphics *g)
 {
   // cpm->sigma[x][y] returns sigma, which I can use to indicise the vector of cells... can I? yes_
-  double maxfood = Food->MaxFood();
   int startcolorindex = 16;
   int ncolors = 29;
 
@@ -533,7 +532,7 @@ void Dish::FoodPlot(Graphics *g)
             cerr<<"foodplane below zero!!"<<endl;
           }
           // To change where first color is and how many colors to use modify parameters of this equation
-          int colori = startcolorindex + (ncolors - 1) * (Food->Sigma(x, y) - 1) / (maxfood - 1);
+          int colori = startcolorindex + ncolors * (Food->Sigma(x, y) - 1) / (Food->getMaxFood() - 1);
           // Make the pixel four times as large
           // to fit with the CPM plane
           g->Point(colori,2*x,2*y);
@@ -2288,7 +2287,6 @@ int Dish::ReadBackup(char *filename){
      getline( strstr2, substr, ',' );
      peaks.push_back( substr );
    }
-   // TODO: test this, i have no idea if it actually works
    for (size_t i = 0; i < peaks.size(); i++) {
      int x, y;
      stringstream (peaks[i]) >> x >> y;
