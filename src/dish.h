@@ -119,6 +119,7 @@ public:
   void CellGrowthAndDivision2(void);
   void UpdateCellParameters(int Time);
   void UpdateCellParameters2(void);
+  void UpdateCellParameters3(int Time);
   double NeighInputCalc(Cell &c);
   // TODO: Ask if needed (multiple grad sources make these function annoying to optimize)
   [[deprecated]]

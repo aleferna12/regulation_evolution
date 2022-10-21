@@ -33,6 +33,13 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define PREY 1
 #define PREDATOR 2
 
+struct BoundingBox {
+    int minx;
+    int miny;
+    int maxx;
+    int maxy;
+};
+
 extern Parameter par;
 class Dish;
 
@@ -705,6 +712,9 @@ al. 2000). The current version of TST does not include such functionality.
   int SetNeighbourDurationFromMother(int cell, int motherduration);
   int updateNeighbourBoundary(int cell, int boundarymodification);
   int updateNeighbourDuration(int cell, int durationmodification);
+  // Returns a bounding box around the cell where CPM->sigma(x, y) is likely to be cell->sigma
+  // TODO: instead of dynamically calculating this, we could keep it is an attr and update it on ConvertSpin
+  BoundingBox getBoundingBox(int maxx, int maxy);
 
 private:
   //updated version: read key-lock pairs
@@ -1078,7 +1088,6 @@ protected:
   int perstime; //counter for how long it has walked persistently
   double mu; //force of migration
 
-  // Two dimensional (square) array of ints, containing the J's.
   double length; // length of the cell;
   double target_length;
 

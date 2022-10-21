@@ -2645,6 +2645,148 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 // }
 
 
+// TODO: Move to cell.h
+int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
+
+  int sigmaneigh;
+
+  // for the cell directions
+  Dir *celldir=0;
+  vector<int> toprint;
+
+  Cell *motherp = &((*cell)[cell_sigma]);
+  Cell *daughterp;
+  /* division */
+
+  //we first check if we can recycle some position already exisiting in the vector
+  //such position would come from a cell that has previously apoptosed
+  vector<Cell>::iterator c;
+  bool replaced=false;
+  for ( c=cell->begin(), c++ ; c!=cell->end(); c++){
+    if(!c->AliveP() && c->TargetArea() <= 0 && c->Area() == 0 ){
+      //we recycle this sigma for the new cell
+      //set recycled sigma
+      daughterp=new Cell(*(motherp->owner), motherp->getTau(), c->Sigma());
+      daughterp->CellBirth(*motherp);
+      *c = *daughterp;    // notice that the operator = (equal) is overloaded, see cell.h
+      replaced=true;
+      break;
+    }
+  }
+  if( !replaced ){
+    //cout << "We do not recycle, calling function new"<< endl;
+    // THIS USED TO BE ABOVE, WHERE THE SIGN *** IS !!!
+    //MAKES NEW CELL AT THE END OF ARRAY
+    daughterp=new Cell(*(motherp->owner));  //this calls  Cell(...){ owner=&who; ConstructorBody()}
+    int momcol=motherp->colour;
+    daughterp->CellBirth(*motherp);
+    cell->push_back(*daughterp);  //this calls default copy constructor Cell(const Cell &src)
+    // prints "Tomato"
+    //this puts new cells at the end of array if there was no space to recycle
+    // renew pointer to mother (because after push_back memory might be relocated)
+    motherp=&((*cell)[cell_sigma]);
+    if(motherp->colour!=momcol) cerr<<"this is the problem"<<endl;
+  }
+  // renew pointers
+  delete daughterp;
+  if(replaced){
+    daughterp=&(*c);
+    //cerr<<"mother sigma: "<<motherp->Sigma()<<", daughter sigma"<<daughterp->Sigma()<<endl;
+  }
+  else {
+    //cerr<<"mother sigma: "<<motherp->Sigma()<<", daughter sigma"<<daughterp->Sigma()<<endl;
+    daughterp=&(cell->back());
+  }
+
+  for (auto &c : *cell)
+    cout << c.Sigma() << " ";
+  cout << endl;
+
+  for (int i=box.minx; i <= box.maxx; i++) for (int j = box.miny; j <= box.maxy; j++) {
+    if (sigma[i][j] == motherp->sigma) {
+      /* Now the actual division takes place */
+
+      /* If celldirections where not yet computed: do it now */
+      if (!celldir)
+        celldir = FindCellDirections3();
+      // if site is below the minor axis of the cell: sigma of new cell
+      // to properly choose this we have to check where this pixel is
+      int checki = i;
+      int checkj = j;
+
+      if (checkj > ((int) (celldir[motherp->sigma].aa2 + celldir[motherp->sigma].bb2 * (double) checki))) {
+        motherp->DecrementArea();
+        motherp->RemoveSiteFromMoments(i, j);
+        sigma[i][j] = daughterp->Sigma();  // WHERE is daughterp->Sigma() defined?
+        daughterp->IncrementArea();
+        daughterp->AddSiteToMoments(i, j);
+        //go through neighbourhood to update contacts
+        // to new daughter contacts we now pass duration from mother
+        // sigma[i][j] is daughter, sigmaneigh can be daughter, mother, medium, someone else
+        for (int k = 1; k <= n_nb; k++) {
+          //if wrapped boundaries we wrap i+nx[k] and j+ny[k] around (if needed)
+          //if fiexed boundaries, we exclude them from the neigh counting
+          int neix = i + nx[k];
+          int neiy = j + ny[k];
+          if (neix <= 0 || neix >= sizex - 1 || neiy <= 0 || neiy >= sizey - 1) {
+            if (par.periodic_boundaries) {
+              if (neix <= 0) neix = sizex - 2 + neix;
+              if (neix >= sizex - 1) neix = neix - sizex + 2;
+              if (neiy <= 0) neiy = sizey - 2 + neiy;
+              if (neiy >= sizey - 1) neiy = neiy - sizey + 2;
+            } else {
+              continue;
+            }
+          }
+          sigmaneigh = sigma[neix][neiy];
+          //if sigmaneigh is not sigma, we update the contact of daughter cell with it,
+          //and the contact of that cell with daughter (provided it is not medium)
+          if (sigmaneigh != sigma[i][j]) {
+
+            //update the edgeSetVector
+            edgeSetVector.insert({i, j, neix, neiy});
+            edgeSetVector.insert({neix, neiy, i, j});
+
+            (*cell)[sigma[i][j]].updateNeighbourBoundary(sigmaneigh, 1);
+            //take duration from mother iff sigmaneigh is not mother
+            if (sigmaneigh != motherp->Sigma() && sigmaneigh != MEDIUM)
+              (*cell)[sigma[i][j]].SetNeighbourDurationFromMother(sigmaneigh, motherp->returnDuration(sigmaneigh));
+
+            //also cell to which sigmaneigh belongs must be updated, if it is not medium
+            if (sigmaneigh) {
+              (*cell)[sigmaneigh].updateNeighbourBoundary(sigma[i][j], 1);
+              if (sigmaneigh != motherp->Sigma()) {
+                (*cell)[sigmaneigh].SetNeighbourDurationFromMother(sigma[i][j], motherp->returnDuration(sigmaneigh));
+              }
+            }
+
+            if (sigmaneigh != motherp->Sigma()) {
+              motherp->updateNeighbourBoundary(sigmaneigh, -1);
+
+              if (sigmaneigh)
+              (*cell)[sigmaneigh].updateNeighbourBoundary(motherp->Sigma(), -1);
+            }
+          } else//sigmaneigh==sigma[i][j] This pixel has already become a daughter pixel,
+            //remove from contacts between mother and daughter
+          {
+            //update the edgeSetVector
+            edgeSetVector.erase({i, j, neix, neiy});
+            edgeSetVector.erase({neix, neiy, i, j});
+
+            motherp->updateNeighbourBoundary(sigmaneigh, -1);
+            (*cell)[sigmaneigh].updateNeighbourBoundary(motherp->Sigma(), -1);
+          }
+        } // end neighbour loop
+      }
+    }
+  }
+
+  if (celldir)
+    delete[] (celldir);
+  return daughterp->sigma;
+}
+
+
 vector<int> CellularPotts::DivideCells(vector<bool> which_cells)
 {
 

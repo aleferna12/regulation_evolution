@@ -229,6 +229,8 @@ public:
     vector<int> DivideCells(std::vector<bool> which_cells);
     vector<int> DivideCells2(std::vector<bool> which_cells);
 
+    int DivideCell(int cell_sigma, BoundingBox box);
+
     /*! Implements the core CPM algorithm. Carries out one MCS.
       \return Total energy change during MCS.
     */

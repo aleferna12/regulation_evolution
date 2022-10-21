@@ -1255,6 +1255,98 @@ void Dish::CellGrowthAndDivision2(void)
 }
 
 
+void Dish::UpdateCellParameters3(int Time) {
+  vector<Cell>::iterator c; //iterator to go over all Cells
+  vector<int> to_divide;
+  array <double,2> inputs={0., 0.}; //was inputs(2,0.);
+  array <int,2> output={0,0};
+  vector<int> sigma_newcells;
+  int interval;
+  int divvs=0;
+
+  //cout<<"Update Cell parameters "<<Time<<endl;
+  //update networks asynchronously f
+  for( c=cell.begin(), ++c; c!=cell.end(); ++c){
+    if( c->AliveP() ){
+
+      c->time_since_birth++;
+      interval=Time+c->Gextiming();
+      //update the network withing each cell, if it is the right time
+      if(!(interval%par.scaling_cell_to_ca_time)){
+        //calculate inputs
+        inputs[0]=(double)c->grad_conc;
+        inputs[1]=(double)c->TimesDivided(); //NeighInputCalc(*c);
+        c->UpdateGenes(inputs, true);
+        c->FinishGeneUpdate();
+        //what is the state of the output node of the cell?
+        c->GetGeneOutput(output);
+
+        //cell decides to divide
+        if (output[0]==1){
+          //cout<<"cell "<<c->Sigma()<<" wants to divide"<<endl;
+          c->dividecounter++;
+
+          if(c->dividecounter>=par.divtime+par.divdur && c->TimesDivided()<par.maxdivisions){ //cannot divide more than three times
+            //divide
+            if(c->Area()>30){
+              //cout<<"cell "<<c->Sigma()<<" will divide"<<endl;
+              if (!par.nodivisions){
+                to_divide.push_back(c->Sigma());
+              }
+              else{
+                c->AddTimesDivided();
+              }
+              divvs=1;
+            }
+            //we already set the target area back to normal. We won't run any AmoebaeMove in between this and division
+            //like this both daughter cells will inherit the normal size
+            //and if the cell was too small, it needs to start all over anyway. (Hopefully a rare case)
+            c->SetTargetArea(par.target_area);
+            c->dividecounter=0;
+            c->ClearGenomeState(); //reset the GRN!
+          }
+            //not time to divide yet, but do stop migrating and start growing
+          else if (c->dividecounter>par.divtime ){
+            //cout<<"cell "<<c->Sigma()<<" starting to divide"<<endl;
+            if ( c->TimesDivided()<par.maxdivisions && c->TargetArea()<par.target_area*2) c->SetTargetArea(c->TargetArea()+1);
+            c->setMu(0.);
+            c->setChemMu(0.0);
+            c->setTau(2); //basically only for color right now...
+
+          }
+        }
+          //this is a migratory cell
+        else{
+          //if (c->dividecounter) cout<<"cell "<<c->Sigma()<<" stopped division program"<<endl;
+          c->dividecounter=0;
+          c->setMu(par.startmu);
+          c->setChemMu(par.init_chemmu);
+          c->SetTargetArea(par.target_area);
+          c->setTau(1);
+          //cout<<"cell "<<c->Sigma()<<" is a migratory cell"<<endl;
+        }
+      }
+
+      //check area:if cell is too small (whether alive or not) we remove its sigma
+      // notice that this keeps the cell in the cell array, it only removes its sigma from the field
+      if(c->Area()< par.min_area_for_life){
+        c->SetTargetArea(0);
+        c->Apoptose(); //set alive to false
+        CPM->RemoveCell(&*c,par.min_area_for_life,c->meanx,c->meany);
+      }
+    }
+  }
+
+  // Divide cells latter. Updating params while dividing did not work (Segmentation faults)
+  for (int c_sigma : to_divide) {
+    int new_sigma = CPM->DivideCell(c_sigma, cell[c_sigma].getBoundingBox(CPM->SizeX(), CPM->SizeY()));
+    sigma_newcells.push_back(new_sigma);
+  }
+  MutateCells(sigma_newcells);
+  UpdateVectorJ(sigma_newcells);
+}
+
+
 // //Function that checks and changes cell parameters
 void Dish::UpdateCellParameters(int Time)
 {

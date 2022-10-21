@@ -127,7 +127,7 @@ INIT {
       }
       cout<<"done with update"<<endl;
       InitCellMigration();
-      UpdateCellParameters(0);//update cell status //UpdateCellParameters2();
+      UpdateCellParameters3(0);//update cell status //UpdateCellParameters2();
       par.starttime=0;
     }
     else if (strlen(par.competitionfile)){
@@ -146,7 +146,7 @@ INIT {
       }
       cout<<"done with update"<<endl;
       InitCellMigration();
-      UpdateCellParameters(0);//update cell status //UpdateCellParameters2();
+      UpdateCellParameters3(0);//update cell status //UpdateCellParameters2();
       par.starttime=0;
     }
 
@@ -201,7 +201,7 @@ TIMESTEP {
     //nr++;
     //cout << duration.count() << endl;
     //This function updates the network and deals with the consequences of the output (motility vs division)
-    dish->UpdateCellParameters(i); // for continuous GRN updating and reproduction
+    dish->UpdateCellParameters3(i); // for continuous GRN updating and reproduction
 
     dish->CellMigration();//updates persistence time and targetvectors
 

@@ -5,7 +5,7 @@ mcs = 100000000
 
 #cells in blobs move at 0.0055 px/mcs
 # duration of season could then be larger than field size/ speed
-season_duration = 30000
+season_duration = 100000
 
 ### grid size ###
 sizex = 500
@@ -101,7 +101,7 @@ maxdivisions = 3
 howmany_makeit_for_nextgen = 100
 popsize = 100
 
-n_init_cells = 100
+n_init_cells = 10
 size_init_cells = 25
 
 #Initial configuration of cells, see ca.cpp placecellsorderly()
@@ -165,7 +165,7 @@ gradnoise = 1.0
 # gradscale = 100 / gradient_step_size
 # gradscale = 5 results in steps that are approx. double the diameter of the cells (assuming t_area = 50)
 gradscale = 5
-gradsources = 10
+gradsources = 5
 # Probability that a cell will degrade a lattice site every few (100) MCS
 degradeprob = 0.0
 
