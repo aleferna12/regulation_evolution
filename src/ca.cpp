@@ -2698,10 +2698,6 @@ int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
     daughterp=&(cell->back());
   }
 
-  for (auto &c : *cell)
-    cout << c.Sigma() << " ";
-  cout << endl;
-
   for (int i=box.minx; i <= box.maxx; i++) for (int j = box.miny; j <= box.maxy; j++) {
     if (sigma[i][j] == motherp->sigma) {
       /* Now the actual division takes place */
