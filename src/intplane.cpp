@@ -52,7 +52,6 @@ IntPlane::IntPlane(const int sx, const int sy, int grad_srcs) {
   grad_sources = grad_srcs;
   // Needs more work, grad_sources scale too much with distance and not enough with area
   min_resource_dist = DetermineMinDist();
-  cout << "MINDIST" << min_resource_dist << endl;
   diagonal = sqrt(sizex*sizex + sizey*sizey);
   peaksx = new int[grad_sources] {};
   peaksy = new int[grad_sources] {};
@@ -355,7 +354,6 @@ void IntPlane::RandomizeResourcePeaks() {
     peaksx[src] = x;
     peaksy[src] = y;
   }
-  dist_most_isolated = DistMostIsolatedPoint();
 }
 
 
@@ -420,8 +418,7 @@ int IntPlane::WritePeaksData() {
 // I am going to change the direction of the gradient every so often
 void IntPlane::IncreaseValSpecifiedExp(CellularPotts *cpm)
 {
-  RandomizeResourcePeaks();
-
+  dist_most_isolated = DistMostIsolatedPoint();
   maxfood = 0;
   for(int i=1;i<sizex-1;i++)for(int j=1;j<sizey-1;j++){
     double dfood = FoodAtPosition(i, j);

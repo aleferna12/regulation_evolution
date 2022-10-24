@@ -173,7 +173,7 @@ INIT {
       InitContactLength();
       InitVectorJ();
       Food->InitIncreaseVal(CPM);
-
+      Food->IncreaseVal(*(Food));
     }
   } catch(const char* error) {
     cerr << "Caught exception\n";
@@ -201,6 +201,7 @@ TIMESTEP {
     //nr++;
     //cout << duration.count() << endl;
     //This function updates the network and deals with the consequences of the output (motility vs division)
+
     dish->UpdateCellParameters3(i); // for continuous GRN updating and reproduction
 
     dish->CellMigration();//updates persistence time and targetvectors
@@ -232,6 +233,7 @@ TIMESTEP {
           //cout<<"done reproducing"<<endl;
           //dish->UpdateCellParameters2();//update cell status; for noncontinuous sim
           //cout<<"done updating"<<endl;
+          dish->Food->RandomizeResourcePeaks();
           dish->Food->IncreaseVal(*(dish->Food)); //this has to be last thing to do here
           std::cout << "End of season: Gradient switching at time (+/- 25 MCS) = "<< i << '\n';
           if(strlen(par.competitionfile)){

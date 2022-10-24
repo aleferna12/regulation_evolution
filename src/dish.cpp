@@ -1347,6 +1347,20 @@ void Dish::UpdateCellParameters3(int Time) {
 }
 
 
+vector<BoundingBox> Dish::MergeBoundingBoxes(vector<BoundingBox> old_bbs, BoundingBox new_bb) {
+  auto it = old_bbs.begin();
+  vector<BoundingBox> to_merge;
+  while (it != old_bbs.end()) {
+    bool w_overlap = min(it->maxx, new_bb.maxx) > max(it->minx, new_bb.minx);
+    bool h_overlap = min(it->maxy, new_bb.maxy) > max(it->miny, new_bb.miny);
+    if (w_overlap and h_overlap) {
+      to_merge.push_back(*it);
+      it = old_bbs.erase(it);
+    }
+  }
+}
+
+
 // //Function that checks and changes cell parameters
 void Dish::UpdateCellParameters(int Time)
 {
