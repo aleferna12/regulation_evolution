@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 from typing import List
 
+sys.setrecursionlimit(10000)
+
 
 def main():
     logging.basicConfig(level=logging.INFO)
@@ -26,6 +28,7 @@ def exhaust_cluster(neigh, neights, cluster):
     return cluster
 
 
+# TODO: Get rid of recursion, it can exceed the recursion limit and cause problems
 def get_clusters(neighs):
     clusters = []
     neigh_list = list(neighs)

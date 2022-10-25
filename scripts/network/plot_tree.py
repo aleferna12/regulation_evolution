@@ -68,14 +68,19 @@ def plot_tree(tree: Tree, clusters, outpath, min_cluster=2, colored=True):
         if node.is_leaf():
             # rapidnj adds these for no reason
             node.name = node.name.strip("\'")
+            face = AttrFace("name")
+            node.add_face(face, column=0)
             # Color unicellular nodes black and doesn't color dead-end nodes
             if colored and getattr(node, "time", None) == last_season:
-                node.img_style["bgcolor"] = leaf_color.get(node.name, _cs.black)
+                color = leaf_color.get(node.name, _cs.darkgray)
+                node.img_style["bgcolor"] = color
+                node.img_style["hz_line_color"] = color
 
     ts = TreeStyle()
     ts.root_opening_factor = 0.1
+    ts.show_leaf_name = False
     ts.mode = 'c'
-    tree.render(outpath, tree_style=ts, w=1000)
+    tree.render(outpath, tree_style=ts, w=250, units="mm")
 
 
 def figtree_nexus_str(newick, clusters, min_cluster=2):

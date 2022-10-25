@@ -229,6 +229,8 @@ public:
     vector<int> DivideCells(std::vector<bool> which_cells);
     vector<int> DivideCells2(std::vector<bool> which_cells);
 
+    // Tells the cell cell_sigma to divide, given its boundingbox
+    // TODO: Put in cell.h
     int DivideCell(int cell_sigma, BoundingBox box);
 
     /*! Implements the core CPM algorithm. Carries out one MCS.

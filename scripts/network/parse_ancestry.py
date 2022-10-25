@@ -13,8 +13,9 @@ def main():
     if not os.path.isdir(outdir):
         raise ValueError("second argument is not a valid existing directory")
     dead_ends = False if len(sys.argv) >= 4 and sys.argv[3] in ["0", "false"] else True
-    print(dead_ends)
     names = False if len(sys.argv) >= 5 and sys.argv[4] in ["0", "false"] else True
+    nhx = False if len(sys.argv) >= 6 and sys.argv[5] in ["0", "false"] else True
+    fmt = int(sys.argv[6]) if len(sys.argv) >= 7 else 5
 
     logging.info(f"Writing trees to '{outdir}'")
     longest = []
@@ -29,8 +30,8 @@ def main():
             longest.append(tree_name)
         tree.write(
             outfile=str(outdir / (tree_name + ".newick")),
-            format=5,
-            features=["time"]
+            format=fmt,
+            features=["time"] if nhx else None
         )
     logging.info("Longest lineages are: " + ", ".join(longest))
     logging.info(f"These lineages survived for {longest_gen} seasons")

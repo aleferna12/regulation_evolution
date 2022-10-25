@@ -50,7 +50,6 @@ IntPlane::IntPlane(const int sx, const int sy, int grad_srcs) {
   sizey=sy;
 
   grad_sources = grad_srcs;
-  // Needs more work, grad_sources scale too much with distance and not enough with area
   min_resource_dist = DetermineMinDist();
   diagonal = sqrt(sizex*sizex + sizey*sizey);
   peaksx = new int[grad_sources] {};

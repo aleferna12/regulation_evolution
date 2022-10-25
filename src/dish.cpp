@@ -1260,7 +1260,6 @@ void Dish::UpdateCellParameters3(int Time) {
   vector<int> to_divide;
   array <double,2> inputs={0., 0.}; //was inputs(2,0.);
   array <int,2> output={0,0};
-  vector<int> sigma_newcells;
   int interval;
   int divvs=0;
 
@@ -1291,6 +1290,7 @@ void Dish::UpdateCellParameters3(int Time) {
             if(c->Area()>30){
               //cout<<"cell "<<c->Sigma()<<" will divide"<<endl;
               if (!par.nodivisions){
+                // Divide cells latter. Updating params while dividing did not work (Segmentation faults)
                 to_divide.push_back(c->Sigma());
               }
               else{
@@ -1312,7 +1312,6 @@ void Dish::UpdateCellParameters3(int Time) {
             c->setMu(0.);
             c->setChemMu(0.0);
             c->setTau(2); //basically only for color right now...
-
           }
         }
           //this is a migratory cell
@@ -1337,27 +1336,13 @@ void Dish::UpdateCellParameters3(int Time) {
     }
   }
 
-  // Divide cells latter. Updating params while dividing did not work (Segmentation faults)
+  vector<int> sigma_newcells;
   for (int c_sigma : to_divide) {
     int new_sigma = CPM->DivideCell(c_sigma, cell[c_sigma].getBoundingBox(CPM->SizeX(), CPM->SizeY()));
     sigma_newcells.push_back(new_sigma);
   }
   MutateCells(sigma_newcells);
   UpdateVectorJ(sigma_newcells);
-}
-
-
-vector<BoundingBox> Dish::MergeBoundingBoxes(vector<BoundingBox> old_bbs, BoundingBox new_bb) {
-  auto it = old_bbs.begin();
-  vector<BoundingBox> to_merge;
-  while (it != old_bbs.end()) {
-    bool w_overlap = min(it->maxx, new_bb.maxx) > max(it->minx, new_bb.minx);
-    bool h_overlap = min(it->maxy, new_bb.maxy) > max(it->miny, new_bb.miny);
-    if (w_overlap and h_overlap) {
-      to_merge.push_back(*it);
-      it = old_bbs.erase(it);
-    }
-  }
 }
 
 
@@ -2252,21 +2237,6 @@ void Dish::MakeBackup(int Time){
   for(int x=1; x<par.sizex-1; x++){
     for(int y=1; y<par.sizey-1; y++){
       int isigma=CPM->Sigma(x,y);
-      ofs<<isigma<<" ";
-      counter++;
-      if(counter>=maxperline){
-        ofs<<endl;
-        counter=0;
-      }
-    }
-  }
-  ofs<<endl;
-
-  counter=0;
-  ofs<<endl;
-  for(int x=1; x<par.sizex-1; x++){
-    for(int y=1; y<par.sizey-1; y++){
-      int isigma=Food->Sigma(x,y);
       ofs<<isigma<<" ";
       counter++;
       if(counter>=maxperline){
