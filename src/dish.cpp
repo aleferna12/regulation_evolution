@@ -818,16 +818,16 @@ void Dish::CellsEat(void)
 }
 
 
-void Dish::CellsEat4(int time) {
+void Dish::CellsEat4() {
   for (auto &c : cell) {
     if (c.AliveP() and c.getTau() == PREY) {
       int fsumx = 0, fsumy = 0, ftotal = 0;
       int foodload;
 
       BoundingBox bb = c.getBoundingBox();
-      int pixel_cout = 0;
+      int pixel_count = 0;
       for (int x = bb.minx; x <= bb.maxx; ++x) for (int y = bb.miny; y <= bb.maxy; ++y) {
-        ++pixel_cout;
+        ++pixel_count;
         int food_xy = Food->Sigma(x, y);
         if (CPM->Sigma(x, y) == c.Sigma()) {
           fsumx += x * food_xy;
@@ -835,9 +835,8 @@ void Dish::CellsEat4(int time) {
           ftotal += food_xy;
         }
       }
-      if (pixel_cout != c.Area()) {
-        cerr << "Something went wrong when dividing cell " << motherp->Sigma() << endl;
-        cerr << "Cell area is " << motherp->Area() << " but only " << pixel_count << " pixels were found inside bounding box";
+      if (pixel_count != c.Area()) {
+        cerr << "Cell area is " << c.Area() << " but only " << pixel_count << " pixels were found inside bounding box";
         cerr << "Terminating the program";
         exit(1);
       }
@@ -845,14 +844,14 @@ void Dish::CellsEat4(int time) {
         double xvector = fsumx / (double) ftotal;
         double yvector = fsumy / (double) ftotal;
         c.grad_conc = ftotal / c.Area();
-        double hyphyp=hypot(xv,yv);
+        double hyphyp=hypot(xvector,yvector);
 
         // in a homogeneous medium, gradient is zero
         // we then pick a random direction
         if(hyphyp > 0.0001){
-          xv/=hyphyp;
-          yv/=hyphyp;
-          c.setChemVec(xv,yv);
+          xvector/=hyphyp;
+          yvector/=hyphyp;
+          c.setChemVec(xvector,yvector);
         } else {
           double theta = 2. * M_PI * RANDOM();
           c.setChemVec(cos(theta), sin(theta));
