@@ -12,16 +12,7 @@ from colorir import *
 _cs = Palette.load()
 
 
-def main():
-    logging.basicConfig(level=logging.INFO)
-    season = int(sys.argv[1])
-    treepath = Path(sys.argv[2]).resolve()
-    neighpath = Path(sys.argv[3]).resolve()
-    outpath = Path(sys.argv[4]).resolve()
-    min_cluster = int(sys.argv[5]) if len(sys.argv) > 5 else 2
-    reroot = True if len(sys.argv) > 6 and sys.argv[6] in ["true", '1'] else False
-    colored = False if len(sys.argv) > 7 and sys.argv[7] in ["false", '0'] else True
-
+def main(season, treepath, neighpath, outpath, min_cluster, reroot, colored):
     logging.info("Reading tree file")
     tree = Tree(str(treepath))
     # When tree is constructed by neighbour joining they are unrooted so we must estimate
@@ -113,4 +104,13 @@ def figtree_nexus_str(newick, clusters, min_cluster=2):
 
 
 if __name__ == "__main__":
-    main()
+    logging.basicConfig(level=logging.INFO)
+    season = int(sys.argv[1])
+    treepath = Path(sys.argv[2]).resolve()
+    neighpath = Path(sys.argv[3]).resolve()
+    outpath = Path(sys.argv[4]).resolve()
+    min_cluster = int(sys.argv[5]) if len(sys.argv) > 5 else 2
+    reroot = True if len(sys.argv) > 6 and sys.argv[6] in ["true", '1'] else False
+    colored = False if len(sys.argv) > 7 and sys.argv[7] in ["false", '0'] else True
+
+    main(season, treepath, neighpath, outpath, min_cluster, reroot, colored)

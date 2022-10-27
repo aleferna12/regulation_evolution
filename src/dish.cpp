@@ -817,6 +817,60 @@ void Dish::CellsEat(void)
     }
 }
 
+
+void Dish::CellsEat4(int time) {
+  for (auto &c : cell) {
+    if (c.AliveP() and c.getTau() == PREY) {
+      int fsumx = 0, fsumy = 0, ftotal = 0;
+      int foodload;
+
+      BoundingBox bb = c.getBoundingBox();
+      int pixel_cout = 0;
+      for (int x = bb.minx; x <= bb.maxx; ++x) for (int y = bb.miny; y <= bb.maxy; ++y) {
+        ++pixel_cout;
+        int food_xy = Food->Sigma(x, y);
+        if (CPM->Sigma(x, y) == c.Sigma()) {
+          fsumx += x * food_xy;
+          fsumy += y * food_xy;
+          ftotal += food_xy;
+        }
+      }
+      if (pixel_cout != c.Area()) {
+        cerr << "Something went wrong when dividing cell " << motherp->Sigma() << endl;
+        cerr << "Cell area is " << motherp->Area() << " but only " << pixel_count << " pixels were found inside bounding box";
+        cerr << "Terminating the program";
+        exit(1);
+      }
+      if (ftotal) {
+        double xvector = fsumx / (double) ftotal;
+        double yvector = fsumy / (double) ftotal;
+        c.grad_conc = ftotal / c.Area();
+        double hyphyp=hypot(xv,yv);
+
+        // in a homogeneous medium, gradient is zero
+        // we then pick a random direction
+        if(hyphyp > 0.0001){
+          xv/=hyphyp;
+          yv/=hyphyp;
+          c.setChemVec(xv,yv);
+        } else {
+          double theta = 2. * M_PI * RANDOM();
+          c.setChemVec(cos(theta), sin(theta));
+        }
+      } else {
+        double theta = 2.*M_PI*RANDOM();
+        c.setChemVec(cos(theta), sin(theta));
+      }
+
+      if(c.chemvecx>1 || c.chemvecy>1){
+        std::cerr << ", vector: "<< c.chemvecx <<" "<< c.chemvecy  << '\n';
+        exit(1);
+      }
+    }
+  }
+}
+
+
 //changes cells direction vector based on where more food is
 void Dish::CellsEat2(int time)
 {
@@ -825,8 +879,6 @@ void Dish::CellsEat2(int time)
   //   std::cerr << "CellsEat2: does not work with wrapped boundaries" << '\n';
   //   exit(1);
   // }
-
-  int MAX_PARTICLES=1000000; //max particles that a cell can have inside it
   std::vector<int> fsumx(cell.size(),0), fsumy(cell.size(),0),ftotal(cell.size(),0);
   int foodload;
 
@@ -841,15 +893,6 @@ void Dish::CellsEat2(int time)
             //determine the mean position of the food that the cell sees
             int fx=x, fy=y;
 
-            if(par.periodic_boundaries){
-              double meanx = cell[cell_sigma].getXpos();
-              double meany = cell[cell_sigma].getYpos();
-              if( (fx-meanx)>0 && (fx-meanx)>(meanx-(fx-(par.sizex-2))) ) fx-=(par.sizex-2);
-              else if( (meanx-fx)>0 && (meanx-fx)>(fx+(par.sizex-2)-meanx)) fx+=(par.sizex-2);
-              if( (fy-meany)>0 && (fy-meany)> (meany - (fy - (par.sizey-2))) ) fy-=(par.sizey-2);
-              else if( (meany-fy>0) && (meany-fy)>(fy+(par.sizey-2)-meany)) fy+=(par.sizey-2);
-            }
-
             fsumx[cell_sigma]+=fx*Food->Sigma(x,y);
             fsumy[cell_sigma]+=fy*Food->Sigma(x,y);
             ftotal[cell_sigma]+=Food->Sigma(x,y);
@@ -858,17 +901,6 @@ void Dish::CellsEat2(int time)
             if (par.degradeprob && time % 100 == 0 && RANDOM() < par.degradeprob) {
               Food->addtoValue(x, y, -1);
             }
-          }else{
-            int howmuchfood = BinomialDeviate( -1*Food->Sigma(x,y) , cell[cell_sigma].GetEatProb()/(double)par.scaling_cell_to_ca_time );
-            Food->addtoValue(x,y,-1*-howmuchfood);
-
-            // we cannot add all the particles endlessly, otherwise it overflows
-            int current_particles = cell[cell_sigma].particles;
-            int added_particles = ( current_particles <= (MAX_PARTICLES-howmuchfood) )?howmuchfood:(MAX_PARTICLES-current_particles);
-            // std::cerr << "cell eats so many particles: "<< added_particles;
-            cell[cell_sigma].particles += added_particles;
-            // std::cerr << " therefore it now has: "<< cell[cell_sigma].particles << '\n';
-            // ADD SIGNAL for regulation
           }
         }
       }
@@ -1338,7 +1370,7 @@ void Dish::UpdateCellParameters3(int Time) {
 
   vector<int> sigma_newcells;
   for (int c_sigma : to_divide) {
-    int new_sigma = CPM->DivideCell(c_sigma, cell[c_sigma].getBoundingBox(CPM->SizeX(), CPM->SizeY()));
+    int new_sigma = CPM->DivideCell(c_sigma, cell[c_sigma].getBoundingBox());
     sigma_newcells.push_back(new_sigma);
   }
   MutateCells(sigma_newcells);

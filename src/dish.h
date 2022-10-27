@@ -108,6 +108,7 @@ public:
   void CellsEat(void);
   void CellsEat2(int time); //chenges cells direction vector based on where more food is
   void CellsEat3(void); //hopefully more efficient version of cellseat2
+  void CellsEat4(); // Hopefully hopefully more efficient than CellsEat2
 
   void UpdateCellExpression(void);
 
@@ -121,7 +122,6 @@ public:
   void UpdateCellParameters2(void);
   void UpdateCellParameters3(int Time);
   double NeighInputCalc(Cell &c);
-  // TODO: Ask if needed (multiple grad sources make these function annoying to optimize)
   [[deprecated]]
   int CheckWhoMadeitLinear(void);
   [[deprecated]]

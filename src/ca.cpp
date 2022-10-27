@@ -2645,7 +2645,8 @@ void CellularPotts::ShowDirections(Graphics &g, const Dir *celldir) const
 // }
 
 
-// TODO: Move to cell.h
+// TODO: This should probably be in cell.h
+// TODO: This should probably be in cell.h
 int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
 
   int sigmaneigh;
@@ -2698,8 +2699,10 @@ int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
     daughterp=&(cell->back());
   }
 
+  int pixel_count = 0;
   for (int i=box.minx; i <= box.maxx; i++) for (int j = box.miny; j <= box.maxy; j++) {
     if (sigma[i][j] == motherp->sigma) {
+      ++pixel_count;
       /* Now the actual division takes place */
 
       /* If celldirections where not yet computed: do it now */
@@ -2713,7 +2716,7 @@ int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
       if (checkj > ((int) (celldir[motherp->sigma].aa2 + celldir[motherp->sigma].bb2 * (double) checki))) {
         motherp->DecrementArea();
         motherp->RemoveSiteFromMoments(i, j);
-        sigma[i][j] = daughterp->Sigma();  // WHERE is daughterp->Sigma() defined?
+        sigma[i][j] = daughterp->Sigma();
         daughterp->IncrementArea();
         daughterp->AddSiteToMoments(i, j);
         //go through neighbourhood to update contacts
@@ -2724,16 +2727,6 @@ int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
           //if fiexed boundaries, we exclude them from the neigh counting
           int neix = i + nx[k];
           int neiy = j + ny[k];
-          if (neix <= 0 || neix >= sizex - 1 || neiy <= 0 || neiy >= sizey - 1) {
-            if (par.periodic_boundaries) {
-              if (neix <= 0) neix = sizex - 2 + neix;
-              if (neix >= sizex - 1) neix = neix - sizex + 2;
-              if (neiy <= 0) neiy = sizey - 2 + neiy;
-              if (neiy >= sizey - 1) neiy = neiy - sizey + 2;
-            } else {
-              continue;
-            }
-          }
           sigmaneigh = sigma[neix][neiy];
           //if sigmaneigh is not sigma, we update the contact of daughter cell with it,
           //and the contact of that cell with daughter (provided it is not medium)
@@ -2776,9 +2769,15 @@ int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
       }
     }
   }
-
+  if (pixel_count != motherp->Area()) {
+    cerr << "Something went wrong when dividing cell " << motherp->Sigma() << endl;
+    cerr << "Cell area is " << motherp->Area() << " but only " << pixel_count << " pixels were found inside bounding box";
+    cerr << "Terminating the program";
+    exit(1);
+  }
   if (celldir)
     delete[] (celldir);
+
   return daughterp->sigma;
 }
 

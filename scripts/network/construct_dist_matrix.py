@@ -8,12 +8,7 @@ from pathlib import Path
 from parse_networks import Cell, RegNode, InNode, OutNode, read_networks
 
 
-def main():
-    logging.basicConfig(level=logging.INFO)
-    season = int(sys.argv[1])
-    netpath = Path(sys.argv[2]).resolve()
-    outpath = Path(sys.argv[3]).resolve()
-
+def main(season, netpath, outpath):
     logging.info("Reading network file")
     if os.path.isfile(netpath):
         with open(netpath, "rb") as file:
@@ -87,4 +82,9 @@ def construct_dist_matrix(season):
 
 
 if __name__ == "__main__":
-    main()
+    logging.basicConfig(level=logging.INFO)
+    season = int(sys.argv[1])
+    netpath = Path(sys.argv[2]).resolve()
+    outpath = Path(sys.argv[3]).resolve()
+
+    main(season, netpath, outpath)

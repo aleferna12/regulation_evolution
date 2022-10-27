@@ -6,17 +6,7 @@ from pathlib import Path
 from ete3 import Tree
 
 
-def main():
-    logging.basicConfig(level=logging.INFO)
-    netpath = Path(sys.argv[1]).resolve()
-    outdir = Path(sys.argv[2]).resolve()
-    if not os.path.isdir(outdir):
-        raise ValueError("second argument is not a valid existing directory")
-    dead_ends = False if len(sys.argv) >= 4 and sys.argv[3] in ["0", "false"] else True
-    names = False if len(sys.argv) >= 5 and sys.argv[4] in ["0", "false"] else True
-    nhx = False if len(sys.argv) >= 6 and sys.argv[5] in ["0", "false"] else True
-    fmt = int(sys.argv[6]) if len(sys.argv) >= 7 else 5
-
+def main(netpath, outdir, dead_ends, names, nhx, fmt):
     logging.info(f"Writing trees to '{outdir}'")
     longest = []
     longest_gen = 0
@@ -37,11 +27,17 @@ def main():
     logging.info(f"These lineages survived for {longest_gen} seasons")
     logging.info("Finished")
 
+    return longest
 
-def read_ancestry(path, dead_ends=True, names=True, single_leaf=False):
+
+def read_ancestry(path, dead_ends=True, names=True, single_leaf=True, up_to=-1):
     path = Path(path)
     seasons = {}
     for filepath in path.glob("anc_*.txt"):
+        season_i = int(re.search(r"(?<=t)\d+", filepath.name).group())
+        if up_to != -1 and season_i > up_to:
+            continue
+            
         cells = []
         with open(filepath) as file:
             lines = file.read().split("\n")
@@ -52,13 +48,12 @@ def read_ancestry(path, dead_ends=True, names=True, single_leaf=False):
             if cell_sigma == "0":
                 continue
             cells.append((int(cell_sigma), int(anc_sigma)))
-        season_i = int(re.search(r"(?<=t)\d+", filepath.name).group())
         seasons[season_i] = cells
     return make_trees(seasons, dead_ends, names, single_leaf)
 
 
 # Remember that although the sigmas are added as names, the same id can refer to DIFFERENT cells
-def make_trees(seasons, dead_ends=True, names=True, single_leaf=False):
+def make_trees(seasons, dead_ends=True, names=True, single_leaf=True):
     # Order by time backwards
     # This is needed to deal with dead-ends
     seasons = {k: seasons[k] for k in sorted(seasons, reverse=True)}
@@ -99,4 +94,14 @@ def make_trees(seasons, dead_ends=True, names=True, single_leaf=False):
 
 
 if __name__ == "__main__":
-    main()
+    logging.basicConfig(level=logging.INFO)
+    netpath = Path(sys.argv[1]).resolve()
+    outdir = Path(sys.argv[2]).resolve()
+    if not os.path.isdir(outdir):
+        raise ValueError("second argument is not a valid existing directory")
+    dead_ends = False if len(sys.argv) >= 4 and sys.argv[3] in ["0", "false"] else True
+    names = False if len(sys.argv) >= 5 and sys.argv[4] in ["0", "false"] else True
+    nhx = False if len(sys.argv) >= 6 and sys.argv[5] in ["0", "false"] else True
+    fmt = int(sys.argv[6]) if len(sys.argv) >= 7 else 5
+
+    main(netpath, outdir, dead_ends, names, nhx, fmt)

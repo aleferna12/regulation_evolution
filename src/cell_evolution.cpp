@@ -194,7 +194,7 @@ TIMESTEP {
     if( !(i%100000) ) cerr<<"TIME: "<<i<<endl;
 
     //auto start = high_resolution_clock::now();
-    dish->CellsEat2(i);
+    dish->CellsEat4();
     //auto stop = high_resolution_clock::now();
     //auto duration = duration_cast<microseconds>(stop - start);
     //sum+=duration.count();

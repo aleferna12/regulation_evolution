@@ -713,8 +713,9 @@ al. 2000). The current version of TST does not include such functionality.
   int updateNeighbourBoundary(int cell, int boundarymodification);
   int updateNeighbourDuration(int cell, int durationmodification);
   // Returns a bounding box around the cell where CPM->sigma(x, y) is likely to be cell->sigma
-  // TODO: instead of dynamically calculating this, we could keep it is an attr and update it on ConvertSpin
-  BoundingBox getBoundingBox(int maxx, int maxy);
+  // Instead of dynamically calculating this, we could keep it is an attr and update it on ConvertSpin
+  // Is that faster?
+  BoundingBox getBoundingBox();
 
 private:
   //updated version: read key-lock pairs

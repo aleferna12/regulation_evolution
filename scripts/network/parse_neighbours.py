@@ -5,13 +5,8 @@ import json
 from pathlib import Path
 from typing import List
 
-sys.setrecursionlimit(10000)
 
-
-def main():
-    logging.basicConfig(level=logging.INFO)
-    neighpath = sys.argv[1]
-    outpath = sys.argv[2]
+def main(neighpath, outpath):
     logging.info("Reading neighbour information")
     neighs = read_neighbours(neighpath)
     logging.info(f"Writing neighbours to: '{outpath}'")
@@ -20,24 +15,22 @@ def main():
     logging.info("Finished")
 
 
-def exhaust_cluster(neigh, neights, cluster):
-    if neigh not in cluster:
-        cluster.add(neigh)
-        for next_neigh in neights[neigh]:
-            exhaust_cluster(next_neigh, neights, cluster)
-    return cluster
-
-
-# TODO: Get rid of recursion, it can exceed the recursion limit and cause problems
 def get_clusters(neighs):
     clusters = []
-    neigh_list = list(neighs)
-    while neigh_list:
-        cluster = list(exhaust_cluster(neigh_list[0], neighs, set()))
-        for found_neigh in cluster:
-            if found_neigh in neigh_list:
-                neigh_list.remove(found_neigh)
-        clusters.append(cluster)
+    neigh_set = set(neighs)
+    while neigh_set:
+        cluster = set()
+        qneighs = {neigh_set.pop()}
+        while qneighs:
+            neigh = qneighs.pop()
+            # Prevent infitine recursion
+            if neigh not in cluster:
+                cluster.add(neigh)
+                qneighs.update(neighs[neigh])
+
+        neigh_set -= cluster
+        # Sets are not JSON hashable
+        clusters.append(list(cluster))
 
     return clusters
 
@@ -67,4 +60,8 @@ def read_neighbours(path, season_filter: List[int] = None):
 
 
 if __name__ == "__main__":
-    main()
+    logging.basicConfig(level=logging.INFO)
+    neighpath = sys.argv[1]
+    outpath = sys.argv[2]
+
+    main(neighpath, outpath)
