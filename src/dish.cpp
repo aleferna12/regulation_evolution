@@ -827,9 +827,9 @@ void Dish::CellsEat4() {
       BoundingBox bb = c.getBoundingBox();
       int pixel_count = 0;
       for (int x = bb.minx; x <= bb.maxx; ++x) for (int y = bb.miny; y <= bb.maxy; ++y) {
-        ++pixel_count;
         int food_xy = Food->Sigma(x, y);
         if (CPM->Sigma(x, y) == c.Sigma()) {
+          ++pixel_count;
           fsumx += x * food_xy;
           fsumy += y * food_xy;
           ftotal += food_xy;
