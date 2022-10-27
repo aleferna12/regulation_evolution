@@ -56,7 +56,6 @@ Parameter::Parameter() {
   neighbours = 2;
   min_area_for_life = 5;
   key_lock_length = 10;
-  periodic_boundaries = false;
   n_chem = 1;
   diff_coeff = new double[1];
   diff_coeff[0] = 1e-13;
@@ -614,7 +613,6 @@ void Parameter::Read(const char *filename) {
   neighbours = igetpar(fp, "neighbours", 2, true);
   min_area_for_life = igetpar(fp, "min_area_for_life", 5, true);
   key_lock_length = igetpar(fp, "key_lock_length", 10, true);
-  periodic_boundaries = bgetpar(fp, "periodic_boundaries", false, true);
   n_chem = igetpar(fp, "n_chem", 0, true);
   if(n_chem){
     diff_coeff = dgetparlist(fp, "diff_coeff", n_chem, true);
@@ -863,7 +861,6 @@ void Parameter::Write(ostream &os) const {
   os << " neighbours = " << neighbours << endl;
   os << " min_area_for_life = " << min_area_for_life << endl;
   os << " key_lock_length = " << key_lock_length << endl;
-  os << " periodic_boundaries = " << sbool(periodic_boundaries) << endl;
   os << " n_chem = " << n_chem << endl;
   os << " diff_coeff = "<< diff_coeff[0] << endl;
   os << " decay_rate = "<< decay_rate[0] << endl;

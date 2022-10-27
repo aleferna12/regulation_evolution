@@ -23,7 +23,6 @@ T = 16
 
 # neigh =2 is Moore neigh (#set neighbours to 1 to avoid predators from eating beyond contact <- NO)
 neighbours = 2
-periodic_boundaries = false
 conn_diss = 0			#whether to penalise loose pixels
 #unclear, only in deltaH
 vecadherinknockout = false

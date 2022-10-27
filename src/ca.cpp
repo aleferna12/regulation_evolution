@@ -1060,28 +1060,10 @@ int CellularPotts::AmoebaeMove2(PDE *PDEfield)
       yp=(*it).first[3];
       k=sigma[x][y];
 
-     if (par.periodic_boundaries) {
-      // Boundary management:
-      // since we are asynchronic, we cannot just copy the borders once
-      // every MCS
-      if (x<=0) x=sizex-2+x;
-      if (y<=0) y=sizey-2+y;
-      if (x>=sizex-1) x=x-sizex+2;
-      if (y>=sizey-1) y=y-sizey+2;
-      if(xp<=0) xp=sizex-2+xp;  //sizex-2 because both borders
-      if(yp<=0) yp=sizey-2+yp;
-      if(xp>=sizex-1) xp=xp-sizex+2;
-      if(yp>=sizey-1) yp=yp-sizey+2;
-      k=sigma[x][y];
+    if (xp<=0 || yp<=0 || xp>=sizex-1 || yp>=sizey-1)
+      kp=-1;
+    else
       kp=sigma[xp][yp];
-
-    } else {
-
-      if (xp<=0 || yp<=0 || xp>=sizex-1 || yp>=sizey-1)
-        kp=-1;
-      else
-        kp=sigma[xp][yp];
-    }
     // test for border state (relevant only if we do not use periodic boundaries)
     // test always passed with periodic boundaries
     if (kp!=-1) {
@@ -1124,18 +1106,6 @@ int CellularPotts::AmoebaeMove2(PDE *PDEfield)
     				xn = nx[j]+x;
     				yn = ny[j]+y;
 
-    				if (par.periodic_boundaries) {
-    					 	// since we are asynchronic, we cannot just copy the borders once
-    					 	// every MCS
-    					if (xn<=0)
-    						xn=sizex-2+xn;
-    					if(yn<=0)
-    						yn=sizey-2+yn;
-    					if (xn>=sizex-1)
-    						xn=xn-sizex+2;
-    				  if (yn>=sizey-1)
-    						yn=yn-sizey+2;
-    				}
     				if (xn>0 && yn>0 && xn<sizex-1 && yn<sizey-1){//if the neighbour site is within the lattice
 
     					// if we should add the edge to the edgelist, add it
