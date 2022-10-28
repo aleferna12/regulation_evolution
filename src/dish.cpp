@@ -841,8 +841,8 @@ void Dish::CellsEat4() {
         exit(1);
       }
       if (ftotal) {
-        double xvector = fsumx / (double) ftotal;
-        double yvector = fsumy / (double) ftotal;
+        double xvector = fsumx / (double) ftotal - c.meanx;
+        double yvector = fsumy / (double) ftotal - c.meany;
         c.grad_conc = ftotal / c.Area();
         double hyphyp=hypot(xvector,yvector);
 
