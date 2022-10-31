@@ -6,7 +6,7 @@ set(CMAKE_CXX_FLAGS -Wall)
 set(CMAKE_CXX_FLAGS_DEBUG -g)
 set(CMAKE_CXX_FLAGS_RELEASE -O2)
 
-set(SOURCES
+add_executable(cell_evolution
         src/cell_evolution.cpp
         src/ca.cpp
         src/hull.cpp
@@ -25,8 +25,7 @@ set(SOURCES
         src/random.cpp
         src/crash.cpp
         src/warning.cpp
-        src/x11graph.cpp)
-set(MOC_HEADERS
+        src/x11graph.cpp
         src/ca.h
         src/hull.h
         src/gene.h
@@ -47,14 +46,10 @@ set(MOC_HEADERS
         src/sticky.h
         src/crash.h
         src/warning.h
-        src/x11graph.h)
+        src/x11graph.h src/boundingbox.cpp src/boundingbox.h)
 
 find_package(Qt4 REQUIRED QtCore)
 find_package(X11)
-
-add_executable(cell_evolution
-        ${MOC_SRCS}
-        ${SOURCES})
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
