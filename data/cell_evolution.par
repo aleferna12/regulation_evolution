@@ -86,7 +86,7 @@ key_lock_length = 24
 ## of Cell Behaviour ##
 #######################
 
-genomefile = /home/aleferna/CProjects/Projects/regulation_evolution/runs/test/networkdir_
+#genomefile = /home/aleferna/CProjects/Projects/regulation_evolution/runs/test/networkdir_
 nr_regnodes = 3
 divtime = 20	# scaled nr of steps before a cell initiates division
 divdur = 1000     # duration of division, during which a cell stops moving
