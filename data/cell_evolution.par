@@ -5,7 +5,7 @@ mcs = 100000000
 
 #cells in blobs move at 0.0055 px/mcs
 # duration of season could then be larger than field size/ speed
-season_duration = 100000
+season_duration = 30000
 
 ### grid size ###
 sizex = 500
@@ -86,7 +86,7 @@ key_lock_length = 24
 ## of Cell Behaviour ##
 #######################
 
-#genomefile = designnet.txt
+genomefile = /home/aleferna/CProjects/Projects/regulation_evolution/runs/test/networkdir_
 nr_regnodes = 3
 divtime = 20	# scaled nr of steps before a cell initiates division
 divdur = 1000     # duration of division, during which a cell stops moving
@@ -207,7 +207,7 @@ divisioncolour = true
 datadir = ../runs/data_film2
 save_text_file_period = 10000
 datafile = ../runs/data_cellcount.txt
-save_backup_period = 250000
+save_backup_period = 30000
 backupdir = ../runs/backup
 networkdir = ../runs/networks
 # Deprecated
