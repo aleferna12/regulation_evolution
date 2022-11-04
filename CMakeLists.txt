@@ -8,45 +8,29 @@ set(CMAKE_CXX_FLAGS_RELEASE -O2)
 
 add_executable(cell_evolution
         src/cell_evolution.cpp
-        src/ca.cpp
-        src/hull.cpp
-        src/gene.cpp
-        src/genome.cpp
-        src/cell.cpp
-        src/conrec.cpp
-        src/dish.cpp
-        src/info.cpp
-        src/misc.cpp
-        src/output.cpp
-        src/parameter.cpp
-        src/parse.cpp
-        src/pde.cpp
-        src/intplane.cpp
-        src/random.cpp
+        src/ca.cpp src/ca.h
+        src/hull.cpp src/hull.h
+        src/gene.cpp src/gene.h
+        src/genome.cpp src/genome.h
+        src/cell.cpp src/cell.h
+        src/conrec.cpp src/conrec.h
+        src/dish.cpp src/dish.h
+        src/info.cpp src/info.h
+        src/misc.cpp src/misc.h
+        src/output.cpp src/output.h
+        src/parameter.cpp src/parameter.h
+        src/parse.cpp src/parse.h
+        src/pde.cpp src/pde.h
+        src/intplane.cpp src/intplane.h
+        src/random.cpp src/random.h
         src/crash.cpp
-        src/warning.cpp
-        src/x11graph.cpp
-        src/ca.h
-        src/hull.h
-        src/gene.h
-        src/genome.h
-        src/cell.h
-        src/conrec.h
-        src/dish.h
+        src/warning.cpp src/warning.h
+        src/x11graph.cpp src/x11graph.h
         src/graph.h
-        src/info.h
-        src/misc.h
-        src/output.h
-        src/parameter.h
-        src/parse.h
-        src/pde.h
-        src/intplane.h
-        src/random.h
         src/sqr.h
         src/sticky.h
-        src/crash.h
-        src/warning.h
-        src/x11graph.h src/boundingbox.cpp src/boundingbox.h)
+        src/boundingbox.cpp src/boundingbox.h
+        src/foodpatch.cpp src/foodpatch.h)
 
 find_package(Qt4 REQUIRED QtCore)
 find_package(X11)
