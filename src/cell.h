@@ -27,18 +27,13 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 //#define EMPTY -1
 #include <math.h>
 #include <map>
+#include <utility>
 #include "random.h"
 #include "genome.h"
+#include "boundingbox.h"
 
 #define PREY 1
 #define PREDATOR 2
-
-struct BoundingBox {
-    int minx;
-    int miny;
-    int maxx;
-    int maxy;
-};
 
 extern Parameter par;
 class Dish;
@@ -65,13 +60,13 @@ public:
     ConstructorBody(settau,setrecycledsigma);
   }
 
-  Cell(void) {
+  Cell() {
     if(par.n_chem){
       chem = new double[par.n_chem];
     }
   };
 
-  ~Cell(void);
+  ~Cell();
 
 
   //! Default copy constructor.
@@ -267,19 +262,19 @@ public:
 //   }
 
   /*! \brief Returns false if Cell has apoptosed (vanished). */
-  inline bool AliveP(void) const {
+  inline bool AliveP() const {
     return alive;
   }
 
   //! Returns the cell colour.
-  inline int Colour(void) const {
+  inline int Colour() const {
 
     //return tau+1;
     return colour;
   };
 
 //this function maps migration vector angle to a colour in radial_colour array (see misc.cpp)
-  inline int AngleColour(void) const {
+  inline int AngleColour() const {
     double ang=atan(tvecy/tvecx);
     if(tvecx<0.000) ang+=M_PI;
     else if(tvecy<0.000) ang+=2*M_PI;
@@ -292,7 +287,7 @@ public:
   // for now only growth   ---- THIS STUFF CREATES PROBLEMS!
 
   //predator is 1? No, prey is 1, predator is 2
-  inline void SetCellTypeProperties(void)
+  inline void SetCellTypeProperties()
   {
     if(tau==PREY){
       //growth = par.growth/2.;
@@ -317,28 +312,28 @@ public:
   }
 
   //Nonsensical object oriented stuff:
-  inline vector<int> getJkey(void){
+  inline vector<int> getJkey(){
     return jkey;
   }
 
-  inline vector<int> getJlock(void){
+  inline vector<int> getJlock(){
     return jlock;
   }
 
   inline void setJkey(vector<int> setjkey){
-    jkey = setjkey;
+    jkey = std::move(setjkey);
   }
 
   inline void setJlock(vector<int> setjlock){
-    jlock= setjlock;
+    jlock= std::move(setjlock);
   }
 
-  inline vector<int> getVJ(void){
+  inline vector<int> getVJ(){
     return vJ;
   }
 
   inline void setVJ(vector<int> setvj){
-    vJ = setvj;
+    vJ = std::move(setvj);
   }
 
   inline void InitMeanX(double xpos){
@@ -349,29 +344,29 @@ public:
   }
 
   //Return values related to cell position and direction of migration
-  inline double getXpos(void){
+  inline double getXpos() const{
     return meanx;
   }
-  inline double getYpos(void){
+  inline double getYpos() const{
     return meany;
   }
-  inline double getXvec(void){
+  inline double getXvec() const{
     return tvecx;
   }
-  inline double getYvec(void){
+  inline double getYvec() const{
     return tvecy;
   }
-  inline double getChemXvec(void){
+  inline double getChemXvec() const{
     return chemvecx;
   }
-  inline double getChemYvec(void){
+  inline double getChemYvec() const{
     return chemvecy;
   }
-  inline double getChemMu(void){
+  inline double getChemMu() const{
     //cout<<"numu: "<<mu<<endl;
     return chemmu;
   }
-  inline double getMu(void){
+  inline double getMu() const{
     //cout<<"numu: "<<mu<<endl;
     return mu;
   }
@@ -436,7 +431,7 @@ public:
     }
   }
 
-  inline void updatePersTime(void){
+  inline void updatePersTime(){
    perstime++;
    if(perstime==persdur){
      updateTarVec();
@@ -448,7 +443,7 @@ public:
 
 //   // it uses size_t instead of int to shut up warnings
   inline void setVJ_singleval(int pos, int val){
-    size_t unsigned_pos = (size_t)pos;
+    auto unsigned_pos = (size_t)pos;
     if( unsigned_pos >= vJ.size()){
       //cerr<<"pos larger than vJ size: pos = "<<unsigned_pos<<" size = "<< vJ.size() <<endl;
       for(size_t i=vJ.size(); i<unsigned_pos+1 ; i++)
@@ -457,17 +452,17 @@ public:
     vJ[unsigned_pos] = val;
   }
 
-  int MutateKeyAndLock(void);
+  int MutateKeyAndLock();
 
   double MAXmu=30;
-  inline void MutateMu(void){
+  inline void MutateMu(){
     mu+= (RANDOM() -0.5)/1.;
     if(mu<0) mu= -mu;
     else if(mu>MAXmu) mu=MAXmu-mu;
   }
 
   //! Set cell type of this Cell.
-  inline int getHalfDivArea(void) {
+  inline int getHalfDivArea() const {
     return half_div_area;
   }
 
@@ -477,7 +472,7 @@ public:
   }
 
   //! Get cell type of this Cell.
-  inline int getTau(void) {
+  inline int getTau() const {
     return tau;
   }
   //! Set color of this cell to new_colour, irrespective of type.
@@ -516,7 +511,7 @@ public:
 
 
   //! Debugging function used to print the cell's current inertia tensor (as used for calculations of the length )
-  inline void PrintInertia(void) {
+  inline void PrintInertia() const {
 
     double ixx=(double)sum_xx-(double)sum_x*sum_x/(double)area;
     double iyy=(double)sum_yy-(double)sum_y*sum_y/(double)area;
@@ -529,20 +524,9 @@ public:
   }
 
   // return the current length
-  inline double Length(void) {
+  inline double Length() const {
     return length;
   }
-
-/*! \brief Clears the table of J's.
-
-This is only important for a
-feature called "DynamicJ's", where J-values depend on internal states
-of the cells (such as a genetic network; see e.g. Hogeweg et
-al. 2000). The current version of TST does not include such functionality.
-*/
-  static void ClearJ(void);
-  double polarvec[9];
-  void RenormPolarVec(void);
 
   /*! \brief Returns the maximum cell identity number in the Dish.
     This would normally be the number of cells in the Dish, although
@@ -590,23 +574,23 @@ al. 2000). The current version of TST does not include such functionality.
     ancestor = Sigma();
   }
   //! Cell lineage tracking: get the cell's parent
-  inline int Mother(void) const { return mother; }
+  inline int Mother() const { return mother; }
 
   //! Cell lineage tracking: get the cell's daughter
-  inline int Daughter(void) const { return daughter; }
+  inline int Daughter() const { return daughter; }
 
   //! Returns a counter keeping track of the number of divisions
-  inline int TimesDivided(void) const { return times_divided; }
+  inline int TimesDivided() const { return times_divided; }
 
-  inline void AddTimesDivided(void){  times_divided++; }
+  inline void AddTimesDivided(){  times_divided++; }
 
-  inline void ResetTimesDivided(void){  times_divided=0; dividecounter=0; }
+  inline void ResetTimesDivided(){  times_divided=0; dividecounter=0; }
 
   //! Returns Monte Carlo Step (MCS) when this cell originated.
-  inline int DateOfBirth(void) const { return date_of_birth; }
+  inline int DateOfBirth() const { return date_of_birth; }
 
   //! Returns the cell type at the time of birth.
-  inline int ColourOfBirth(void) const { return colour_of_birth; }
+  inline int ColourOfBirth() const { return colour_of_birth; }
 
   //! Returns the bond energy J between this cell and cell c2.
   inline int GetJ(const Cell &c2) const {
@@ -621,7 +605,7 @@ al. 2000). The current version of TST does not include such functionality.
 
 
   //deal with the genome:
-  inline void ClearGenomeState(void){
+  inline void ClearGenomeState(){
     genome.ResetGenomeState();
   }
 
@@ -637,70 +621,25 @@ al. 2000). The current version of TST does not include such functionality.
   inline void UpdateGenes(const array<double,2> &input, bool sync){
     genome.UpdateGeneExpression(input, sync);
   }
-  inline void FinishGeneUpdate(void){
+  inline void FinishGeneUpdate(){
     genome.FinishUpdate();
   }
   inline void GetGeneOutput(array<int,2> &out){
     genome.GetOutput(out);
   }
-  inline void MutateGenome(double mu, double mustd){
-    genome.MutateGenome(mu, mustd);
+  inline void MutateGenome(double mu_, double mustd){
+    genome.MutateGenome(mu_, mustd);
   }
 
   inline void setGTiming(int timing){
     gextiming=timing;
   }
-  inline int Gextiming(void){
+  inline int Gextiming() const{
     return gextiming;
-  }
-  // Deal with gradient measurements:
-
-  //! Set the current gradient of the cell to g. Currently not in use.
-  inline double* SetGrad(double *g) {
-    grad[0]=g[0];
-    grad[1]=g[1];
-    return grad;
-  }
-
-  //! Returns the cell's measured gradient. Currently not in use.
-  inline const double* GetGrad(void) const {
-    return grad;
-  }
-
-  //! Returns the cell's measured gradient. Currently not in use.
-  inline const double GradX() const {
-    return grad[0];
-  }
-
-  //! Returns the cell's measured gradient. Currently not in use.
-  inline const double GradY() const {
-    return grad[1];
-  }
-
-  //! Currently not in use (remove?)
-  inline double* AddToGrad(double *g) {
-    grad[0]+=g[0];
-    grad[1]+=g[1];
-    return grad;
-  }
-
-  //! Currently not in use (remove?)
-  inline void ClearGrad(void) {
-    grad[0]=0.;
-    grad[1]=0.;
-  }
-
-  inline double GetEatProb(void){
-    return eatprob;
   }
   inline void SetEatProb(double par_eatprob){
     eatprob=par_eatprob;
   }
-
-  /*! After introducing a new Cell (e.g. with GrowInCell)
-    call this function to set the moments and areas right.
-  */
-  void MeasureCellSize(Cell &c);
 
   //This is for keeping track of who is neigh, how much contact and for how long
   std::map<int, pair<int,int> >neighbours; //stores neigh as {neighbouring cells(ID) <amount of contact,duration>
@@ -718,8 +657,6 @@ al. 2000). The current version of TST does not include such functionality.
   BoundingBox getBoundingBox();
 
 private:
-  //updated version: read key-lock pairs
-  static void ReadKeyLockFromFile(const char *fname);
   /*! \brief Read a table of static Js.
     First line: number of types (including medium)
     Next lines: diagonal matrix, starting with 1 element (0 0)
@@ -980,7 +917,7 @@ private:
 
   //! \brief Calculates the length based on the given inertia tensor
   //components (used internally)
-  inline double Length(long int s_x,long int s_y,long int s_xx,
+  static inline double Length(long int s_x,long int s_y,long int s_xx,
 				long int s_yy,long int s_xy,long int n) {
 
     // inertia tensor (constructed from the raw momenta, see notebook)
@@ -1045,13 +982,13 @@ private:
 
   This is useful when reading an initial condition from an image.
   */
-  inline int SetAreaToTarget(void) {
+  inline int SetAreaToTarget() {
     return area=target_area;
   }
   inline void SetTimeSinceBirth(int t){
     time_since_birth=t;
   }
-  inline int GetTimeSinceBirth(void){
+  inline int GetTimeSinceBirth() const{
     return time_since_birth;
   }
 
@@ -1060,7 +997,7 @@ private:
 
   // returns the maximum cell type index
   // (depends on Jtable)
-  static int MaxTau(void) {
+  static int MaxTau() {
     return maxtau;
   }
 

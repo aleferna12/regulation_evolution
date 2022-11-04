@@ -36,6 +36,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "pde.h"
 //#include "dish.h"
 #include "cell.h"
+#include "boundingbox.h"
 
 class Dish;
 
@@ -154,11 +155,11 @@ class CellularPotts {
 
 public:
   //! \brief Constructs a CA field. This should be done in "Dish".
-  CellularPotts(std::vector<Cell> *cells, const int sizex=200,
-		const int sizey=200 );
+  explicit CellularPotts(std::vector<Cell> *cells, int sizex=200,
+		int sizey=200 );
   // empty constructor
   // (necessary for derivation)
-  CellularPotts(void);
+  CellularPotts();
 
   // Keyword virtual means, that derived classed (cppvmCellularPotts) can override
   // this function and carry out the memory allocation in their preferred way
@@ -177,9 +178,9 @@ public:
    same method because both for drawing the black lines between the
    cells and for searching the neighbours, the cell borders have to be
    determined. */
-  int **SearchNandPlot(Graphics *g=0, bool get_neighbours=true);
-  void CellAngleColour(Graphics *g=0);
-  void CellOrderColour(Graphics *g=0);
+  int **SearchNandPlot(Graphics *g=nullptr, bool get_neighbours=true);
+  void CellAngleColour(Graphics *g=nullptr);
+  void CellOrderColour(Graphics *g=nullptr);
   //! Plot the dish to Graphics window g
   inline void Plot(Graphics *g, int colour) {
     switch (colour) {
@@ -196,7 +197,7 @@ public:
   }
 
   //! Return the total area occupied by the cells
-  inline int Mass(void) {
+  inline int Mass() {
     int mass=0;
     for (int i=0;i<sizex*sizey;i++) {
       if (sigma[0][i]>0) mass++;
@@ -210,25 +211,6 @@ public:
   */
   void PlotSigma(Graphics *g, int mag=2);
 
-
-  // Divide all cells, returns same as DivideCells(vector bool)
-  vector<int> DivideCells(void) {
-	std::vector<bool> tmp;
-    return DivideCells(tmp);
-  }
-
-    /*! Divide all cells marked "true" in which_cells.
-
-    \param which_cells is a vector<bool> with the same number of
-    elements as the number of cells. It is a mask indicating which
-    cells should be divided; each cell marked true will be divided.
-
-     If which_cells is empty, this method divides all cells.
-    */
-    //void DivideCells(std::vector<bool> which_cells);
-    vector<int> DivideCells(std::vector<bool> which_cells);
-    vector<int> DivideCells2(std::vector<bool> which_cells);
-
     // Tells the cell cell_sigma to divide, given its boundingbox
     // TODO: Put in cell.h
     int DivideCell(int cell_sigma, BoundingBox box);
@@ -236,13 +218,7 @@ public:
     /*! Implements the core CPM algorithm. Carries out one MCS.
       \return Total energy change during MCS.
     */
-    int AmoebaeMove(PDE *PDEfield=0);
     int AmoebaeMove2(PDE *PDEfield);
-    /*! \brief Read initial cell shape from XPM file.
-      Reads the initial cell shape from an
-      include xpm picture called "ZYGXPM(ZYGOTE)",
-      and it allocates enough cells for it to the Dish */
-    void ReadZygotePicture(void);
 
 
     // int BlobCounting(void); (not implemented?)
@@ -286,36 +262,13 @@ public:
   //this function facilitates creation from a backup file
   int SetNextSigma(int sig);
 
-  // Was used to make it possible to enlarge the Graphics window in
-  // X11 and replace the contents interactively. Not currently supported.
-  void Replace(Graphics *g);
-
   /*! In this method the principal axes of the cells are computed using
    the method described in "Biometry", box 15.5
    \return a pointer to a "new[]"ed array containing the directions.
    The memory has to be freed afterwards using the delete[] operator
   */
-  Dir *FindCellDirections3(void) const;
-  Dir *FindCellDirections2(void) const;
-
-  Dir *FindCellDirections(void) const;
-
-
-  /*! \brief Initialize the CA plane with n circular cells fitting in
-    a cellsize^2 square.*/
-  int ThrowInCells(int n, int cellsize);
-
-  /*! \brief Initialize the CA plane with n cells using an Eden growth algorithm.
-
-  \param n: Number of cells.
-  \param cellsize: Number of Eden growth iterations.
-  \param subfield: Defines a centered frame of size (size/subfield)^2 in which all cell will be positioned.
-  \return Index of last cell inserted.
-  */
-  int GrowInCells(int n_cells, int cellsize, double subfield=1.);
+  Dir *FindCellDirections3() const;
   int GrowInCells(int n_cells, int cell_size, int sx, int sy, int offset_x, int offset_y);
-  bool PlaceOneCellsAtXY(int posx,int posy, int cellsize, int cellsigma);
-  int PlaceOneCellRandomly(int sig, int cellsize);
   int PlaceCellsRandomly(int n_cells, int cellsize);
   int PlaceCellsOrderly(int n_cells, int cellsize);
   int Place2Groups(int placement,int size_init_cells, int groupsize);
@@ -324,82 +277,37 @@ public:
     cell->push_back(Cell(beast));
     return cell->back();
   }
-
-  //removes cell from ca plane by force
-  void RemoveCell(Cell* cellid);
   void RemoveCell(Cell* cellid,int min_area, int meanx, int meany);
   int FancyloopX(int loopdepth, int meanx, int meany, int thissig, bool above);
   int FancyloopY(int loopdepth, int meanx, int meany, int thissig, bool left);
-  /*! \brief Display the division planes returned by FindCellDirections.
-
-  \param g: Graphics window
-  \param celldir: cell axes as returned by FindCellDirections.
-  */
-  void ShowDirections(Graphics &g, const Dir *celldir) const;
-
-  //! \brief Returns the mean area of the cells.
-  double MeanCellArea(void) const;
-
-  /*! \brief Returns the cell density.
-
-  Cell density is defined as the area occupied by cells divided by the size of the field.
-  */
-  double CellDensity(void) const;
-
-  //! \brief Set target lengths of all cells to the value given in parameter file.
-  void ResetTargetLengths(void);
-
-  int spins_converted;
 
   /*! \brief Give each cell a random cell type.
 
   The number of cell types is defined by the J parameter file. (See
   Jtable in parameter file).ount
   */
-  void SetRandomTypes(void);
-  void SetRandomTypes(int whichtau, double probtau) ;
-  /*! Cells grow until twice their original target_length, then
-    divide, with rate "growth_rate"
-  */
-  void GrowAndDivideCells(int growth_rate);
+  void SetRandomTypes();
 
   inline Cell &getCell(int c) {
     return (*cell)[c];
   }
-
-  /*! Draw convex hull around all cells.
-    \return The area of the convex hull in lattice sites.
-  */
-  double DrawConvexHull(Graphics *g, int color=1);
-
-  /*! Calculate compactness (summed_area/hull_area) of all cells.
-    This is a good measure for the density.
-    \return Compactness.
-  */
-  double Compactness(double *res_compactness = 0,
-		     double *res_area = 0,
-		     double *res_cell_area = 0);
 
 
   //This used to be private but I want to use it elsewhere
   static const int nx[25], ny[25];
   static const int nbh_level[5];
   int n_nb;
-  void MeasureCellSizes(void);
+  void MeasureCellSizes();
 private:
-  void IndexShuffle(void);
-  int DeltaH(int x,int y, int xp, int yp, PDE *PDEfield=0);
-  int DeltaHWithMedium(int x,int y, PDE *PDEfield=0);
+  int DeltaH(int x,int y, int xp, int yp, PDE *PDEfield=nullptr);
+  int DeltaHWithMedium(int x,int y, PDE *PDEfield=nullptr);
   double Adhesion_Energy(int sigma1, int sigma2);
-  bool Probability(int DH);
   void ConvertSpin(int x,int y,int xp,int yp);
   void ConvertSpinToMedium(int x, int y );
-  void SprayMedium(void);
-  int CopyvProb(int DH,  double stiff);
-  void FreezeAmoebae(void);
+  static int CopyvProb(int DH,  double stiff);
 
   void MeasureCellSize(Cell &c);
-  void CopyProb(double T);
+  static void CopyProb(double T);
   bool ConnectivityPreservedP(int x, int y);
 
   // little debugging function to print the site and its neighbourhood
@@ -423,7 +331,6 @@ protected:
 private:
   Edges edgeSetVector;
   bool frozen;
-  static int shuffleindex[9];
   std::vector<Cell> *cell;
   int zygote_area;
   int thetime;

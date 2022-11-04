@@ -23,298 +23,134 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 
 #ifndef _INTPL_HH_
 #define _INTPL_HH_
+
 #include <stdio.h>
 #include <float.h>
 #include <functional>
+#include <climits>
 #include "graph.h"
 #include "random.h"
-
-struct peakinfo {
-  int x;
-  int y;
-  double dist;
-};
+#include "foodpatch.h"
 
 class IntPlane; //forward declaration
 
 class CellularPotts;
+
 class IntPlane {
 
-  friend class Info;
+    friend class Info;
 
- public:
+public:
 
-  /*!
-   * \brief Constructor for PDE object containing arbitrary number of planes.
-   * \param layers: Number of PDE planes
-   * \param sizex: horizontal size of PDE planes
-   * \param sizey: vertical size of PDE planes
-  */
+    /*!
+     * \brief Constructor for PDE object containing arbitrary number of planes.
+     * \param layers: Number of PDE planes
+     * \param sx: horizontal size of PDE planes
+     * \param sy: vertical size of PDE planes
+    */
 
-  IntPlane(const int sizex, const int sizey, int grad_sources);
+    IntPlane(const int sx, const int sy);
 
 
-  // destructor must also be virtual
-  virtual ~IntPlane();
+    // destructor must also be virtual
+    virtual ~IntPlane();
 
-  /*!
-   * \brief Plots one layer of the PDE plane to a Graphics window.
-   * \param g: Graphics window.
-   * \param layer: The PDE plane to be plotted. Default layer 0.
-  */
-  void Plot(Graphics *g);
+    /*!
+     * \brief Plots one layer of the PDE plane to a Graphics window.
+     * \param g: Graphics window.
+     * \param layer: The PDE plane to be plotted. Default layer 0.
+    */
+    void Plot(Graphics *g);
 
-  /*! \brief Plots one layer of the PDE to a Graphics window, but not over the cells.
+    /*! \brief Plots one layer of the PDE to a Graphics window, but not over the cells.
+      \param g: Graphics window.
+      \param cpm: CellularPotts object containing the cells.
+      \param layer: The PDE plane to be plotted. Default layer 0.
+    */
+
+    void Plot(Graphics *g, CellularPotts *cpm);
+
+    /*! \brief Plots the PDE field using contour lines.
+
     \param g: Graphics window.
-    \param cpm: CellularPotts object containing the cells.
     \param layer: The PDE plane to be plotted. Default layer 0.
-  */
+    \param colour: Color to use for the contour lines, as defined in the "default.ctb" color map file, which should be in the same directory as the executable. Default color 1 (black in the default color map).
+    */
 
-  void Plot(Graphics *g, CellularPotts *cpm);
+    //! \brief Returns the horizontal size of the PDE planes.
+    inline int SizeX() const {
+      return sizex;
+    }
 
-  /*! \brief Plots the PDE field using contour lines.
+    //! \brief Returns the vertical size of the PDE planes.
+    inline int SizeY() const {
+      return sizey;
+    }
 
-  \param g: Graphics window.
-  \param layer: The PDE plane to be plotted. Default layer 0.
-  \param colour: Color to use for the contour lines, as defined in the "default.ctb" color map file, which should be in the same directory as the executable. Default color 1 (black in the default color map).
-  */
+    /*! \brief Returns the value of grid point x,y of PDE plane "layer".
 
-  //! \brief Returns the horizontal size of the PDE planes.
-  inline int SizeX() const {
-    return sizex;
-  }
+    Warning, no range checking done.
 
-  //! \brief Returns the vertical size of the PDE planes.
-  inline int SizeY() const {
-    return sizey;
-  }
+    \param layer: the PDE plane to probe.
+    \param x, y: grid point to probe.
+    */
+    inline int Sigma(const int x, const int y) const {
+      return sigma[x][y];
+    }
 
-  /*! \brief Returns the value of grid point x,y of PDE plane "layer".
+    /*! \brief Sets grid point x,y of PDE plane "layer" to value "value".
 
-  Warning, no range checking done.
+    \param layer: PDE plane.
+    \param x, y: grid point
+    \param value: new contents
 
-  \param layer: the PDE plane to probe.
-  \param x, y: grid point to probe.
-  */
-  inline int Sigma(const int x, const int y) const {
-    return sigma[x][y];
-  }
+    */
+    inline void setSigma(const int x, const int y, const int value) {
+      sigma[x][y] = value;
+    }
 
-  /*! \brief Sets grid point x,y of PDE plane "layer" to value "value".
+    int SetNextVal(int sig);
 
-  \param layer: PDE plane.
-  \param x, y: grid point
-  \param value: new contents
-
-  */
-  inline void setValue(const int x, const int y, const int value) {
-    sigma[x][y]=value;
-  }
-
-  /*! \brief Adds a number to a PDE grid point.
-
-  \param layer: PDE plane.
-  \param x, y: grid point
-  \param value: value to add
-  */
-  inline void addtoValue(const int x, const int y, const int value) {
-    sigma[x][y]+=value;
-  }
-
-
-  //IncreaseVal should be a function pointer to either
-  // IncreaseValEverywhere <- which takes no arguments, or
-  // IncreaseValIfEmpty, which takes CellularPotts *cpm as argument
-  // a way to achieve this, is to set IncreaseVal as a function from bind
-  // but what is the right way to declare it?
-
-//   std::function<void(int)> IncreaseVal;
-  // f_display = print_num; probably I can do this in InitIncreaseVal()
-
-  typedef std::function<void(IntPlane&)> my_fun_t; //apparently this is legal declaration
-  my_fun_t IncreaseVal;
-
-  // Get distance of coordinate to the closest source of resources
-  peakinfo ClosestPeak(int x, int y, int upto=-1);
-  // Determines the minimum separation distance between gradient source peaks so that its always safe
-  // to place as many as gradient_sources peaks without running out of space
-  double DetermineMinDist();
-  // Food in relation to the distance from a single peak F(x)
-  double FoodEquation(double dist_from_peak);
-  // Determines how much food is in a specific position
-  double FoodAtPosition(int x, int y);
-  // Iterates lattice and finds max food
-  // Writes a few rows of the sigma lattice to par.peaksdatafile
-  int WritePeaksData();
-  // Randomize location of peaks based on min_resource_dist
-  void RandomizeResourcePeaks();
-  // Finds the most isolated point in the grid (farthest away from closest resource peak)
-  double DistMostIsolatedPoint();
-  // Add values to random positions in plane (e.g. food influx)
-  int SetNextVal(int sig);
-  void IncreaseValEverywhere(void);
-  // Add values to random positions in plane if not occupied (e.g. food influx)
-  void IncreaseValIfEmpty(CellularPotts *cpm); //set if notonprey parameter
-  void NotIncreaseVal(void);                   // set if nowhere
-  void IncreaseValPatchy(CellularPotts *cpm);         // patchy food increase
-  void IncreaseValSomewhere(CellularPotts *cpm);         // food increases only somewhere, always there
-  void IncreaseValSomewhereIfEmpty(CellularPotts *cpm);
-  void IncreaseValPatchyRandom(CellularPotts *cpm); // food increases in random patches that are depleted
-  void IncreaseValPatchyRandomPersistence(CellularPotts *cpm);
-  void IncreaseValSelfGrowth(CellularPotts *cpm);
-  void IncreaseValBoundaryGrad(CellularPotts *cpm);
-  void IncreaseValSpecifiedExp(CellularPotts *cpm);
-  void InitIncreaseVal(CellularPotts *cpm);// set if everywhere parameter
-                                           //Set function pointer for food update,
-                                           // pointer to cpm is not used if IncreaseVal
-                                           // points to IncreaseValEverywhere
-
-  /*! \brief Gets the maximum value of PDE layer l.
-
-  \param l: layer
-  \return Maximum value in layer l.
-  */
-  inline int Max(void ) {
-    int max=sigma[0][0];
-    int loop=sizex*sizey;
-    for (int i=1;i<loop;i++)
-      if (sigma[0][i]>max) {
-	max=sigma[0][i];
+    pair<int, int> getMinMax() const {
+      int maxval = 0;
+      int minval = INT_MAX;
+      for (int i = 1; i < sizex; ++i) for (int j = 1; j < sizex; ++j) {
+        minval = min(sigma[i][j], minval);
+        maxval = max(sigma[i][j], maxval);
       }
-    return max;
-  }
-  /*! \brief Returns the minimum value of PDE layer l.
+      return {minval, maxval};
+    }
 
-  \param l: layer
-  \return Minimum value in layer l.
-  */
-  inline int Min(void) {
-    int min=sigma[0][0];
-    int loop=sizex*sizey;
-    for (int i=1;i<loop;i++)
-      if (sigma[0][i]<min) {
-	min=sigma[0][i];
-      }
-    return min;
-  }
+protected:
 
-  /*! \brief Carry out $n$ diffusion steps for all PDE planes.
+    int **sigma;
 
-  We use a forward Euler method here. Can be replaced for better algorithm.
+    int sizex;
+    int sizey;
+    // Diagonal length of the lattice (calculated)
+    double diagonal;
 
-  \param repeat: Number of steps.
+    // Protected member functions
 
-  Time step dt, space step dx, diffusion coefficient diff_coeff and
-  boundary conditions (bool periodic_boundary) are set as global
-  parameters in a parameter file using class Parameter.
+    /*! \brief Used in Plot. Takes a color and turns it into a grey value.
 
-  */
-  void Diffuse(int repeat);
+    \param val: Value from PDE plane.
 
-  void DiffuseParticles(void);
+    Implement this function in you main simulation code. See e.g. vessel.cpp.
+    */
+    //virtual int MapColour(double val);
 
-  /*! \brief Implementation of no-flux boundaries.
+    //! empty constructor (necessary for derivation)
+    IntPlane();
 
-  Called internally (optionally) by Diffuse(). */
-  void NoFluxBoundaries(void);
+    /*! \brief Allocates a PDE plane (internal use).
 
-  /*! \brief Implementation of absorbing boundaries.
+    For internal use, can be reimplemented in derived class to change
+    method of memory allocation.
+    */
+    virtual int **AllocateSigma(int sx, int sy);
 
-  Called internally (optionally) by Diffuse(). */
-  void AbsorbingBoundaries(void);
-
-  /*! \brief Implementation of periodic boundaries.
-
-  Called internally (optionally) by Diffuse(). */
-  void PeriodicBoundaries(void);
-
-  /*! \brief Reaction and interaction of CPM plane with PDE planes.
-
-  \param cpm: CellularPotts plane the PDE plane interacts with
-
-  You should implement this member function as part of your main
-  simulation code. See for an example vessel.cpp.
-
-  */
-  void Secrete(CellularPotts *cpm);
-
-  /*! \brief Returns cumulative "simulated" time,
-    i.e. number of time steps * dt. */
-  inline double TheTime(void) const {
-    return thetime;
-  }
-
-  inline int getMaxFood() const {
-    return maxfood;
-  }
-
-  inline int GetPeakx(int i) {
-    return peaksx[i];
-  }
-  inline int GetPeaky(int i) {
-    return peaksy[i];
-  }
-  inline void SetPeakx(int i, int px){
-    peaksx[i] = px;
-  }
-  inline void SetPeaky(int i, int py){
-    peaksy[i] = py;
-  }
-  inline int GetGradSources() {
-    return grad_sources;
-  }
-
- protected:
-
-  int **sigma;
-
-  int here_time;
-
-  int sizex;
-  int sizey;
-
-  // Number of resource sources
-  int grad_sources;
-  // Coefficient for how the resources decrease according to their distance from the sources
-  // TODO: Should this be a parameter?
-  double dist_coef;
-  // TODO: Can this be safely implemented as a paramer? Do we want to do so?
-  bool interference;
-  // Maximum distance from any point in the gradient to the closest source (calculated)
-  double dist_most_isolated;
-  // Maximum food at any position of the gradient. Recalculated every time gradient positions change
-  int maxfood;
-  // Diagonal length of the lattice (calculated)
-  double diagonal;
-  //
-  double min_resource_dist;
-  int *peaksx;
-  int *peaksy;
-
-  // Protected member functions
-
-  /*! \brief Used in Plot. Takes a color and turns it into a grey value.
-
-  \param val: Value from PDE plane.
-
-  Implement this function in you main simulation code. See e.g. vessel.cpp.
-  */
-  //virtual int MapColour(double val);
-
-  //! empty constructor (necessary for derivation)
-  IntPlane(void);
-
-  /*! \brief Allocates a PDE plane (internal use).
-
-  For internal use, can be reimplemented in derived class to change
-  method of memory allocation.
-  */
-  virtual int **AllocateSigma(const int sx, const int sy);
-
- private:
-  static const int nx[9], ny[9];
-  double thetime;
-
+private:
 };
 
 #endif

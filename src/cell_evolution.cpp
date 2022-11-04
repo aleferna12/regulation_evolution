@@ -65,7 +65,6 @@ INIT {
     // THIS IS JUST FOR EXPERIMENTS
     //CPM->PlaceOneCellsAtXY(par.sizex/2,par.sizey/2., par.size_init_cells, 1);
     //CPM->PlaceOneCellsAtXY(par.sizex/4,par.sizey/4, par.size_init_cells, 2);
-
     if (! strlen(par.backupfile) && !strlen(par.competitionfile)) {
       //THIS IS TO USE FOR NORMAL INITIALISATION
       if(par.scatter_start){
@@ -115,12 +114,9 @@ INIT {
       cout << "Done initialising genome"<<endl;
 
       //Set function pointer for food update, depending on parameters
-      Food->InitIncreaseVal(CPM); //a pointer to CPM is an argument to InitIncreaseVal
                                      // but NOT to IncreaseVal if it points to IncreaseValEverywhere
 
       // Initialises food plane (now the gradient plane)
-      Food->RandomizeResourcePeaks();
-      Food->IncreaseVal(*(Food));
       cout<<"done with food"<<endl;
       //run CPM for some time without persistent motion
       for(int init_time=0;init_time<10;init_time++){
@@ -139,10 +135,7 @@ INIT {
       cout << "done initialising contacts for competition"<<endl;
       InitVectorJ();
       cout << "done initialising Jvalues for competition"<<endl;
-      Food->InitIncreaseVal(CPM); //a pointer to CPM is an argument to InitIncreaseVal
       // Initialises food plane (now the gradient plane)
-      Food->RandomizeResourcePeaks();
-      Food->IncreaseVal(*(Food));
       for(int init_time=0;init_time<10;init_time++){
         CPM->AmoebaeMove2(PDEfield);  //this changes neighs
       }
@@ -174,8 +167,6 @@ INIT {
       CPM->InitializeEdgeList(false);
       InitContactLength();
       InitVectorJ();
-      Food->InitIncreaseVal(CPM);
-      Food->IncreaseVal(*(Food));
     }
   } catch(const char* error) {
     cerr << "Caught exception\n";
@@ -196,7 +187,7 @@ TIMESTEP {
     if( !(i%100000) ) cerr<<"TIME: "<<i<<endl;
 
     //auto start = high_resolution_clock::now();
-    dish->CellsEat4();
+    dish->CellsEat();
     //auto stop = high_resolution_clock::now();
     //auto duration = duration_cast<microseconds>(stop - start);
     //sum+=duration.count();
@@ -230,13 +221,12 @@ TIMESTEP {
           //dish->RemoveMotileCells(par.popsize); //kill all nondividing cells and more if necessary; for noncontinuous reproduction
           std::cerr << "After remove there are "<< dish->CountCells() <<" cells" << '\n';
 
-          if (par.scatter_cells) dish->ScatterEndOfSeason();
         //  dish->ReproduceEndOfSeason(); //replenish the population; for noncontinuous sim
           //cout<<"done reproducing"<<endl;
           //dish->UpdateCellParameters2();//update cell status; for noncontinuous sim
           //cout<<"done updating"<<endl;
-          dish->Food->RandomizeResourcePeaks();
-          dish->Food->IncreaseVal(*(dish->Food)); //this has to be last thing to do here
+          dish->RandomizeResourcePeaks();
+          dish->updateFoodSigma(); //this has to be last thing to do here
           std::cout << "End of season: Gradient switching at time (+/- 25 MCS) = "<< i << '\n';
           if(strlen(par.competitionfile)){
             //check if one of the groups is extinct. if yes, end simulation
