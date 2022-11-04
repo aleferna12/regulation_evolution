@@ -70,8 +70,6 @@ public:
     */
     void Init();
 
-    void ConstructorBody();
-
     virtual ~Dish();
 
     /*! \brief Plot the Dish to graphics window g.

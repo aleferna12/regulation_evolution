@@ -41,54 +41,23 @@ IntPlane::IntPlane(const int sx, const int sy) {
   sizey = sy;
   diagonal = sqrt(2 * sizex * sizey);
 
-  sigma = AllocateSigma(sx, sy);
+  sigma = new int[sizex * sizey];
 }
 
 
 IntPlane::IntPlane() {
-
   sigma = nullptr;
   sizex = 0;
   sizey = 0;
-
+  diagonal = 0;
 }
 
 // destructor (virtual)
 IntPlane::~IntPlane() {
   if (sigma) {
-    free(sigma[0]);
-    free(sigma);
+    delete[] sigma;
     sigma = nullptr;
   }
-}
-
-int **IntPlane::AllocateSigma(const int sx, const int sy) {
-
-  int **mem;
-  sizex = sx;
-  sizey = sy;
-
-  mem = (int **) malloc(sizex * sizeof(int *));
-
-  if (mem == nullptr)
-    MemoryWarning();
-
-  mem[0] = (int *) malloc(sizex * sizey * sizeof(int));
-  if (mem[0] == nullptr)
-    MemoryWarning();
-
-  {
-    for (int i = 1; i < sizex; i++)
-      mem[i] = mem[i - 1] + sizey;
-  }
-
-  /* Clear IntPlane plane */
-  {
-    for (int i = 0; i < sizex * sizey; i++)
-      mem[0][i] = 0.;
-  }
-
-  return mem;
 }
 
 void IntPlane::Plot(Graphics *g2) {
@@ -97,10 +66,10 @@ void IntPlane::Plot(Graphics *g2) {
     for (int y = 1; y < sizey - 1; y++) {
       // Make the pixel four times as large
       // to fit with the CPM plane
-      g2->Point(sigma[x][y], 2 * x, 2 * y);
-      g2->Point(sigma[x][y], 2 * x + 1, 2 * y);
-      g2->Point(sigma[x][y], 2 * x, 2 * y + 1);
-      g2->Point(sigma[x][y], 2 * x + 1, 2 * y + 1);
+      g2->Point(Sigma(x, y), 2 * x, 2 * y);
+      g2->Point(Sigma(x, y), 2 * x + 1, 2 * y);
+      g2->Point(Sigma(x, y), 2 * x, 2 * y + 1);
+      g2->Point(Sigma(x, y), 2 * x + 1, 2 * y + 1);
     }
 
 }
@@ -110,7 +79,7 @@ void IntPlane::Plot(Graphics *g2, CellularPotts *cpm) {
 
   // this has to take into account stuff from cpm plane (maybe x,y info should give a tau of the cpm plane)
 
-  // cpm->sigma[x][y] returns sigma, which I can use to indicise the vector of cells... can I?
+  // cpm->Sigma(x, y) returns sigma, which I can use to indicise the vector of cells... can I?
   // not really, food doesn't know about cell
 
   // maybe this function should really be in dish...
@@ -119,9 +88,9 @@ void IntPlane::Plot(Graphics *g2, CellularPotts *cpm) {
   for (int x = 1; x < sizex - 1; x++)
     for (int y = 1; y < sizey - 1; y++)
       //if (cpm->Sigma(x,y)==0) {
-      if (sigma[x][y] != 0) {
+      if (Sigma(x, y) != 0) {
         int colorindex;
-        if (sigma[x][y] > 0) colorindex = 10 + sigma[x][y];
+        if (Sigma(x, y) > 0) colorindex = 10 + Sigma(x, y);
         else colorindex = 5;
         // Make the pixel four times as large
         // to fit with the CPM plane
@@ -142,7 +111,7 @@ int IntPlane::SetNextVal(int pos) {
     return 1;
   }
 
-  sigma[xcount][ycount] = pos;
+  setSigma(xcount, ycount, pos);
   ycount++;
   if (ycount == sizey - 1) {
     ycount = 1;

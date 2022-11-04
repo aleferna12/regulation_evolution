@@ -95,7 +95,7 @@ public:
     \param x, y: grid point to probe.
     */
     inline int Sigma(const int x, const int y) const {
-      return sigma[x][y];
+      return sigma[x * sizex + y];
     }
 
     /*! \brief Sets grid point x,y of PDE plane "layer" to value "value".
@@ -106,7 +106,7 @@ public:
 
     */
     inline void setSigma(const int x, const int y, const int value) {
-      sigma[x][y] = value;
+      sigma[x * sizex + y] = value;
     }
 
     int SetNextVal(int sig);
@@ -115,21 +115,13 @@ public:
       int maxval = 0;
       int minval = INT_MAX;
       for (int i = 1; i < sizex; ++i) for (int j = 1; j < sizex; ++j) {
-        minval = min(sigma[i][j], minval);
-        maxval = max(sigma[i][j], maxval);
+        minval = min(Sigma(i, j), minval);
+        maxval = max(Sigma(i, j), maxval);
       }
       return {minval, maxval};
     }
 
 protected:
-
-    int **sigma;
-
-    int sizex;
-    int sizey;
-    // Diagonal length of the lattice (calculated)
-    double diagonal;
-
     // Protected member functions
 
     /*! \brief Used in Plot. Takes a color and turns it into a grey value.
@@ -143,14 +135,12 @@ protected:
     //! empty constructor (necessary for derivation)
     IntPlane();
 
-    /*! \brief Allocates a PDE plane (internal use).
-
-    For internal use, can be reimplemented in derived class to change
-    method of memory allocation.
-    */
-    virtual int **AllocateSigma(int sx, int sy);
-
 private:
+    int *sigma;
+    int sizex;
+    int sizey;
+    // Diagonal length of the lattice (calculated)
+    double diagonal;
 };
 
 #endif

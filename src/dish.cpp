@@ -53,35 +53,6 @@ extern Parameter par;
 using namespace std;
 
 Dish::Dish() {
-  ConstructorBody();
-
-  CPM = new CellularPotts(&cell, par.sizex, par.sizey);
-  Food = new IntPlane(par.sizex, par.sizey);
-  updateFoodSigma();
-
-  if (par.n_chem)
-    PDEfield = new PDE(par.n_chem, par.sizex, par.sizey);
-
-  cout << "Starting the dish. Initialising..." << endl;
-  // Initial cell distribution is defined by user in INIT {} block
-  Init();
-
-
-
-  //cout<<cell[1].neighbours[0].first<<endl;
-  //cout<<cell[1].TargetArea()<<endl;
-}
-
-
-Dish::~Dish() {
-  cell.clear();
-
-  delete CPM;
-  delete Food;
-}
-
-
-void Dish::ConstructorBody() {
   sizex = par.sizex;
   sizey = par.sizey;
   grad_sources = par.gradsources;
@@ -109,9 +80,24 @@ void Dish::ConstructorBody() {
   cell.front().sigma = 0;
   cell.front().tau = 0;
 
-  CPM = nullptr;
-  PDEfield = nullptr;
-  Food = nullptr; // SORT OF NULL INITIALISATION
+  CPM = new CellularPotts(&cell, par.sizex, par.sizey);
+  Food = new IntPlane(par.sizex, par.sizey);
+  updateFoodSigma();
+
+  if (par.n_chem)
+    PDEfield = new PDE(par.n_chem, par.sizex, par.sizey);
+
+  cout << "Starting the dish. Initialising..." << endl;
+  // Initial cell distribution is defined by user in INIT {} block
+  Init();
+}
+
+
+Dish::~Dish() {
+  cell.clear();
+
+  delete CPM;
+  delete Food;
 }
 
 
@@ -139,12 +125,10 @@ peakinfo Dish::ClosestPeak(int x, int y, int upto) {
   return res;
 }
 
-
 // Alternatively, we could use the most isolated point to know where to put next peak at each iteration
 // I think that doing this would be worse, as it is more computationally intensive and probably will tend to accumulate
 // peaks in the corners (?), which may be problematic for small grad_sources numbers
 double Dish::DetermineMinDist() const {
-  // Subtract two because I think positions 0 and size are forbidden (?) - yes, they seem to be
   double ratio = (par.sizey - 2) / (double) (par.sizex - 2);
   // ratio * sepx = sepy
   // sepx = sepy / ratio
