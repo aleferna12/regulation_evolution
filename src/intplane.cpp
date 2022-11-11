@@ -35,13 +35,14 @@ extern Parameter par;
 
 /** PRIVATE **/
 
-IntPlane::IntPlane(const int sx, const int sy) {
-  sigma = nullptr;
+IntPlane::IntPlane(const int sx, const int sy, int fill) {
   sizex = sx;
   sizey = sy;
-  diagonal = sqrt(2 * sizex * sizey);
 
-  sigma = new int[sizex * sizey];
+  sigma = new int[sizex * sizey]{};
+  if (fill != 0) {
+    fill_n(sigma, sizex * sizey, fill);
+  }
 }
 
 
@@ -49,56 +50,11 @@ IntPlane::IntPlane() {
   sigma = nullptr;
   sizex = 0;
   sizey = 0;
-  diagonal = 0;
 }
 
 // destructor (virtual)
 IntPlane::~IntPlane() {
-  if (sigma) {
-    delete[] sigma;
-    sigma = nullptr;
-  }
-}
-
-void IntPlane::Plot(Graphics *g2) {
-  // l=layer: default layer is 0
-  for (int x = 1; x < sizex - 1; x++)
-    for (int y = 1; y < sizey - 1; y++) {
-      // Make the pixel four times as large
-      // to fit with the CPM plane
-      g2->Point(Sigma(x, y), 2 * x, 2 * y);
-      g2->Point(Sigma(x, y), 2 * x + 1, 2 * y);
-      g2->Point(Sigma(x, y), 2 * x, 2 * y + 1);
-      g2->Point(Sigma(x, y), 2 * x + 1, 2 * y + 1);
-    }
-
-}
-
-// Plot the value of the intplane only in the medium of the CPM
-void IntPlane::Plot(Graphics *g2, CellularPotts *cpm) {
-
-  // this has to take into account stuff from cpm plane (maybe x,y info should give a tau of the cpm plane)
-
-  // cpm->Sigma(x, y) returns sigma, which I can use to indicise the vector of cells... can I?
-  // not really, food doesn't know about cell
-
-  // maybe this function should really be in dish...
-
-  // suspend=true suspends calling of DrawScene
-  for (int x = 1; x < sizex - 1; x++)
-    for (int y = 1; y < sizey - 1; y++)
-      //if (cpm->Sigma(x,y)==0) {
-      if (Sigma(x, y) != 0) {
-        int colorindex;
-        if (Sigma(x, y) > 0) colorindex = 10 + Sigma(x, y);
-        else colorindex = 5;
-        // Make the pixel four times as large
-        // to fit with the CPM plane
-        g2->Point(colorindex, 2 * x, 2 * y);
-        g2->Point(colorindex, 2 * x + 1, 2 * y);
-        g2->Point(colorindex, 2 * x, 2 * y + 1);
-        g2->Point(colorindex, 2 * x + 1, 2 * y + 1);
-      }
+  delete[] sigma;
 }
 
 //copy of this function in ca.cpp

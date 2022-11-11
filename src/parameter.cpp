@@ -86,7 +86,6 @@ Parameter::Parameter() {
   mustd=0.1;
   divtime=50;
   divdur=10;
-  maxdivisions=4;
   mindeathprob=0.;
   maxdeathprob=1.;
   scatter_cells=false;
@@ -99,14 +98,19 @@ Parameter::Parameter() {
   peaksdatafile = strdup("peaks_data.csv");
   save_text_file_period = 100;
   food_influx_location = strdup("nowhere");
-  foodinflux=0.;
+  metabrate=0.1;
   eatprob=0.;
   growth=0;
   ardecay=0.;
   gradnoise=0.1;
-  degradeprob=0.5;
   gradscale=1.0;
-  gradsources=1;
+  foodpatches=1;
+  foodpatchperiod=1000;
+  foodpatchlength=1;
+  foodperspot=1;
+  maxfood=10000;
+  foodstart=1000;
+  eatperiod=1000;
   nodivisions=false;
   min_contact_duration_for_preying = 10;
   frac_contlen_eaten = 1.;
@@ -200,11 +204,16 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<" -nodivisions # do not execute divisions -> number of cells remains the same"<<endl;
   cerr<<" -backupfile path/to/backupfile # to start simulation from backup"<<endl;
   cerr<<" -season [INT_NUMBER] # season duration"<<endl;
-  cerr<<" -foodinflux [FLOAT_NUMBER] # howmuchfood"<<endl;
+  cerr<<" -metabrate [FLOAT_NUMBER] cost of living for cells in food per MCS"<<endl;
   cerr<<" -gradscale [FLOAT_NUMBER] slope of the gradient (in percent units)"<<endl;
-  cerr<<" -gradsources [INT_NUMBER] number of gradient sources in the lattice"<<endl;
+  cerr<<" -foodpatches [INT_NUMBER] initial number of food patches resources placed in the field"<<endl;
+  cerr<<" -foodpatchperiod [INT_NUMBER] new food patch timer (a new patch will be created every X MCS)"<<endl;
+  cerr<<" -foodpatchlength [INT_NUMBER] side of each food patch (total amount of spots per patch will be this squared)"<<endl;
+  cerr<<" -foodperspot [INT_NUMBER] how much food each spot contains"<<endl;
+  cerr<<" -maxfood [INT_NUMBER] maximum food allowed in the system"<<endl;
+  cerr<<" -foodstart [INT_NUMBER] initial food for cells"<<endl;
+  cerr<<" -eatperiod [INT_NUMBER] how often a cell can eat"<<endl;
   cerr<<" -gradnoise [FLOAT_NUMBER] chances that any grid point has gradient, rather than being empty"<<endl;
-  cerr<<" -degradeprob [FLOAT_NUMBER] chance that a cell will degrade the gradient bellow it (for each site)"<<endl;
   cerr<<" -chemmu [FLOAT_NUMBER] scaling factor for chemotaxis in the Hamiltonian"<<endl;
   cerr<<" -fitscale [FLOAT_NUMBER] point in field where deathrate is half value"<<endl;
   cerr<<" -genomefile [string] starting genome with which to seed the field"<<endl;
@@ -435,13 +444,13 @@ int Parameter::ReadArguments(int argc, char *argv[])
     }else if( 0==strcmp(argv[i],"-noevolreg") ){
       evolreg = false;
       cerr<<"No evolution of regulation parameters"<<endl;
-    }else if( 0==strcmp(argv[i],"-foodinflux") ){
+    }else if( 0==strcmp(argv[i],"-metabrate") ){
       i++; if(i==argc){
-        cerr<<"Something odd in foodinflux?"<<endl;
+        cerr<<"Something odd in metabrate?"<<endl;
         return 1;  //check if end of arguments, exit with error in case
       }
-      foodinflux = atof( argv[i] );
-      cerr<<"New value for foodinflux: "<<mut_rate<<endl;
+      metabrate = atof( argv[i] );
+      cerr<<"New value for metabrate: "<<mut_rate<<endl;
     }else if( 0==strcmp(argv[i],"-gradscale") ){
       i++; if(i==argc){
         cerr<<"Something odd in gradscale?"<<endl;
@@ -449,13 +458,55 @@ int Parameter::ReadArguments(int argc, char *argv[])
       }
       gradscale = atof( argv[i] );
       cerr<<"New value for gradscale: "<<gradscale<<endl;
-    }else if( 0==strcmp(argv[i],"-gradsources") ){
+    }else if( 0==strcmp(argv[i],"-foodpatches") ){
       i++; if(i==argc){
-        cerr<<"Something odd in gradsources?"<<endl;
+        cerr<<"Something odd in foodpatches?"<<endl;
         return 1;  //check if end of arguments, exit with error in case
       }
-      gradsources = atoi( argv[i] );
-      cerr<<"New value for gradsources: "<<gradsources<<endl;
+      foodpatches = atoi(argv[i] );
+      cerr << "New value for foodpatches: " << foodpatches << endl;
+    }else if( 0==strcmp(argv[i],"-foodpatchperiod") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in foodpatchperiod?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      foodpatchperiod = atoi(argv[i] );
+      cerr << "New value for foodpatchperiod: " << foodpatchperiod << endl;
+    }else if( 0==strcmp(argv[i],"-foodpatchlength") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in foodpatchlength?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      foodpatchlength = atoi(argv[i] );
+      cerr << "New value for foodpatchlength: " << foodpatchlength << endl;
+    }else if( 0==strcmp(argv[i],"-foodperspot") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in foodperspot?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      foodperspot = atoi(argv[i] );
+      cerr << "New value for foodperspot: " << foodperspot << endl;
+    }else if( 0==strcmp(argv[i],"-maxfood") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in maxfood?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      maxfood = atoi(argv[i] );
+      cerr << "New value for maxfood: " << maxfood << endl;
+    }else if( 0==strcmp(argv[i],"-foodstart") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in foodstart?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      foodstart = atoi(argv[i] );
+      cerr << "New value for foodstart: " << foodstart << endl;
+    }else if( 0==strcmp(argv[i],"-eatperiod") ){
+      i++; if(i==argc){
+        cerr<<"Something odd in eatperiod?"<<endl;
+        return 1;  //check if end of arguments, exit with error in case
+      }
+      eatperiod = atoi(argv[i] );
+      cerr << "New value for eatperiod: " << eatperiod << endl;
     }else if( 0==strcmp(argv[i],"-chemmu") ){
       i++; if(i==argc){
         cerr<<"Something odd in chemmu?"<<endl;
@@ -498,13 +549,6 @@ int Parameter::ReadArguments(int argc, char *argv[])
       }
       gradnoise = atof( argv[i] );
       cerr<<"New value for gradnoise: "<<gradnoise<<endl;
-    }else if( 0==strcmp(argv[i],"-degradeprob") ){
-      i++; if(i==argc){
-        cerr<<"Something odd in degradeprob?"<<endl;
-        return 1;  //check if end of arguments, exit with error in case
-      }
-      degradeprob = atof( argv[i] );
-      cerr<<"New value for degradeprob: "<<degradeprob<<endl;
     }else if( 0==strcmp(argv[i],"-fitscale") ){
       i++; if(i==argc){
         cerr<<"Something odd in fitscale?"<<endl;
@@ -643,7 +687,6 @@ void Parameter::Read(const char *filename) {
   mustd = fgetpar(fp, "mustd", 0., true);
   divtime = igetpar(fp, "divtime", 200, true);
   divdur = igetpar(fp, "divdur", 50, true);
-  maxdivisions = igetpar(fp, "maxdivisions", 4, true);
   mindeathprob = fgetpar(fp, "mindeathprob", 0., true);
   maxdeathprob = fgetpar(fp, "maxdeathprob", 1.0, true);
   scatter_cells = bgetpar(fp, "scatter_cells", false, true);
@@ -656,16 +699,21 @@ void Parameter::Read(const char *filename) {
   peaksdatafile = sgetpar(fp,"peaksdatafile" , "peaks_data.csv",true);
   save_text_file_period = igetpar(fp, "save_text_file_period", 100, true);
   food_influx_location = sgetpar(fp,"food_influx_location" , "nowhere",true);
-  initial_food_amount = fgetpar(fp, "initial_food_amount", 0, true);
-  foodinflux = fgetpar(fp, "foodinflux", 0., true);
+  initial_food_amount = igetpar(fp, "initial_food_amount", 0, true);
+  metabrate = fgetpar(fp, "metabrate", 0.1, true);
   eatprob = fgetpar(fp, "eatprob", 0., true);
   ardecay = fgetpar(fp, "ardecay", 0., true);
   growth = fgetpar(fp, "growth", 0., true);
   gradnoise = fgetpar(fp, "gradnoise", 0.1, true);
-  degradeprob = fgetpar(fp, "degradeprob", 0.5, true);
   gradscale = fgetpar(fp, "gradscale", 1.0, true);
-  gradsources = fgetpar(fp, "gradsources", 1, true);
-  min_contact_duration_for_preying = fgetpar(fp, "min_contact_duration_for_preying", 1., true);
+  foodpatches = igetpar(fp, "foodpatches", 1, true);
+  foodpatchperiod = igetpar(fp, "foodpatchperiod", 1000, true);
+  foodpatchlength = igetpar(fp, "foodpatchlength", 1, true);
+  foodperspot = igetpar(fp, "foodperspot", 1, true);
+  maxfood = igetpar(fp, "maxfood", 10000, true);
+  foodstart = igetpar(fp, "foodstart", 1000, true);
+  eatperiod = igetpar(fp, "eatperiod", 1000, true);
+  min_contact_duration_for_preying = igetpar(fp, "min_contact_duration_for_preying", 1., true);
   frac_contlen_eaten = fgetpar(fp, "frac_contlen_eaten", 1., true);
   metabolic_conversion = fgetpar(fp, "metabolic_conversion", 0.5, true);
   chancemediumcopied = fgetpar(fp, "chancemediumcopied", 0.0001, true);
@@ -896,14 +944,19 @@ void Parameter::Write(ostream &os) const {
   os << " maxdeathprob = " << maxdeathprob << endl;
   os << " initial_food_amount = "<< initial_food_amount << endl;
   os << " food_influx_location = "<< food_influx_location <<endl;
-  os << " foodinflux = " << foodinflux << endl;
+  os << " metabrate = " << metabrate << endl;
   os << " eatprob = " << eatprob << endl;
   os << " ardecay = " << ardecay << endl;
   os << " growth = " << growth << endl;
   os << " gradnoise = " << gradnoise << endl;
-  os << " degradeprob = " << degradeprob << endl;
   os << " gradscale = " << gradscale << endl;
-  os << " gradsources = " << gradsources << endl;
+  os << " foodpatches = " << foodpatches << endl;
+  os << " foodpatchperiod = " << foodpatchperiod << endl;
+  os << " foodpatchlength = " << foodpatchlength << endl;
+  os << " foodperspot = " << foodperspot << endl;
+  os << " maxfood = " << maxfood << endl;
+  os << " foodstart = " << foodstart << endl;
+  os << " eatperiod = " << eatperiod << endl;
   os << " divisioncolour = " << divisioncolour << endl;
   os << " nodivisions = " << nodivisions << endl;
   os << " motiledeath = " << motiledeath << endl;

@@ -121,6 +121,9 @@ public:
     chemvecy=src.chemvecy;
     grad_conc=src.grad_conc;
 
+    food = src.food;
+    last_meal = src.last_meal;
+
     owner=src.owner;
     particles=src.particles;
     eatprob=src.eatprob;
@@ -157,6 +160,8 @@ public:
   to Cell.
   */
   inline Cell &operator=(const Cell &src) {
+    if (this == &src)
+      return *this;
     //cout<<"Potato"<<endl;
     colour=src.colour;
     alive=src.alive;
@@ -189,6 +194,9 @@ public:
     chemmu=src.chemmu;
     chemvecx=src.chemvecx;
     chemvecy=src.chemvecy;
+
+    food = src.food;
+    last_meal = src.last_meal;
 
     grad_conc=src.grad_conc;
     sum_x=src.sum_x;
@@ -223,43 +231,6 @@ public:
     return *this;
 
   }
-  //another overload, this is used for assigning a cell to another
-  //but with specified sigma
-  // except tghat this also doesn't work
-//   inline Cell &operator=(const Cell &src, const int &recycled_sigma) {
-//     cout<<"Potato with sigma"<<endl;
-//     colour=src.colour;
-//     alive=src.alive;
-//     sigma=recycled_sigma;
-//     area=src.area;
-//     tau=src.tau;
-//     target_area=src.target_area;
-//     v[0]=src.v[0];
-//     v[1]=src.v[1];
-//     n_copies=src.n_copies;
-//
-//     sum_x=src.sum_x;
-//     sum_y=src.sum_y;
-//     sum_xx=src.sum_xx;
-//     sum_yy=src.sum_yy;
-//     sum_xy=src.sum_xy;
-//
-//     length=src.length;
-//     target_length=src.target_length;
-//     amount++;
-//     owner=src.owner;
-//
-//     particles=src.particles;
-//     growth = src.growth;
-//     neighbours=src.neighbours;
-//
-//     chem = new double[par.n_chem];
-//     for (int ch=0;ch<par.n_chem;ch++)
-//       chem[ch]=src.chem[ch];
-//
-//     return *this;
-//
-//   }
 
   /*! \brief Returns false if Cell has apoptosed (vanished). */
   inline bool AliveP() const {
@@ -1102,9 +1073,12 @@ protected:
   long int sum_yy;
   long int sum_xy;
 
+  double food;
+  int last_meal;
+
   int time_since_birth;
 
-  const Dish *owner; // pointer to owner of cell
+  const Dish *owner; // pointer to plane of cell
 
 };
 

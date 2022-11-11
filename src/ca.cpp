@@ -145,7 +145,7 @@ CellularPotts::~CellularPotts() {
   if (sigma) {
     free(sigma[0]);
     free(sigma);
-    sigma = 0;
+    sigma = nullptr;
   }
 }
 
@@ -327,7 +327,7 @@ int CellularPotts::DeltaHWithMedium(int x, int y, PDE *PDEfield) {
   DH += (int) (par.lambda * (1. - 2. * (double) ((*cell)[sxy].Area() - (*cell)[sxy].TargetArea())));
   double ax, ay;
   if ((*cell)[sxy].getMu() > 0.0001 || (*cell)[sxyp].getMu() > 0.0001) {
-    double smeanx = (*cell)[sxy].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other side
+    double smeanx = (*cell)[sxy].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other length
     double smeany = (*cell)[sxy].getYpos();
 
     if (par.periodic_boundaries) {
@@ -359,7 +359,7 @@ int CellularPotts::DeltaHWithMedium(int x, int y, PDE *PDEfield) {
 
 //Similarly to Joost's method, a bias due to chemokine gradient
   if ((*cell)[sxy].getChemMu() > 0.0001 || (*cell)[sxyp].getChemMu() > 0.0001) {
-    double smeanx = (*cell)[sxy].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other side
+    double smeanx = (*cell)[sxy].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other length
     double smeany = (*cell)[sxy].getYpos();
 
     if (par.periodic_boundaries) {
@@ -539,7 +539,7 @@ int CellularPotts::DeltaH(int x, int y, int xp, int yp, PDE *PDEfield) {
   if ((*cell)[sxy].getMu() > 0.0001 || (*cell)[sxyp].getMu() > 0.0001) {
     if (sxy != MEDIUM) {
       //cerr<<"tvecx: "<<(*cell)[sxy].getXvec()<<", tvecy: "<< (*cell)[sxy].getYvec() <<endl;
-      double smeanx = (*cell)[sxy].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other side
+      double smeanx = (*cell)[sxy].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other length
       double smeany = (*cell)[sxy].getYpos();
 
       if (par.periodic_boundaries) {
@@ -568,7 +568,7 @@ int CellularPotts::DeltaH(int x, int y, int xp, int yp, PDE *PDEfield) {
       DH += (*cell)[sxy].getMu() * (ax * (*cell)[sxy].getXvec() + ay * (*cell)[sxy].getYvec()) / hypot(ax, ay);
     }
     if (sxyp != MEDIUM) {
-      double spmeanx = (*cell)[sxyp].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other side
+      double spmeanx = (*cell)[sxyp].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other length
       double spmeany = (*cell)[sxyp].getYpos();
 
       if (par.periodic_boundaries) {
@@ -602,7 +602,7 @@ int CellularPotts::DeltaH(int x, int y, int xp, int yp, PDE *PDEfield) {
   if ((*cell)[sxy].getChemMu() > 0.0001 || (*cell)[sxyp].getChemMu() > 0.0001) {
     if (sxy != MEDIUM) {
       //cerr<<"tvecx: "<<(*cell)[sxy].getXvec()<<", tvecy: "<< (*cell)[sxy].getYvec() <<endl;
-      double smeanx = (*cell)[sxy].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other side
+      double smeanx = (*cell)[sxy].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other length
       double smeany = (*cell)[sxy].getYpos();
 
       if (par.periodic_boundaries) {
@@ -632,7 +632,7 @@ int CellularPotts::DeltaH(int x, int y, int xp, int yp, PDE *PDEfield) {
             hypot(ax, ay);
     }
     if (sxyp != MEDIUM) {
-      double spmeanx = (*cell)[sxyp].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other side
+      double spmeanx = (*cell)[sxyp].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other length
       double spmeany = (*cell)[sxyp].getYpos();
 
       if (par.periodic_boundaries) {
@@ -1205,10 +1205,8 @@ int **CellularPotts::SearchNandPlot(Graphics *g, bool get_neighbours) {
           colour = (*cell)[sigma[i][j]].Colour() + 7 * ((*cell)[sigma[i][j]].getTau() - 1);
           // if (colour !=2 && colour !=3) cerr<<" Wrong colour! "<< colour<<endl;
         } else {
-          colour = (*cell)[sigma[i][j]].getTau() + 1 + ((*cell)[sigma[i][j]].getTau() - 1) * 4 +
-                   (*cell)[sigma[i][j]].TimesDivided();
+          colour = (*cell)[sigma[i][j]].getTau() + 1 + ((*cell)[sigma[i][j]].getTau() - 1) * 4;
         }
-
 
         //colour = sigma[i][j];
       }
@@ -1702,7 +1700,6 @@ Dir *CellularPotts::FindCellDirections3() const {
 
 
 // TODO: This should probably be in cell.h
-// TODO: This should probably be in cell.h
 int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
 
   int sigmaneigh;
@@ -1711,8 +1708,9 @@ int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
   Dir *celldir = nullptr;
   vector<int> toprint;
 
-  Cell *motherp = &((*cell)[cell_sigma]);
   Cell *daughterp;
+  Cell *motherp = &((*cell)[cell_sigma]);
+  motherp->food /= 2;
   /* division */
 
   //we first check if we can recycle some position already exisiting in the vector
@@ -1734,7 +1732,7 @@ int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
     //cout << "We do not recycle, calling function new"<< endl;
     // THIS USED TO BE ABOVE, WHERE THE SIGN *** IS !!!
     //MAKES NEW CELL AT THE END OF ARRAY
-    daughterp = new Cell(*(motherp->owner));  //this calls  Cell(...){ owner=&who; ConstructorBody()}
+    daughterp = new Cell(*(motherp->owner));  //this calls  Cell(...){ plane=&who; ConstructorBody()}
     int momcol = motherp->colour;
     daughterp->CellBirth(*motherp);
     cell->push_back(*daughterp);  //this calls default copy constructor Cell(const Cell &src)
@@ -2024,6 +2022,13 @@ int CellularPotts::PlaceCellsOrderly(int n_cells, int size_cells) {
        << endl;
   //exit(1);
   return count;
+}
+
+void CellularPotts::killCell(int c_sigma) {
+  Cell &c = (*cell)[c_sigma];
+  c.SetTargetArea(0);
+  c.Apoptose(); //set alive to false
+  RemoveCell(&c, par.min_area_for_life, int(c.meanx), int(c.meany));
 }
 
 int CellularPotts::Place2Groups(int placement, int size_cells, int groupsize) {
@@ -2390,6 +2395,7 @@ void CellularPotts::RemoveCell(Cell *thiscell, int min_area, int meanx, int mean
 //     cerr<<"Removed one, countpix ="<<countpix<<endl;
   }
 
+  // TODO: Profile this version against looping over BoundingBox
   while (true) {
     //top row
     //Here we go through progressively larger squares (only its boundary)

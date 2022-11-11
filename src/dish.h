@@ -38,6 +38,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "intplane.h"
 #include "cell.h"
 #include "ca.h"
+#include "foodpatch.h"
 
 #define PREY 1
 #define PREDATOR 2
@@ -47,12 +48,6 @@ namespace ColourMode {
         State, CellType, Sigma, Auxilliary
     };
 }
-
-struct peakinfo {
-    int x;
-    int y;
-    double dist;
-};
 
 class Dish {
 
@@ -77,7 +72,7 @@ public:
     Simply calls CPM->Plot.
     And also colors depnd on food.
     */
-    void FoodPlot(Graphics *g) const;
+    void ChemPlot(Graphics *g) const;
 
     void Plot(Graphics *g, int colour);
 
@@ -105,13 +100,13 @@ public:
 //count how many cells of each group there are (when running competition), return 1 when one is extinct
     int CountCellGroups() const;
 
-    void CellsEat(); // Based on the old CellsEat2
+    void CellsEat(int time); // Based on the old CellsEat2
 
     void InitCellMigration();
 
     void CellMigration();
 
-    void UpdateCellParameters3(int Time);
+    void UpdateCellParameters(int Time);
 
     void GradientBasedCellKill(int currentsize);
 
@@ -131,7 +126,7 @@ public:
 
     void MakeBackup(int Time);
 
-    // TODO: Test if it is working with multiple peaks
+    // TODO: Test if it is working with multiple fpatches
     int ReadBackup(char *filename);
 
     int ReadCompetitionFile(char *filename);
@@ -147,32 +142,18 @@ public:
       return cell[c];
     }
 
-    inline int GetPeakx(int i) {
-      return peaksx[i];
+    const FoodPatch &getFPatch(int id) {
+      return fpatches[id];
     }
-
-    inline int GetPeaky(int i) {
-      return peaksy[i];
-    }
-
-    inline void SetPeakx(int i, int px) {
-      peaksx[i] = px;
-    }
-
-    inline void SetPeaky(int i, int py) {
-      peaksy[i] = py;
-    }
-
-    vector<FoodPatch> getPeaks() const;
 
     inline int GetGradSources() const {
       return grad_sources;
     }
 
     // Get distance of coordinate to the closest source of resources
-    peakinfo ClosestPeak(int x, int y, int upto = -1);
+    pair<int, double> closestFPatch(int x, int y);
 
-    // Food in relation to the distance from a single peak F(x)
+    // ChemPlane in relation to the distance from a single peak F(x)
     double FoodEquation(double dist_from_peak) const;
 
     // Determines how much food is in a specific position
@@ -182,17 +163,28 @@ public:
     // Writes a few rows of the sigma lattice to par.peaksdatafile
     int WritePeaksData() const;
 
-    // Randomize location of peaks based on min_resource_dist
-    void RandomizeResourcePeaks();
+    static double DetermineMinDist(int n) ;
 
-    double DetermineMinDist() const;
+    double distMostIsolatedPoint();
 
-    double DistMostIsolatedPoint();
+    void updateChemPlane();
 
-    void updateFoodSigma();
+    int addFPatch(int x, int y);
+
+    int addRandomFPatch();
+
+    void removeFPatch(int id);
+
+    unsigned int getFoodLeft() {
+      unsigned int food = 0;
+      for (auto &fp : fpatches)
+        food += fp.getFoodLeft();
+      return food;
+    }
 
     PDE *PDEfield;
-    IntPlane *Food;
+    IntPlane *ChemPlane;
+    IntPlane *FoodPlane;
     CellularPotts *CPM;
 
 protected:
@@ -202,16 +194,13 @@ protected:
     int sizex, sizey;
     // Number of resource sources
     int grad_sources;
-    double min_resource_dist;
-    int *peaksx;
-    int *peaksy;
-    vector<FoodPatch> peaks;
+    vector<FoodPatch> fpatches;
     // Coefficient for how the resources decrease according to their distance from the sources
     // TODO: Should this be a parameter?
     double dist_coef;
-    // TODO: Can this be safely implemented as a paramer? Do we want to do so?
-    bool interference;
-    double dist_most_isolated;
+
+    void FoodPlot(Graphics *g, int colori) const;
+
 };
 
 #define INIT void Dish::Init(void)

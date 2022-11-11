@@ -144,7 +144,7 @@ int conrec(double **d,
 	    // m3.
 	    // It is assumed that the centre of the box is always vertex 2
 	    // though this isimportant only when all 3 vertices lie exactly on
-	    // the same contour level, in which case only the side of the box
+	    // the same contour level, in which case only the length of the box
 	    // is drawn.
 	    //
 	    //
@@ -203,7 +203,7 @@ int conrec(double **d,
 		  y2=yh[m1];
 		  break;
 		  //===========================================================
-		  //     Case 4 - Line between vertex 1 and side 2-3
+		  //     Case 4 - Line between vertex 1 and length 2-3
 		  //===========================================================
 		case 4:
 		  x1=xh[m1];
@@ -212,7 +212,7 @@ int conrec(double **d,
 		  y2=ysect(m2,m3);
 		  break;
 		  //===========================================================
-		  //     Case 5 - Line between vertex 2 and side 3-1
+		  //     Case 5 - Line between vertex 2 and length 3-1
 		  //===========================================================
 		case 5:
 		  x1=xh[m2];
@@ -221,7 +221,7 @@ int conrec(double **d,
 		  y2=ysect(m3,m1);
 		  break;
 		  //===========================================================
-		  //     Case 6 - Line between vertex 3 and side 1-2
+		  //     Case 6 - Line between vertex 3 and length 1-2
 		  //===========================================================
 		case 6:
 		  x1=xh[m3];

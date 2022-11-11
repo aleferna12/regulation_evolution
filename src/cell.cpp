@@ -55,7 +55,7 @@ class Dish;
 
 using namespace std;
 
-Cell::~Cell(void) {
+Cell::~Cell() {
 
   amount--;
   if (amount == 0) {
@@ -146,6 +146,8 @@ void Cell::CellBirth(Cell &mother_cell) {
   growth = mother_cell.growth;
   eatprob = mother_cell.eatprob;
 
+  food = mother_cell.food;
+  last_meal = mother_cell.last_meal;
 
   clearNeighbours(); //neighbours will be reassigned during the division function
 
@@ -228,6 +230,9 @@ void Cell::ConstructorBody(int settau, int setrecycledsigma) {
 
   chemvecx = 0.;
   chemvecy = 0.;
+
+  food = par.foodstart;
+  last_meal = 0;
 
   time_since_birth = 0;
 
@@ -416,7 +421,7 @@ BoundingBox Cell::getBoundingBox() {
   };
 }
 
-int Cell::MutateKeyAndLock(void) {
+int Cell::MutateKeyAndLock() {
 //   cerr<<"key: ";
 //   for(auto x: jkey) cerr<<x<<" ";
 //   cerr<<"lock: ";

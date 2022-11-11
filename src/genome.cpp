@@ -240,7 +240,7 @@ void Genome::UpdateGeneExpression(const array<double,2> &input, bool sync_cells)
 }
 
 //this function puts the NewBool state of nodes into BoolState
-void Genome::FinishUpdate(void)
+void Genome::FinishUpdate()
 {
   int i;
   //update the actual expression

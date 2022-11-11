@@ -13,62 +13,50 @@ class Dish;
 
 class FoodPatch {
 private:
-    int centerx;
-    int centery;
-    int side;
-    int food_start;
-    int food_spots_left;
-    int *sigma;
+    int id;
+    int x;
+    int y;
+    int length;
+    int food_per_spot;
+    int food_left = 0;
     Dish *owner;
     BoundingBox grad_box{};
 
 public:
-    FoodPatch(Dish *owner, int centerx, int centery, int side, int food_start);
+    FoodPatch(Dish *owner, int id, int x, int y, int length, int food_per_spot);
 
-    virtual ~FoodPatch();
+    FoodPatch(const FoodPatch &fp);
 
-    int getCenterX() const {
-      return centerx;
+    int getX() const {
+      return x;
     }
 
-    void setCenterX(int val) {
-      centerx = val;
+    int getY() const {
+      return y;
     }
 
-    int getCenterY() const {
-      return centery;
+    double getCenterX() const {
+      return x + length / (double) 2;
     }
 
-    void setCenterY(int val) {
-      centery = val;
+    double getCenterY() const {
+      return y + length / (double) 2;
     }
 
-    int getSide() const {
-      return side;
+    int getId() const {
+      return id;
     }
 
-    void setSide(int val) {
-      side = val;
+    int getLength() const {
+      return length;
     }
 
-    int getFoodStart() const {
-      return food_start;
+    int getFoodPerSpot() const {
+      return food_per_spot;
     }
 
-    int getFoodSpotsLeft() const {
-      return food_spots_left;
-    }
-
-    void decrementFoodSpotsLeft() {
-      food_spots_left -= 1;
-    }
-
-    int getSigma(int x, int y) const {
-      return sigma[x * side + y];
-    }
-
-    void setSigma(int x, int y, int val) {
-      sigma[x * side + y] = val;
+    unsigned int getFoodLeft() const {
+      return food_left;
     }
 
     // TODO
@@ -76,6 +64,22 @@ public:
       throw logic_error("grad boxes are yet to be implemented");
       return grad_box;
     }
+
+    void initSigma();
+
+    int consumeFood(int gi, int gj);
+
+    // Whether there is any food spots for this patch
+    // If true we can remove FoodPatch from the ChemPlane
+    // If false, removed is also false
+    bool empty = false;
+
+    // Whether FoodPatch has been removed from the ChemPlane
+    // If true, we can recycle the position on fpatches
+    // If true, empty is also true
+    bool removed = false;
+
+    void checkEmpty();
 };
 
 

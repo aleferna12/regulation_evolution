@@ -43,39 +43,15 @@ class IntPlane {
 public:
 
     /*!
-     * \brief Constructor for PDE object containing arbitrary number of planes.
-     * \param layers: Number of PDE planes
+     * \brief Constructor for PDE object.
      * \param sx: horizontal size of PDE planes
      * \param sy: vertical size of PDE planes
     */
 
-    IntPlane(const int sx, const int sy);
-
+    IntPlane(int sx, int sy,  int fill = 0);
 
     // destructor must also be virtual
     virtual ~IntPlane();
-
-    /*!
-     * \brief Plots one layer of the PDE plane to a Graphics window.
-     * \param g: Graphics window.
-     * \param layer: The PDE plane to be plotted. Default layer 0.
-    */
-    void Plot(Graphics *g);
-
-    /*! \brief Plots one layer of the PDE to a Graphics window, but not over the cells.
-      \param g: Graphics window.
-      \param cpm: CellularPotts object containing the cells.
-      \param layer: The PDE plane to be plotted. Default layer 0.
-    */
-
-    void Plot(Graphics *g, CellularPotts *cpm);
-
-    /*! \brief Plots the PDE field using contour lines.
-
-    \param g: Graphics window.
-    \param layer: The PDE plane to be plotted. Default layer 0.
-    \param colour: Color to use for the contour lines, as defined in the "default.ctb" color map file, which should be in the same directory as the executable. Default color 1 (black in the default color map).
-    */
 
     //! \brief Returns the horizontal size of the PDE planes.
     inline int SizeX() const {
@@ -87,11 +63,18 @@ public:
       return sizey;
     }
 
+    double getDiagonal() const {
+      return sqrt(sizex * sizex + sizey * sizey);
+    }
+
+    int getArea() const {
+      return sizex * sizey;
+    }
+
     /*! \brief Returns the value of grid point x,y of PDE plane "layer".
 
     Warning, no range checking done.
 
-    \param layer: the PDE plane to probe.
     \param x, y: grid point to probe.
     */
     inline int Sigma(const int x, const int y) const {
@@ -100,7 +83,6 @@ public:
 
     /*! \brief Sets grid point x,y of PDE plane "layer" to value "value".
 
-    \param layer: PDE plane.
     \param x, y: grid point
     \param value: new contents
 
@@ -114,7 +96,7 @@ public:
     pair<int, int> getMinMax() const {
       int maxval = 0;
       int minval = INT_MAX;
-      for (int i = 1; i < sizex; ++i) for (int j = 1; j < sizex; ++j) {
+      for (int i = 1; i < sizex - 1; ++i) for (int j = 1; j < sizey - 1; ++j) {
         minval = min(Sigma(i, j), minval);
         maxval = max(Sigma(i, j), maxval);
       }
@@ -139,8 +121,6 @@ private:
     int *sigma;
     int sizex;
     int sizey;
-    // Diagonal length of the lattice (calculated)
-    double diagonal;
 };
 
 #endif

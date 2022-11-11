@@ -2,7 +2,7 @@
 
 Inside the area around each peak is where the strength of the gradient is determined by that peak.
 
-It's not very fast, but can be improved by using ray-casting (this is done).
+It's not very fast, but can be improved by using ray-tracing (this is done).
 
 The other thing that can be done to improve is add points one by one and for each new point:
     1. Query which is the closest old point from the new point
@@ -28,7 +28,7 @@ def main():
     # Number of rays used in ray-tracing
     # -1 disables it
     # Increasing this too much is worse than disabling it
-    ray_n = -1
+    ray_n = 10
     # Float arithmetic needs to be corrected
     # A low precision may cause areas to overextend, while a high one may cause some areas not
     # to be assigned to any point
@@ -39,6 +39,7 @@ def main():
     points = np.random.rand(n, 2)
     points[:, 0] *= latt[0]
     points[:, 1] *= latt[1]
+    points = [Point(*p) for p in points]
 
     fig = go.Figure()
     colors = Grad(
@@ -49,8 +50,11 @@ def main():
         )
     ).n_colors(n)
 
+    ps = []
+    for p in points:
+        ps = add_to_latt(p, ps, latt, ray_n, precision)
     for i, point in enumerate(points):
-        poly = get_poly(point.tolist(), points.tolist(), latt, ray_n, precision)
+        poly = get_poly(point, points, latt, ray_n, precision)
         poly = np.array(poly)
         # Theoretically this should always work but it depends on precision
         try:
@@ -80,9 +84,29 @@ def main():
     fig.show()
 
 
+def add_to_latt(p, ps, latt, ray_n, prec):
+    pc = closest_p(p, ps)
+    if pc is not None:
+        for pu in pc.infs:
+            update_vertices(pu, [p, pc] + pu.infs, latt, prec)
+        update_vertices(p, [pc] + pc.infs, latt, prec)
+        update_vertices(pc, [p] + pc.infs, latt, prec)
+    return ps + [p]
+
+
+def update_vertices(p, check_ps, latt, prec):
+    # p.infs, ncs = neighbours(p, check_ps, prec)
+    # p.vs = find_all_vertices(p, ncs, latt, prec)
+    pass
+
+
 def get_poly(p, ps, latt, ray_n, prec):
     """Check all classifiers. Slow but precise."""
-    cs = get_classifiers(p, ps)
+    cs = []
+    for p2 in ps:
+        c = get_classifier(p, p2)
+        if c is not None:
+            cs.append(c)
 
     if ray_n > 0:
         ray_cs = []
@@ -96,7 +120,16 @@ def get_poly(p, ps, latt, ray_n, prec):
                 ray_cs.append(fc)
         cs = ray_cs
 
-    return find_all_vertices(p, cs, latt, prec)
+    return [v[1] for v in get_all_vertices(p, ps, cs, latt, prec)]
+
+
+def closest_p(p, ps):
+    closest = (None, float("inf"))
+    for p2 in ps:
+        d = dist(p, p2)
+        if d < closest[1]:
+            closest = (p2, d)
+    return closest[0]
 
 
 def ray_trace(p, q, angle, cs):
@@ -127,36 +160,34 @@ def get_quad(angle):
     return 3
 
 
-def get_classifiers(p, ps):
-    # Get all classifiers (lines that split p from other points midway)
-    cs = []
-    for p2 in ps:
-        if p2 == p:
-            continue
+def get_classifier(p1, p2):
+    if p1 == p2:
+        return None
 
-        r = get_line(p, p2)
-        # Average point
-        p3 = ((p[0] + p2[0]) / 2, (p[1] + p2[1]) / 2)
-        cs.append(get_perpendicular(p3, r[0]))
-    return cs
+    r = get_line(p1, p2)
+    # Average point
+    p3 = ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2)
+    return get_perpendicular(p3, r[0])
 
 
-def find_all_vertices(p, cs, latt, prec):
+def get_all_vertices(p, ps, cs, latt, prec):
     # For every classifier we need to query whether it has "direct line of sight" to p
     # Vertices are the putative points that match this condition
     # They will later be filtered
     vertices = [(0, 0), (0, latt[1]), (latt[0], 0), (latt[0], latt[1])]
-    for c in cs:
-        vertices += get_intersection_latt(c, latt)
+    vertices = list(zip([None] * len(vertices), vertices))
+    for p2, c in zip(ps, cs):
+        if c is None:
+            continue
+        vertices += list(zip([None] * 4, get_intersection_latt(c, latt)))
 
         for o_c in cs:
-            if c == o_c:
+            if o_c == c or o_c is None:
                 continue
-            pc = get_intersection(c, o_c)
-            vertices.append(pc)
-
-    return [pv for pv in vertices
-            if in_bounds(pv, latt) and not split_by_classif(p, pv, cs, prec)]
+            pv = get_intersection(c, o_c)
+            if in_bounds(pv, latt):
+                vertices.append((p2, pv))
+    return [v for v in vertices if not split_by_classif(p, v[1], cs, prec)]
 
 
 def get_box(poly):
@@ -168,50 +199,9 @@ def get_box(poly):
     ]
 
 
-def box_from_classf(cs, p, latt):
-    coords = [0, 0, *latt]
-    if not isinstance(cs[0], int):
-        p1 = get_intersects(cs[0], cs[1], latt)
-        p2 = get_intersects(cs[0], cs[3], latt)
-        valid = validate((p1[0], p2[0]), 0, p[0], coords[0])
-        if valid:
-            coords[0] = min(valid)
-    if not isinstance(cs[1], int):
-        p1 = get_intersects(cs[1], cs[0], latt)
-        p2 = get_intersects(cs[1], cs[2], latt)
-        valid = validate((p1[1], p2[1]), 0, p[1], coords[1])
-        if valid:
-            coords[1] = min(valid)
-    if not isinstance(cs[2], int):
-        p1 = get_intersects(cs[2], cs[1], latt)
-        p2 = get_intersects(cs[2], cs[3], latt)
-        valid = validate((p1[0], p2[0]), p[0], latt[0], coords[2])
-        if valid:
-            coords[2] = max(valid)
-    if not isinstance(cs[3], int):
-        p1 = get_intersects(cs[3], cs[0], latt)
-        p2 = get_intersects(cs[3], cs[2], latt)
-        valid = validate((p1[1], p2[1]), p[1], latt[1], coords[3])
-        if valid:
-            coords[3] = max(valid)
-    return coords
-
-
 def validate(vs, lower, upper, repl):
     ret = [v if v is not None and lower < v < upper else repl for v in vs]
     return ret
-
-
-def get_intersects(c1, c2, latt):
-    if c2 == 0:
-        return 0, c1[1]
-    if c2 == 1:
-        return -c1[1] / c1[0], 0
-    if c2 == 2:
-        return latt[0], latt[0] * c1[0] + c1[1]
-    if c2 == 3:
-        return (latt[1] - c1[1]) / c1[0], latt[1]
-    return get_intersection(c1, c2)
 
 
 def in_bounds(p, latt):
@@ -278,6 +268,26 @@ def lattice_ref_points(p, latt):
         (p[0], latt[1])
     ]
     return [dist(p, pr) for pr in prs]
+
+
+class Point:
+    def __init__(self, x, y, infs=None, vs=None):
+        self.x, self.y = x, y
+        self.infs = [] if infs is None else infs
+        self.vs = [] if infs is None else vs
+
+    def __getitem__(self, item):
+        if item == 0:
+            return self.x
+        elif item == 1:
+            return self.y
+        raise Exception("2d point has only 2 dimensions (duhh)")
+
+    def __iter__(self):
+        return iter((self.x, self.y))
+
+    def __repr__(self):
+        return f"{self.x}, {self.y}"
 
 
 if __name__ == "__main__":

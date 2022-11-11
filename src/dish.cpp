@@ -55,34 +55,28 @@ using namespace std;
 Dish::Dish() {
   sizex = par.sizex;
   sizey = par.sizey;
-  grad_sources = par.gradsources;
-  peaksx = new int[grad_sources]{};
-  peaksy = new int[grad_sources]{};
-  dist_most_isolated = DistMostIsolatedPoint();
-  min_resource_dist = DetermineMinDist();
-  RandomizeResourcePeaks();
-
-  peaks = vector<FoodPatch>{
-          FoodPatch(this, 0, 0, 20, 5),
-          FoodPatch(this, 100, 100, 20, 5)
-  };
   // This should be always 1 if we keep the gradients linear
   dist_coef = 1;
-  // This should be always 1 if we keep the gradients independent from each other
-  interference = false;
+
+  grad_sources = par.foodpatches;
+
+  CPM = new CellularPotts(&cell, par.sizex, par.sizey);
+
+  FoodPlane = new IntPlane(par.sizex, par.sizey, -1);
+  fpatches = vector<FoodPatch>{};
+  for (int i = 0; i < par.foodpatches; ++i)
+    addRandomFPatch();
+
+  ChemPlane = new IntPlane(par.sizex, par.sizey);
+  updateChemPlane();
 
   Cell::maxsigma = 0;
-
   // Allocate the first "cell": this is the medium (tau=0)
   cell.push_back(*(new Cell(*this, 0)));
 
   // indicate that the first cell is the medium
   cell.front().sigma = 0;
   cell.front().tau = 0;
-
-  CPM = new CellularPotts(&cell, par.sizex, par.sizey);
-  Food = new IntPlane(par.sizex, par.sizey);
-  updateFoodSigma();
 
   if (par.n_chem)
     PDEfield = new PDE(par.n_chem, par.sizex, par.sizey);
@@ -97,46 +91,61 @@ Dish::~Dish() {
   cell.clear();
 
   delete CPM;
-  delete Food;
+  delete ChemPlane;
+  delete FoodPlane;
+}
+
+// Adds a new FoodPatch at a semi-random position (still takes into account mindist)
+int Dish::addRandomFPatch() {
+  int x, y;
+  if (fpatches.empty()) {
+    // Ok positions = [2, side - 3] (inclusive both sides)
+    x = (int) RandomNumber(sizex - 4) + 1;
+    y = (int) RandomNumber(sizey - 4) + 1;
+    return addFPatch(x, y);
+  }
+  double dist = 0;
+  double mindist = DetermineMinDist(int(fpatches.size()) + 1);
+  while (dist < mindist) {
+    x = (int) RandomNumber(sizex - 4) + 1;
+    y = (int) RandomNumber(sizey - 4) + 1;
+    dist = closestFPatch(x, y).second;
+  }
+  return addFPatch(x, y);
 }
 
 
-peakinfo Dish::ClosestPeak(int x, int y, int upto) {
-  if (upto == -1) {
-    upto = grad_sources;
-  }
+pair<int, double> Dish::closestFPatch(int x, int y) {
+  double mindist_sq = sizex * sizex + sizey * sizey;
+  int res_id = -1;
 
-  peakinfo res{};
-  long mindist_sq = (long) INFINITY;
-
-  for (int src = 0; src < upto; src++) {
-    // - ensures always finding smaller value
-    int dx = peaksx[src] - x;
-    int dy = peaksy[src] - y;
-    long dist_sq = dx * dx + dy * dy;
-    if (dist_sq < mindist_sq) {
-      mindist_sq = dist_sq;
-      res.x = peaksx[src];
-      res.y = peaksy[src];
+  for (auto &fp : fpatches) {
+    if (not fp.empty) {
+      double dx = fp.getCenterX() - x;
+      double dy = fp.getCenterY() - y;
+      double dist_sq = dx * dx + dy * dy;
+      if (dist_sq < mindist_sq) {
+        mindist_sq = dist_sq;
+        res_id = fp.getId();
+      }
     }
   }
 
-  res.dist = sqrt(mindist_sq);
-  return res;
+  return {res_id, sqrt(mindist_sq)};
 }
 
 // Alternatively, we could use the most isolated point to know where to put next peak at each iteration
 // I think that doing this would be worse, as it is more computationally intensive and probably will tend to accumulate
-// peaks in the corners (?), which may be problematic for small grad_sources numbers
-double Dish::DetermineMinDist() const {
+// fpatches in the corners (?), which may be problematic for small grad_sources numbers
+double Dish::DetermineMinDist(int n) {
   double ratio = (par.sizey - 2) / (double) (par.sizex - 2);
   // ratio * sepx = sepy
   // sepx = sepy / ratio
   // (sepx + 1) * (sepy + 1) = grad_sources - 1
   // ratio * pow(sepx, 2) + sepx * (1 + ratio) + 2 - grad_sources = 0
   // Do the same for sepy and solve quadradic equations
-  double sepx = SolveQuadradic(ratio, 1 + ratio, 2 - grad_sources);
-  double sepy = SolveQuadradic(1 / ratio, 1 + 1 / ratio, 2 - grad_sources);
+  double sepx = SolveQuadradic(ratio, 1 + ratio, 2 - n);
+  double sepy = SolveQuadradic(1 / ratio, 1 + 1 / ratio, 2 - n);
   double mindistx = (par.sizex - 2) / (sepx * 2 + 2);
   double mindisty = (par.sizey - 2) / (sepy * 2 + 2);
   return sqrt(mindistx * mindistx + mindisty * mindisty);
@@ -423,18 +432,6 @@ void Dish::UpdateNeighDuration() {
   std::vector<Cell>::iterator c;
   std::map<int, pair<int, int> >::iterator n, prev;
 
-//    cerr<<"Printing neighbor list"<<endl;
-//    for(c=cell.begin(),c++; c!=cell.end(); ++c){
-//      cerr << c->Sigma() <<": ";
-//      n=c->neighbours.begin();
-//      while( n != c->neighbours.end() ){
-//        if(n->second.first!=0 && n->second.second!=0)
-//          cerr << n->first <<", ";
-//        n++;
-//     }
-//     cerr << endl;
-//    }
-
   //cerr<<"Hello UpdateNeighDuration begin"<<endl;
   for (c = cell.begin(), c++; c != cell.end(); ++c) {
     if (!c->AliveP()) continue;
@@ -465,23 +462,28 @@ void Dish::UpdateNeighDuration() {
 
 // Colors for food are indicised from 10 to 60, with some simple calculations it should be easy
 // to make them pretty
-void Dish::FoodPlot(Graphics *g) const {
+void Dish::ChemPlot(Graphics *g) const {
   // cpm->sigma[x][y] returns sigma, which I can use to indicise the vector of cells... can I? yes_
   int startcolorindex = 16;
   int ncolors = 29;
-  auto minmaxfood = Food->getMinMax();
+  auto minmaxfood = ChemPlane->getMinMax();
 
   // suspend=true suspends calling of DrawScene
   for (int x = 1; x < par.sizex - 1; x++)
     for (int y = 1; y < par.sizey - 1; y++)
 
-      if (Food->Sigma(x, y) != 0) {
+      if (ChemPlane->Sigma(x, y) != 0) {
         if (CPM->Sigma(x, y) == 0) {
-          if (Food->Sigma(x, y) < 0) {
-            cerr << "foodplane below zero!!" << endl;
+          if (ChemPlane->Sigma(x, y) < 0) {
+            cerr << "chemplane below zero!!" << endl;
           }
-          // To change where first color is and how many colors to use modify parameters of this equation
-          int colori = startcolorindex + ncolors * (Food->Sigma(x, y) - minmaxfood.first) / (minmaxfood.second - minmaxfood.first);
+          int colori;
+          if (minmaxfood.first == minmaxfood.second) {
+            colori = startcolorindex;
+          } else {
+            colori = startcolorindex +
+                     ncolors * (ChemPlane->Sigma(x, y) - minmaxfood.first) / (minmaxfood.second - minmaxfood.first);
+          }
           // Make the pixel four times as large
           // to fit with the CPM plane
           g->Point(colori, 2 * x, 2 * y);
@@ -490,11 +492,22 @@ void Dish::FoodPlot(Graphics *g) const {
           g->Point(colori, 2 * x + 1, 2 * y + 1);
         } else { ;
           // it's getting a bit cumbersome to look at this, for now I'll do without
-          // g->Point(60+Food->Sigma(x,y),2*x,2*y);
-          // g->Point(60+Food->Sigma(x,y),2*x+1,2*y);
-          // g->Point(60+Food->Sigma(x,y),2*x,2*y+1);
-          // g->Point(60+Food->Sigma(x,y),2*x+1,2*y+1);
+          // g->Point(60+ChemPlane->Sigma(x,y),2*x,2*y);
+          // g->Point(60+ChemPlane->Sigma(x,y),2*x+1,2*y);
+          // g->Point(60+ChemPlane->Sigma(x,y),2*x,2*y+1);
+          // g->Point(60+ChemPlane->Sigma(x,y),2*x+1,2*y+1);
         }
+      }
+}
+
+void Dish::FoodPlot(Graphics *g, int colori) const {
+  for (int x = 1; x < par.sizex - 1; x++)
+    for (int y = 1; y < par.sizey - 1; y++)
+      if (FoodPlane->Sigma(x, y) != -1 and CPM->Sigma(x, y) == 0) {
+        g->Point(colori, 2 * x, 2 * y);
+        g->Point(colori, 2 * x + 1, 2 * y);
+        g->Point(colori, 2 * x, 2 * y + 1);
+        g->Point(colori, 2 * x + 1, 2 * y + 1);
       }
 }
 
@@ -503,8 +516,9 @@ void Dish::Plot(Graphics *g, int colour) {
     CPM->Plot(g, colour);
   }
 
-  //here food plotting, with info from cpm and cell
-  FoodPlot(g);
+  //here chem grad plotting, with info from cpm and cell
+  ChemPlot(g);
+  FoodPlot(g, 100);
 
   //Plot direction arrows, with line function from X11?
   if (par.startmu > 0) {
@@ -534,9 +548,8 @@ int Dish::WritePeaksData() const {
   file.open(par.peaksdatafile);
   for (int i = 0; i < num_rows; i++) {
     int row = i * sizex / num_rows + 1;
-    cout << row << endl;
     for (int col = 1; col < sizey - 1; col++) {
-      file << Food->Sigma(row, col) << ",";
+      file << ChemPlane->Sigma(row, col) << ",";
     }
     file << endl;
   }
@@ -545,64 +558,91 @@ int Dish::WritePeaksData() const {
 }
 
 
-void Dish::CellsEat() {
+void Dish::CellsEat(int time) {
   for (auto &c: cell) {
-    if (c.AliveP() and c.getTau() == PREY) {
-      int fsumx = 0, fsumy = 0, ftotal = 0;
-      int foodload;
+    if (c.AliveP()) {
+      c.food -= par.metabrate;
 
+      int chemsumx = 0, chemsumy = 0, chemtotal = 0;
       BoundingBox bb = c.getBoundingBox();
       int pixel_count = 0;
-      for (int x = bb.getMinX(); x <= bb.getMaxX(); ++x)
-        for (int y = bb.getMinY(); y <= bb.getMaxY(); ++y) {
-          int food_xy = Food->Sigma(x, y);
+      for (int x = bb.getMinX(); x < bb.getMaxX(); ++x) {
+        for (int y = bb.getMinY(); y < bb.getMaxY(); ++y) {
           if (CPM->Sigma(x, y) == c.Sigma()) {
             ++pixel_count;
-            fsumx += x * food_xy;
-            fsumy += y * food_xy;
-            ftotal += food_xy;
+            if (time - c.last_meal > par.eatperiod) {
+              int fp_id = FoodPlane->Sigma(x, y);
+              if (fp_id != -1) {
+                c.food += fpatches[fp_id].consumeFood(x, y);
+                c.last_meal = time;
+                if (c.getTau() != PREY)
+                  // There's nothing left to do so just skip to next cell on the vector
+                  goto next_cell;
+              }
+            }
+            int chem_xy = ChemPlane->Sigma(x, y);
+            chemsumx += x * chem_xy;
+            chemsumy += y * chem_xy;
+            chemtotal += chem_xy;
           }
         }
+      }
       if (pixel_count != c.Area()) {
-        cerr << "Cell area is " << c.Area() << " but only " << pixel_count << " pixels were found inside bounding box";
+        cerr << "Cell area is " << c.Area() << " but only " << pixel_count
+             << " pixels were found inside bounding box";
         cerr << "Terminating the program";
         exit(1);
       }
-      if (ftotal) {
-        double xvector = fsumx / (double) ftotal - c.meanx;
-        double yvector = fsumy / (double) ftotal - c.meany;
-        c.grad_conc = ftotal / c.Area();
-        double hyphyp = hypot(xvector, yvector);
+      if (c.getTau() == PREY) {
+        if (chemtotal) {
+          double xvector = chemsumx / (double) chemtotal - c.meanx;
+          double yvector = chemsumy / (double) chemtotal - c.meany;
+          c.grad_conc = chemtotal / c.Area();
+          double hyphyp = hypot(xvector, yvector);
 
-        // in a homogeneous medium, gradient is zero
-        // we then pick a random direction
-        if (hyphyp > 0.0001) {
-          xvector /= hyphyp;
-          yvector /= hyphyp;
-          c.setChemVec(xvector, yvector);
+          // in a homogeneous medium, gradient is zero
+          // we then pick a random direction
+          if (hyphyp > 0.0001) {
+            xvector /= hyphyp;
+            yvector /= hyphyp;
+            c.setChemVec(xvector, yvector);
+          } else {
+            double theta = 2. * M_PI * RANDOM();
+            c.setChemVec(cos(theta), sin(theta));
+          }
         } else {
           double theta = 2. * M_PI * RANDOM();
           c.setChemVec(cos(theta), sin(theta));
         }
-      } else {
-        double theta = 2. * M_PI * RANDOM();
-        c.setChemVec(cos(theta), sin(theta));
-      }
 
-      if (c.chemvecx > 1 || c.chemvecy > 1) {
-        std::cerr << ", vector: " << c.chemvecx << " " << c.chemvecy << '\n';
-        exit(1);
+        if (c.chemvecx > 1 || c.chemvecy > 1) {
+          std::cerr << ", vector: " << c.chemvecx << " " << c.chemvecy << '\n';
+          exit(1);
+        }
       }
     }
+    next_cell:;
+  }
+
+  // TODO: This needs big changes to only update the right sections (call to removeFPatch)
+  bool update_chem = false;
+  for (auto &fp : fpatches) {
+    if (fp.empty and not fp.removed) {
+      fp.removed = true;
+      update_chem = true;
+    }
+  }
+  if (update_chem) {
+    updateChemPlane();
   }
 }
 
 
-double Dish::DistMostIsolatedPoint() {
+double Dish::distMostIsolatedPoint() {
   double dist = 0;
   for (int i = 1; i < sizex - 1; i++)
     for (int j = 1; j < sizey - 1; j++) {
-      double closest_dist = ClosestPeak(i, j).dist;
+      double closest_dist = closestFPatch(i, j).second;
       if (closest_dist > dist) {
         dist = closest_dist;
       }
@@ -611,16 +651,15 @@ double Dish::DistMostIsolatedPoint() {
 }
 
 
-void Dish::updateFoodSigma() {
-  dist_most_isolated = DistMostIsolatedPoint();
+void Dish::updateChemPlane() {
   for (int i = 1; i < sizex - 1; i++)
     for (int j = 1; j < sizey - 1; j++) {
       double dfood = FoodAtPosition(i, j);
       int local_maxfood = (int) dfood;
-      Food->setSigma(i, j, local_maxfood);
+      ChemPlane->setSigma(i, j, local_maxfood);
       if (RANDOM() < dfood - local_maxfood) local_maxfood++;
       if (RANDOM() < par.gradnoise)
-        Food->setSigma(i, j, local_maxfood);
+        ChemPlane->setSigma(i, j, local_maxfood);
     }
   // If we want to see transversal profiles of the plane
   // WritePeaksData();
@@ -676,18 +715,23 @@ void Dish::CellMigration() {
 }
 
 
-void Dish::UpdateCellParameters3(int Time) {
+void Dish::UpdateCellParameters(int Time) {
   vector<Cell>::iterator c; //iterator to go over all Cells
   vector<int> to_divide;
+  vector<int> to_kill;
   array<double, 2> inputs = {0., 0.}; //was inputs(2,0.);
   array<int, 2> output = {0, 0};
   int interval;
-  int divvs = 0;
 
   //cout<<"Update Cell parameters "<<Time<<endl;
   //update networks asynchronously f
   for (c = cell.begin(), ++c; c != cell.end(); ++c) {
     if (c->AliveP()) {
+      // Mark cell to die
+      if (c->food <= 0) {
+        to_kill.push_back(c->Sigma());
+        continue;
+      }
 
       c->time_since_birth++;
       interval = Time + c->Gextiming();
@@ -695,7 +739,9 @@ void Dish::UpdateCellParameters3(int Time) {
       if (!(interval % par.scaling_cell_to_ca_time)) {
         //calculate inputs
         inputs[0] = (double) c->grad_conc;
-        inputs[1] = (double) c->TimesDivided(); //NeighInputCalc(*c);
+        // TODO test
+        double division_cost = par.metabrate * par.scaling_cell_to_ca_time * (par.divtime + par.divdur);
+        inputs[1] = (double) c->food / division_cost;
         c->UpdateGenes(inputs, true);
         c->FinishGeneUpdate();
         //what is the state of the output node of the cell?
@@ -706,8 +752,7 @@ void Dish::UpdateCellParameters3(int Time) {
           //cout<<"cell "<<c->Sigma()<<" wants to divide"<<endl;
           c->dividecounter++;
 
-          if (c->dividecounter >= par.divtime + par.divdur &&
-              c->TimesDivided() < par.maxdivisions) { //cannot divide more than three times
+          if (c->dividecounter >= par.divtime + par.divdur) {
             //divide
             if (c->Area() > 30) {
               //cout<<"cell "<<c->Sigma()<<" will divide"<<endl;
@@ -717,7 +762,6 @@ void Dish::UpdateCellParameters3(int Time) {
               } else {
                 c->AddTimesDivided();
               }
-              divvs = 1;
             }
             //we already set the target area back to normal. We won't run any AmoebaeMove in between this and division
             //like this both daughter cells will inherit the normal size
@@ -726,10 +770,10 @@ void Dish::UpdateCellParameters3(int Time) {
             c->dividecounter = 0;
             c->ClearGenomeState(); //reset the GRN!
           }
-            //not time to divide yet, but do stop migrating and start growing
+          //not time to divide yet, but do stop migrating and start growing
           else if (c->dividecounter > par.divtime) {
             //cout<<"cell "<<c->Sigma()<<" starting to divide"<<endl;
-            if (c->TimesDivided() < par.maxdivisions && c->TargetArea() < par.target_area * 2)
+            if (c->TargetArea() < par.target_area * 2)
               c->SetTargetArea(c->TargetArea() + 1);
             c->setMu(0.);
             c->setChemMu(0.0);
@@ -751,11 +795,12 @@ void Dish::UpdateCellParameters3(int Time) {
       //check area:if cell is too small (whether alive or not) we remove its sigma
       // notice that this keeps the cell in the cell array, it only removes its sigma from the field
       if (c->Area() < par.min_area_for_life) {
-        c->SetTargetArea(0);
-        c->Apoptose(); //set alive to false
-        CPM->RemoveCell(&*c, par.min_area_for_life, c->meanx, c->meany);
+        to_kill.push_back(c->Sigma());
       }
     }
+  }
+  for (auto c_sigma : to_kill) {
+    CPM->killCell(c_sigma);
   }
 
   vector<int> sigma_newcells;
@@ -767,9 +812,24 @@ void Dish::UpdateCellParameters3(int Time) {
   UpdateVectorJ(sigma_newcells);
 }
 
+void Dish::removeFPatch(int id) {
+  // TODO
+}
+
+int Dish::addFPatch(int x, int y) {
+  for (auto &fp : fpatches) {
+    if (fp.removed) {
+      int id = fp.getId();
+      fpatches[id] = FoodPatch(this, id, x, y, fp.getLength(), fp.getFoodPerSpot());
+      return id;
+    }
+  }
+  fpatches.emplace_back(this, fpatches.size(), x, y, par.foodpatchlength, par.foodperspot);
+  return fpatches.back().getId();
+}
+
 //death based on distance from the gradient until popsize is restored
 void Dish::GradientBasedCellKill(int popsize) {
-  int current_popsize = 0;
   std::vector<pair<int, double> > sig_dist;
   double distance, rn;
   double deathprob;
@@ -781,8 +841,7 @@ void Dish::GradientBasedCellKill(int popsize) {
   //determine final distance of those cells that are alive
   for (auto &c: cell) {
     if (c.Sigma() > 0 && c.AliveP()) {
-      current_popsize++;
-      distance = ClosestPeak((int) round(c.getXpos()), (int) round(c.getYpos())).dist;
+      distance = closestFPatch((int) round(c.getXpos()), (int) round(c.getYpos())).second;
       //fitness=1./(1.+pow(distance,3.)/par.fitscale); //for relative version
       //totalfit+=fitness; //for relative version
       //sig_dist.push_back(make_pair(c.Sigma(),totalfit)); //for relative version
@@ -798,9 +857,7 @@ void Dish::GradientBasedCellKill(int popsize) {
     rn = RANDOM();//should be between 0 and 1
 
     if (rn < n.second && cell[n.first].AliveP()) {
-      cell[n.first].SetTargetArea(0);
-      cell[n.first].Apoptose(); //set alive to false
-      CPM->RemoveCell(&cell[n.first], par.min_area_for_life, cell[n.first].meanx, cell[n.first].meany);
+      CPM->killCell(n.first);
     } else if (cell[n.first].AliveP()) {
       cell[n.first].ResetTimesDivided();
       cell[n.first].ClearGenomeState();
@@ -873,28 +930,8 @@ int Dish::TargetArea() const {
 }
 
 
-void Dish::RandomizeResourcePeaks() {
-  peaksx[0] = (int) RandomNumber(sizex - 1);
-  peaksy[0] = (int) RandomNumber(sizey - 1);
-  for (int src = 1; src < grad_sources; src++) {
-    int x = 0;
-    int y = 0;
-    double dist = 0;
-    while (dist < min_resource_dist) {
-      x = (int) RandomNumber(sizex - 1);
-      y = (int) RandomNumber(sizey - 1);
-      dist = ClosestPeak(x, y, src).dist;
-    }
-    peaksx[src] = x;
-    peaksy[src] = y;
-  }
-}
-
-
 double Dish::FoodEquation(double dist_from_peak) const {
-  // Prevents negative value generation from resource sources too far away
-  dist_from_peak = min(dist_from_peak, dist_most_isolated);
-  return par.gradscale * dist_most_isolated / 100 * pow(1 - dist_from_peak / dist_most_isolated, dist_coef);
+  return par.gradscale * FoodPlane->getDiagonal() / 100 * (1 - dist_from_peak / FoodPlane->getDiagonal());
 }
 
 
@@ -914,18 +951,8 @@ double Dish::FoodAtPosition(int x, int y) {
   // or even better counter balanced by a lesser gradient in the variable part
   double dfood = 0;
   // TODO: Solve the interference (can it be safely implemented as parameter? Do we even want that?)
-  if (not interference) {
-    double dist_from_peak = ClosestPeak(x, y).dist;
-    dfood = FoodEquation(dist_from_peak);
-  } else {
-    for (int src = 0; src < grad_sources; src++) {
-      int dx = peaksx[src] - x;
-      int dy = peaksy[src] - y;
-      double dist_from_peak = sqrt(dx * dx + dy * dy);
-      dfood += FoodEquation(dist_from_peak);
-    }
-  }
-  // Make sure grad is never 0 (has to do with builtin color generation)
+  double dist_from_peak = closestFPatch(x, y).second;
+  dfood = FoodEquation(dist_from_peak);
   dfood++;
   return dfood;
 }
@@ -1049,11 +1076,13 @@ void Dish::MakeBackup(int Time) {
 
   ofs.open(filename, std::ofstream::out | std::ofstream::app);
   ofs << Time << endl;
-  for (int src = 0; src < GetGradSources(); src++) {
-    if (src > 0) {
-      ofs << ",";
+  for (auto &fp : fpatches) {
+    if (not fp.empty) {
+      if (fp.getId() > 0) {
+        ofs << ",";
+      }
+      ofs << fp.getX() << " " << fp.getY();
     }
-    ofs << GetPeakx(src) << " " << GetPeaky(src);
   }
   ofs << endl;
   //each cell's variables are written on a single line.
@@ -1212,11 +1241,10 @@ int Dish::ReadBackup(char *filename) {
       getline(strstr2, substr, ',');
       peakss.push_back(substr);
     }
-    for (size_t i = 0; i < peaks.size(); i++) {
+    for (size_t i = 0; i < fpatches.size(); i++) {
       int x, y;
       stringstream(peakss[i]) >> x >> y;
-      SetPeakx(i, x);
-      SetPeaky(i, y);
+      addFPatch(x, y);
     }
 
     //now read all the cell variables
@@ -1273,9 +1301,9 @@ int Dish::ReadBackup(char *filename) {
       strstr.str(std::string());
       strstr << line;
       while (strstr >> pos) {
-        int wrong = Food->SetNextVal(pos);
+        int wrong = ChemPlane->SetNextVal(pos);
         if (wrong) {
-          cerr << "ReadBackup error in reading Food plane. more values than fit in plane." << endl;
+          cerr << "ReadBackup error in reading ChemPlane plane. more values than fit in plane." << endl;
           exit(1);
         }
       }
@@ -1297,8 +1325,4 @@ int Dish::SizeY() const { return CPM->SizeY(); }
 
 int Dish::Time() const {
   return CPM->Time();
-}
-
-vector<FoodPatch> Dish::getPeaks() const {
-  return peaks;
 }

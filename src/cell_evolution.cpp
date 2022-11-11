@@ -124,7 +124,7 @@ INIT {
       }
       cout<<"done with update"<<endl;
       InitCellMigration();
-      UpdateCellParameters3(0);//update cell status //UpdateCellParameters2();
+      UpdateCellParameters(0);//update cell status //UpdateCellParameters2();
       par.starttime=0;
     }
     else if (strlen(par.competitionfile)){
@@ -141,7 +141,7 @@ INIT {
       }
       cout<<"done with update"<<endl;
       InitCellMigration();
-      UpdateCellParameters3(0);//update cell status //UpdateCellParameters2();
+      UpdateCellParameters(0);//update cell status //UpdateCellParameters2();
       par.starttime=0;
     }
 
@@ -175,6 +175,8 @@ INIT {
   }
 }
 
+static int last_added_fp = 0;
+
 TIMESTEP {
 
   try {
@@ -187,7 +189,7 @@ TIMESTEP {
     if( !(i%100000) ) cerr<<"TIME: "<<i<<endl;
 
     //auto start = high_resolution_clock::now();
-    dish->CellsEat();
+    dish->CellsEat(i);
     //auto stop = high_resolution_clock::now();
     //auto duration = duration_cast<microseconds>(stop - start);
     //sum+=duration.count();
@@ -195,13 +197,21 @@ TIMESTEP {
     //cout << duration.count() << endl;
     //This function updates the network and deals with the consequences of the output (motility vs division)
 
-    dish->UpdateCellParameters3(i); // for continuous GRN updating and reproduction
+    dish->UpdateCellParameters(i); // for continuous GRN updating and reproduction
 
     dish->CellMigration();//updates persistence time and targetvectors
 
     dish->CPM->AmoebaeMove2(dish->PDEfield);  //this changes neighs
 
     dish->UpdateNeighDuration();
+
+    int freq = int(par.foodpatchperiod / (1. - dish->getFoodLeft() / (double) par.maxfood));
+    if (i > par.starttime and i  - last_added_fp > freq) {
+      last_added_fp = i;
+      dish->addRandomFPatch();
+      // TODO: Change to only update around gradient (actually do this inside addFPatch)
+      dish->updateChemPlane();
+    }
 
     //Change the season and do evolution
     if( i%25 == 0){
@@ -216,7 +226,6 @@ TIMESTEP {
           std::cerr << "End of season: there are "<< dish->CountCells() <<" cells" << '\n';
           dish->SaveNetworks(i);
           dish->SaveAdheringNeighbours(i);
-          dish->GradientBasedCellKill(par.popsize);
           dish->SaveAncestry(i);
           //dish->RemoveMotileCells(par.popsize); //kill all nondividing cells and more if necessary; for noncontinuous reproduction
           std::cerr << "After remove there are "<< dish->CountCells() <<" cells" << '\n';
@@ -225,8 +234,7 @@ TIMESTEP {
           //cout<<"done reproducing"<<endl;
           //dish->UpdateCellParameters2();//update cell status; for noncontinuous sim
           //cout<<"done updating"<<endl;
-          dish->RandomizeResourcePeaks();
-          dish->updateFoodSigma(); //this has to be last thing to do here
+          dish->updateChemPlane(); //this has to be last thing to do here
           std::cout << "End of season: Gradient switching at time (+/- 25 MCS) = "<< i << '\n';
           if(strlen(par.competitionfile)){
             //check if one of the groups is extinct. if yes, end simulation
@@ -269,7 +277,7 @@ TIMESTEP {
       else{
         dish->Plot(this,0);
       }
-      //dish->Food->Plot(this, dish->CPM);
+      //dish->ChemPlane->Plot(this, dish->CPM);
       //char title[400];
       //snprintf(title,399,"CellularPotts: %d MCS",i);
       //ChangeTitle(title);
@@ -290,7 +298,7 @@ TIMESTEP {
         BeginScene(); //this is an empty function for X11
         ClearImage(); //
         dish->Plot(this,2); //everything contained here
-      //dish->Food->Plot(this,dish->CPM); //will this work?  YES !!!
+      //dish->ChemPlane->Plot(this,dish->CPM); //will this work?  YES !!!
         EndScene();
         Write(fname); //FIXED SO THAT CODE AND IMAGE MATCH!
       }else{

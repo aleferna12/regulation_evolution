@@ -298,6 +298,9 @@ public:
   static const int nbh_level[5];
   int n_nb;
   void MeasureCellSizes();
+
+    void killCell(int c_sigma);
+
 private:
   int DeltaH(int x,int y, int xp, int yp, PDE *PDEfield=nullptr);
   int DeltaHWithMedium(int x,int y, PDE *PDEfield=nullptr);

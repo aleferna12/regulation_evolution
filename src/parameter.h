@@ -81,7 +81,6 @@ class Parameter {
   int nr_regnodes; //how many regulatory nodes in genomes
   int divtime; //how many steps does it take before a cell can start dividing?
   int divdur; //duration once a cell starts division program
-  int maxdivisions;
   double mu;
   double mustd;
   double mindeathprob;
@@ -94,14 +93,19 @@ class Parameter {
   int save_text_file_period;
   char *food_influx_location;
   int initial_food_amount;
-  double foodinflux;
+  double metabrate;
   double eatprob;
   double growth;
   double ardecay;
   double gradnoise;
   double gradscale;
-  int gradsources;
-  double degradeprob;
+  int foodpatches;
+  int foodpatchperiod;
+  int foodpatchlength;
+  int foodperspot;
+  int foodstart;
+  int eatperiod;
+  int maxfood;
   bool nodivisions; //whether to NOT execute divisions
   int min_contact_duration_for_preying;
   double frac_contlen_eaten;
