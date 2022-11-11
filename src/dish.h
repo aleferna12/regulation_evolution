@@ -175,8 +175,8 @@ public:
 
     void removeFPatch(int id);
 
-    unsigned int getFoodLeft() {
-      unsigned int food = 0;
+    int getFoodLeft() {
+      int food = 0;
       for (auto &fp : fpatches)
         food += fp.getFoodLeft();
       return food;

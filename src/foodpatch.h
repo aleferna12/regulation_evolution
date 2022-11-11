@@ -55,7 +55,7 @@ public:
       return food_per_spot;
     }
 
-    unsigned int getFoodLeft() const {
+    int getFoodLeft() const {
       return food_left;
     }
 

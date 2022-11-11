@@ -78,7 +78,7 @@ public:
     \param x, y: grid point to probe.
     */
     inline int Sigma(const int x, const int y) const {
-      return sigma[x * sizex + y];
+      return sigma[x * sizey + y];
     }
 
     /*! \brief Sets grid point x,y of PDE plane "layer" to value "value".
@@ -88,7 +88,7 @@ public:
 
     */
     inline void setSigma(const int x, const int y, const int value) {
-      sigma[x * sizex + y] = value;
+      sigma[x * sizey + y] = value;
     }
 
     int SetNextVal(int sig);

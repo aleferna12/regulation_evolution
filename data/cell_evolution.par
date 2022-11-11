@@ -164,9 +164,9 @@ gradnoise = 1.0
 # gradscale = 5 results in steps that are approx. double the diameter of the cells (assuming t_area = 50)
 gradscale = 5
 # Initial number of food patches resources placed in the field
-foodpatches = 1
+foodpatches = 0
 # New food patch timer (a new patch will be created every X MCS)
-foodpatchperiod = 10000
+foodpatchperiod = 10000000
 # Side of each food patch (total amount of spots per patch will be this squared)
 foodpatchlength = 10
 # How much food each spot contains

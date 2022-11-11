@@ -53,8 +53,11 @@ void FoodPatch::initSigma() {
 // Valid check to guarantee that there has been no miscount of food_left
 void FoodPatch::checkEmpty() {
   empty = true;
-  for (int i = x; i < x + length; ++i) {
-    for (int j = y; j < y + length; ++j) {
+  for (int i = max(2, x); i < min(owner->SizeX() - 2, x + length); ++i) {
+    // Even though the actual border is only 0 and size - 1, for some reason
+    // AmoebaMove also prevents cells from reaching pos 1 and size - 2
+    // which is why this loop is smaller
+    for (int j = max(2, y); j < min(owner->SizeY() - 2, y + length); ++j) {
       if (owner->FoodPlane->Sigma(i, j) == id) {
         cerr << "FoodPatch has no food left but is not empty";
         exit(1);
@@ -65,6 +68,7 @@ void FoodPatch::checkEmpty() {
 
 int FoodPatch::consumeFood(int i, int j) {
   if (owner->FoodPlane->Sigma(i, j) == id) {
+    cout << i << j << endl;
     owner->FoodPlane->setSigma(i, j, -1);
     food_left -= food_per_spot;
     if (food_left == 0)
