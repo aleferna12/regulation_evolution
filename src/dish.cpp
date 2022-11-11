@@ -63,9 +63,7 @@ Dish::Dish() {
   CPM = new CellularPotts(&cell, par.sizex, par.sizey);
 
   FoodPlane = new IntPlane(par.sizex, par.sizey, -1);
-  fpatches = vector<FoodPatch>{FoodPatch(this, 0, 97, 20, 5, par.foodperspot)};
-  cout << "FoodLeft" << fpatches[0].getFoodLeft() << endl;
-  cout << "foodperspot" << fpatches[0].getFoodPerSpot() << endl;
+  fpatches = vector<FoodPatch>{};
   for (int i = 0; i < par.foodpatches; ++i)
     addRandomFPatch();
 
