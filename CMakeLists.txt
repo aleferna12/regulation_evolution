@@ -32,7 +32,12 @@ add_executable(cell_evolution
         src/boundingbox.cpp src/boundingbox.h
         src/foodpatch.cpp src/foodpatch.h)
 
-find_package(Qt4 REQUIRED QtCore)
+find_package(Qt4 COMPONENTS QtCore)
+if (Qt4-NOTFOUND)
+    find_package(Qt5 REQUIRED COMPONENTS Core)
+    message("WARNING: Qt4 was not found, compiling with Qt5 instead")
+endif()
+
 find_package(X11)
 
 if(NOT CMAKE_BUILD_TYPE)
