@@ -98,7 +98,7 @@ Parameter::Parameter() {
   peaksdatafile = strdup("peaks_data.csv");
   save_text_file_period = 100;
   food_influx_location = strdup("nowhere");
-  metabrate=0.1;
+  metabperiod=20;
   eatprob=0.;
   growth=0;
   ardecay=0.;
@@ -204,7 +204,7 @@ void Parameter::PrintWelcomeStatement(void)
   cerr<<" -nodivisions # do not execute divisions -> number of cells remains the same"<<endl;
   cerr<<" -backupfile path/to/backupfile # to start simulation from backup"<<endl;
   cerr<<" -season [INT_NUMBER] # season duration"<<endl;
-  cerr<<" -metabrate [FLOAT_NUMBER] cost of living for cells in food per MCS"<<endl;
+  cerr<<" -metabperiod [INT_NUMBER] how often we deduce 1 food of each cell in MCS"<<endl;
   cerr<<" -gradscale [FLOAT_NUMBER] slope of the gradient (in percent units)"<<endl;
   cerr<<" -foodpatches [INT_NUMBER] initial number of food patches resources placed in the field"<<endl;
   cerr<<" -foodpatchperiod [INT_NUMBER] new food patch timer (a new patch will be created every X MCS)"<<endl;
@@ -444,13 +444,13 @@ int Parameter::ReadArguments(int argc, char *argv[])
     }else if( 0==strcmp(argv[i],"-noevolreg") ){
       evolreg = false;
       cerr<<"No evolution of regulation parameters"<<endl;
-    }else if( 0==strcmp(argv[i],"-metabrate") ){
+    }else if( 0==strcmp(argv[i],"-metabperiod") ){
       i++; if(i==argc){
-        cerr<<"Something odd in metabrate?"<<endl;
+        cerr<<"Something odd in metabperiod?"<<endl;
         return 1;  //check if end of arguments, exit with error in case
       }
-      metabrate = atof( argv[i] );
-      cerr<<"New value for metabrate: "<<mut_rate<<endl;
+      metabperiod = atoi(argv[i] );
+      cerr<<"New value for metabperiod: "<< metabperiod <<endl;
     }else if( 0==strcmp(argv[i],"-gradscale") ){
       i++; if(i==argc){
         cerr<<"Something odd in gradscale?"<<endl;
@@ -700,7 +700,7 @@ void Parameter::Read(const char *filename) {
   save_text_file_period = igetpar(fp, "save_text_file_period", 100, true);
   food_influx_location = sgetpar(fp,"food_influx_location" , "nowhere",true);
   initial_food_amount = igetpar(fp, "initial_food_amount", 0, true);
-  metabrate = fgetpar(fp, "metabrate", 0.1, true);
+  metabperiod = fgetpar(fp, "metabperiod", 20, true);
   eatprob = fgetpar(fp, "eatprob", 0., true);
   ardecay = fgetpar(fp, "ardecay", 0., true);
   growth = fgetpar(fp, "growth", 0., true);
@@ -944,7 +944,7 @@ void Parameter::Write(ostream &os) const {
   os << " maxdeathprob = " << maxdeathprob << endl;
   os << " initial_food_amount = "<< initial_food_amount << endl;
   os << " food_influx_location = "<< food_influx_location <<endl;
-  os << " metabrate = " << metabrate << endl;
+  os << " metabperiod = " << metabperiod << endl;
   os << " eatprob = " << eatprob << endl;
   os << " ardecay = " << ardecay << endl;
   os << " growth = " << growth << endl;

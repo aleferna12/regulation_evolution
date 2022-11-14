@@ -208,9 +208,6 @@ TIMESTEP {
     int freq = int(par.foodpatchperiod / (1. - dish->getFoodLeft() / (double) par.maxfood));
     // freq can be higher than INT_MAX, making it negative
     if (i > par.starttime and freq >= 0 and i  - last_added_fp > freq) {
-      cout << "freq" << freq << endl;
-      cout << "foodleft" << dish->getFoodLeft() << endl;
-      cout << "denom" << (1. - min(par.maxfood, dish->getFoodLeft()) / (double) par.maxfood) << endl;
       last_added_fp = i;
       dish->addRandomFPatch();
       // TODO: Change to only update around gradient (actually do this inside addFPatch)

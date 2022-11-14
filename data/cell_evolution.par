@@ -166,19 +166,19 @@ gradscale = 5
 # Initial number of food patches resources placed in the field
 foodpatches = 5
 # New food patch timer (a new patch will be created every X MCS)
-foodpatchperiod = 10000000
+foodpatchperiod = 2000
 # Side of each food patch (total amount of spots per patch will be this squared)
-foodpatchlength = 10
+foodpatchlength = 100
 # How much food each spot contains
 foodperspot = 10
 # Max food allowed in the system (regulates foodpatchperiod)
-maxfood = 200000
-# Cost of living in food PER MCS (so set it to something low for the sake of god)
-metabrate = 0.04
+maxfood = 5000
+# How often in MCS we deduct 1 food from each cell
+metabperiod = 50
 # How much food does each cell start with?
 foodstart = 2000
 # How often in MCS is a cell allowed to eat
-eatperiod = 100
+eatperiod = 20
 
 # only used in specified_experiment, if true it puts 1 food randomly, with probability foodinflux = 0.05
 is_there_food = 0

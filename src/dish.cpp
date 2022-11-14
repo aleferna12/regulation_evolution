@@ -561,7 +561,8 @@ int Dish::WritePeaksData() const {
 void Dish::CellsEat(int time) {
   for (auto &c: cell) {
     if (c.AliveP()) {
-      c.food -= par.metabrate;
+      if (time % par.metabperiod == 0)
+        --c.food;
 
       int chemsumx = 0, chemsumy = 0, chemtotal = 0;
       BoundingBox bb = c.getBoundingBox();
@@ -740,7 +741,7 @@ void Dish::UpdateCellParameters(int Time) {
         //calculate inputs
         inputs[0] = (double) c->grad_conc;
         // TODO test
-        double division_cost = par.metabrate * par.scaling_cell_to_ca_time * (par.divtime + par.divdur);
+        double division_cost = par.metabperiod * par.scaling_cell_to_ca_time * (par.divtime + par.divdur);
         inputs[1] = (double) c->food / division_cost;
         c->UpdateGenes(inputs, true);
         c->FinishGeneUpdate();
