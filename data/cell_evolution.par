@@ -168,7 +168,7 @@ foodpatches = 5
 # New food patch timer (a new patch will be created every X MCS)
 foodpatchperiod = 2000
 # Side of each food patch (total amount of spots per patch will be this squared)
-foodpatchlength = 100
+foodpatchlength = 10
 # How much food each spot contains
 foodperspot = 10
 # Max food allowed in the system (regulates foodpatchperiod)
