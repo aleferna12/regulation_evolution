@@ -6,7 +6,21 @@ from pathlib import Path
 from ete3 import Tree
 
 
-def main(netpath, outdir, dead_ends, names, nhx, fmt):
+def main():
+    logging.basicConfig(level=logging.INFO)
+    netpath = Path(sys.argv[1]).resolve()
+    outdir = Path(sys.argv[2]).resolve()
+    if not os.path.isdir(outdir):
+        raise ValueError("second argument is not a valid existing directory")
+    dead_ends = False if len(sys.argv) >= 4 and sys.argv[3] in ["0", "false"] else True
+    names = False if len(sys.argv) >= 5 and sys.argv[4] in ["0", "false"] else True
+    nhx = False if len(sys.argv) >= 6 and sys.argv[5] in ["0", "false"] else True
+    fmt = int(sys.argv[6]) if len(sys.argv) >= 7 else 5
+
+    parse_ancestry(netpath, outdir, dead_ends, names, nhx, fmt)
+
+
+def parse_ancestry(netpath, outdir, dead_ends, names, nhx, fmt):
     logging.info(f"Writing trees to '{outdir}'")
     longest = []
     longest_gen = 0
@@ -94,14 +108,4 @@ def make_trees(seasons, dead_ends=True, names=True, single_leaf=True):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    netpath = Path(sys.argv[1]).resolve()
-    outdir = Path(sys.argv[2]).resolve()
-    if not os.path.isdir(outdir):
-        raise ValueError("second argument is not a valid existing directory")
-    dead_ends = False if len(sys.argv) >= 4 and sys.argv[3] in ["0", "false"] else True
-    names = False if len(sys.argv) >= 5 and sys.argv[4] in ["0", "false"] else True
-    nhx = False if len(sys.argv) >= 6 and sys.argv[5] in ["0", "false"] else True
-    fmt = int(sys.argv[6]) if len(sys.argv) >= 7 else 5
-
-    main(netpath, outdir, dead_ends, names, nhx, fmt)
+    main()

@@ -97,7 +97,7 @@ Dish::~Dish() {
 
 // Adds a new FoodPatch at a semi-random position (still takes into account mindist)
 int Dish::addRandomFPatch() {
-  int x, y;
+  int x = 0, y = 0;
   if (fpatches.empty()) {
     // Ok positions = [2, side - 3] (inclusive both sides)
     x = (int) RandomNumber(sizex - 4) + 1;

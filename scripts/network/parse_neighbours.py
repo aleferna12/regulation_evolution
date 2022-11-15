@@ -6,7 +6,15 @@ from pathlib import Path
 from typing import List
 
 
-def main(neighpath, outpath):
+def main():
+    logging.basicConfig(level=logging.INFO)
+    neighpath = sys.argv[1]
+    outpath = sys.argv[2]
+
+    parse_neighbours(neighpath, outpath)
+
+
+def parse_neighbours(neighpath, outpath):
     logging.info("Reading neighbour information")
     neighs = read_neighbours(neighpath)
     logging.info(f"Writing neighbours to: '{outpath}'")
@@ -60,8 +68,4 @@ def read_neighbours(path, season_filter: List[int] = None):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    neighpath = sys.argv[1]
-    outpath = sys.argv[2]
-
-    main(neighpath, outpath)
+    main()

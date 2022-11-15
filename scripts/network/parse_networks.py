@@ -7,7 +7,15 @@ from pathlib import Path
 from dataclasses import dataclass
 
 
-def main(netpath, outpath):
+def main():
+    logging.basicConfig(level=logging.INFO)
+    netpath = sys.argv[1]
+    outpath = sys.argv[2]
+
+    parse_networks(netpath, outpath)
+
+
+def parse_networks(netpath, outpath):
     logging.info("Reading networks")
     networks = read_networks(netpath)
     logging.info(f"Writing networks to: '{outpath}'")
@@ -116,8 +124,4 @@ def read_networks(path, season_filter: List[int] = None):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    netpath = sys.argv[1]
-    outpath = sys.argv[2]
-
-    main(netpath, outpath)
+    main()
