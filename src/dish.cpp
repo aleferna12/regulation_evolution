@@ -740,9 +740,8 @@ void Dish::UpdateCellParameters(int Time) {
       if (!(interval % par.scaling_cell_to_ca_time)) {
         //calculate inputs
         inputs[0] = (double) c->grad_conc;
-        // TODO test
-        double division_cost = par.metabperiod * par.scaling_cell_to_ca_time * (par.divtime + par.divdur);
-        inputs[1] = (double) c->food / division_cost;
+        double division_cost = par.scaling_cell_to_ca_time * (par.divtime + par.divdur) / (double) par.metabperiod;
+        inputs[1] = c->food / division_cost;
         c->UpdateGenes(inputs, true);
         c->FinishGeneUpdate();
         //what is the state of the output node of the cell?
@@ -1039,7 +1038,6 @@ void Dish::SaveNetworks(int Time) {
       c.WriteGenomeToFile(fname);
     }
   }
-
 }
 
 void Dish::SaveAdheringNeighbours(int Time) {

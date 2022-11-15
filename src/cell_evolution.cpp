@@ -205,17 +205,18 @@ TIMESTEP {
 
     dish->UpdateNeighDuration();
 
-    int freq = int(par.foodpatchperiod / (1. - dish->getFoodLeft() / (double) par.maxfood));
-    // freq can be higher than INT_MAX, making it negative
-    if (i > par.starttime and freq >= 0 and i  - last_added_fp > freq) {
-      last_added_fp = i;
-      dish->addRandomFPatch();
-      // TODO: Change to only update around gradient (actually do this inside addFPatch)
-      dish->updateChemPlane();
-    }
-
     //Change the season and do evolution
     if( i%25 == 0){
+      double emptiness = 1. - dish->getFoodLeft() / (double) par.maxfood;
+      if (emptiness >= 0) {
+        int timer = int(par.foodpatchperiod / emptiness);
+        if (i - last_added_fp > timer) {
+          last_added_fp = i;
+          dish->addRandomFPatch();
+          // TODO: Change to only update around gradient (actually do this inside addFPatch)
+          dish->updateChemPlane();
+        }
+      }
 
       if(par.evolsim){
         if(i>par.starttime && i%par.season_duration==0 ){

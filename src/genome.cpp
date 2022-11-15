@@ -166,7 +166,7 @@ void Genome::WriteToFile(char *filename)
   ofs<<endl;
   //now write all the interaction strengths
 
-  for (auto n: regnodes){
+  for (const auto& n: regnodes){
     ofs << "1 "<< n.genenr<<" "<<n.threshold;
     for (const auto w: n.w_innode) {
       ofs << " "<< w;
@@ -176,7 +176,7 @@ void Genome::WriteToFile(char *filename)
     }
     ofs<<endl;
   }
-  for (auto n: outputnodes){
+  for (const auto& n: outputnodes){
     ofs << "2 "<< n.genenr<<" "<<n.threshold;
     for (const auto w: n.w_regnode) {
       ofs << " "<< w;
