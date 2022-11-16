@@ -69,7 +69,7 @@ Genome::Genome(const Genome &Parent)
   }
 }
 
-void Genome::ResetGenomeState(void)
+void Genome::ResetGenomeState()
 {
   for (auto &n: regnodes){
     n.Boolstate=0;
