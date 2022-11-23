@@ -140,11 +140,7 @@ void Cell::CellBirth(Cell &mother_cell) {
   grad[0] = mother_cell.grad[0];
   grad[1] = mother_cell.grad[1];
 
-  particles = mother_cell.particles / 2; //daugher gets half particles of mother
-  mother_cell.particles = particles; // mother gets particled halved
-
   growth = mother_cell.growth;
-  eatprob = mother_cell.eatprob;
 
   food = mother_cell.food;
   last_meal = mother_cell.last_meal;
@@ -215,8 +211,6 @@ void Cell::ConstructorBody(int settau, int setrecycledsigma) {
   sum_xx = 0;
   sum_yy = 0;
   sum_xy = 0;
-  particles = 0;
-  eatprob = 0.;
   growth = par.growth;
 
   v[0] = 0.;

@@ -1,15 +1,24 @@
 import argparse
 import re
 import logging
+import sys
 from functools import partial
 from pathlib import Path
 from parse_ancestry import parse_ancestry
 from plot_tree import plot_tree
 
 
-def main(runsdir, outdir, nj):
-    runsdir = Path(runsdir)
-    outdir = Path(outdir)
+def main():
+    logging.basicConfig(level=logging.INFO)
+    parser = argparse.ArgumentParser(description="Create tree plots from a directory with runs "
+                                                 "(that must follow a directory naming "
+                                                 "convention).")
+    parser.add_argument("--runsdir")
+    parser.add_argument("--outdir")
+    args = parser.parse_args()
+
+    runsdir = Path(args.runsdir)
+    outdir = Path(args.outdir)
     if not runsdir.is_dir():
         logging.warning("'runsdir' is not valid directory")
         logging.warning("Aborting")
@@ -30,11 +39,11 @@ def main(runsdir, outdir, nj):
         (outrundir / "trees").mkdir()
         (outrundir / "trees_last").mkdir()
 
-        trees = parse_ancestry(netdir, outrundir / "trees", True, True, True, 5)
-        trees_last = parse_ancestry(netdir, outrundir / "trees_last", False, True, True, 5)
+        trees = parse_ancestry(netdir, outrundir / "trees", True, True, True, True, 5)
+        trees_last = parse_ancestry(netdir, outrundir / "trees_last", False, True, True, True, 5)
         plot_foo = partial(
             plot_tree,
-            season=latest_time,
+            timepoint=latest_time,
             neighpath=netdir,
             min_cluster=2,
             reroot=False,
@@ -51,19 +60,6 @@ def main(runsdir, outdir, nj):
                 outpath=outrundir / f"{tree}_last.svg"
             )
 
-        if nj:
-            # TODO
-            pass
-
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    parser = argparse.ArgumentParser(description="Create tree plots from a directory with runs "
-                                                 "(that must follow a directory naming "
-                                                 "convention).")
-    parser.add_argument("--runsdir")
-    parser.add_argument("--outdir")
-    parser.add_argument("--nj", action="store_true")
-    args = parser.parse_args()
-
-    main(args.runsdir, args.outdir, args.nj)
+    main()

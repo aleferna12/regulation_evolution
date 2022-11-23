@@ -1,3 +1,9 @@
+"""Parse ancestry files into newick trees.
+
+Be mindful of the fact that not all generations are captured, since data is only saved every X
+MCSs. This means that some branches will be collapsed into multifurcations, resulting in some loss
+of phylogenetic information.
+"""
 import re
 import logging
 import sys
@@ -12,25 +18,26 @@ def main():
     outdir = Path(sys.argv[2]).resolve()
     if not os.path.isdir(outdir):
         raise ValueError("second argument is not a valid existing directory")
-    dead_ends = False if len(sys.argv) >= 4 and sys.argv[3] in ["0", "false"] else True
-    names = False if len(sys.argv) >= 5 and sys.argv[4] in ["0", "false"] else True
-    nhx = False if len(sys.argv) >= 6 and sys.argv[5] in ["0", "false"] else True
-    fmt = int(sys.argv[6]) if len(sys.argv) >= 7 else 5
+    dead_ends = False if len(sys.argv) > 3 and sys.argv[3] in ["0", "false"] else True
+    names = False if len(sys.argv) > 4 and sys.argv[4] in ["0", "false"] else True
+    single_leaf = False if len(sys.argv) > 5 and sys.argv[5] in ["0", "false"] else True
+    nhx = False if len(sys.argv) > 6 and sys.argv[6] in ["0", "false"] else True
+    fmt = int(sys.argv[7]) if len(sys.argv) > 7 else 5
 
-    parse_ancestry(netpath, outdir, dead_ends, names, nhx, fmt)
+    parse_ancestry(netpath, outdir, dead_ends, names, single_leaf, nhx, fmt)
 
 
-def parse_ancestry(netpath, outdir, dead_ends, names, nhx, fmt):
+def parse_ancestry(netpath, outdir, dead_ends, names, single_leaf, nhx, fmt):
     logging.info(f"Writing trees to '{outdir}'")
     longest = []
-    longest_gen = 0
-    for i, tree in enumerate(read_ancestry(netpath, dead_ends, names)):
+    longest_time = 0
+    for i, tree in enumerate(read_ancestry(netpath, dead_ends, names, single_leaf)):
         tree_name = "tree" + str(i)
-        gens = len(tree.get_farthest_leaf()[0].get_ancestors())
-        if gens > longest_gen:
+        time = tree.get_farthest_leaf()[0].time
+        if time > longest_time:
             longest = [tree_name]
-            longest_gen = gens
-        elif gens == longest_gen:
+            longest_time = time
+        elif time == longest_time:
             longest.append(tree_name)
         tree.write(
             outfile=str(outdir / (tree_name + ".newick")),
@@ -38,7 +45,7 @@ def parse_ancestry(netpath, outdir, dead_ends, names, nhx, fmt):
             features=["time"] if nhx else None
         )
     logging.info("Longest lineages are: " + ", ".join(longest))
-    logging.info(f"These lineages survived for {longest_gen} seasons")
+    logging.info(f"These lineages survived for {longest_time} MCSs)")
     logging.info("Finished")
 
     return longest
@@ -46,10 +53,10 @@ def parse_ancestry(netpath, outdir, dead_ends, names, nhx, fmt):
 
 def read_ancestry(path, dead_ends=True, names=True, single_leaf=True, up_to=-1):
     path = Path(path)
-    seasons = {}
+    timepoints = {}
     for filepath in path.glob("anc_*.txt"):
-        season_i = int(re.search(r"(?<=t)\d+", filepath.name).group())
-        if up_to != -1 and season_i > up_to:
+        time = int(re.search(r"(?<=t)\d+", filepath.name).group())
+        if up_to != -1 and time > up_to:
             continue
             
         cells = []
@@ -62,26 +69,26 @@ def read_ancestry(path, dead_ends=True, names=True, single_leaf=True, up_to=-1):
             if cell_sigma == "0":
                 continue
             cells.append((int(cell_sigma), int(anc_sigma)))
-        seasons[season_i] = cells
-    return make_trees(seasons, dead_ends, names, single_leaf)
+        timepoints[time] = cells
+    return make_trees(timepoints, dead_ends, names, single_leaf)
 
 
 # Remember that although the sigmas are added as names, the same id can refer to DIFFERENT cells
-def make_trees(seasons, dead_ends=True, names=True, single_leaf=True):
+def make_trees(timepoints, dead_ends=True, names=True, single_leaf=True):
     # Order by time backwards
     # This is needed to deal with dead-ends
-    seasons = {k: seasons[k] for k in sorted(seasons, reverse=True)}
-    # This dict holds the descendents of the current season of cells
+    timepoints = {k: timepoints[k] for k in sorted(timepoints, reverse=True)}
+    # This dict holds the descendents of the current cells
     prev_anc_child = {}
-    for season, cell_batch in seasons.items():
-        # This dict holds the ancestors of the current season of cells
+    for time, cell_batch in timepoints.items():
+        # This dict holds the ancestors of the current cells
         next_anc_child = {}
         for cell_sigma, anc_sigma in cell_batch:
             # Keep dead ends from being added to the trees
             if not dead_ends and prev_anc_child and cell_sigma not in prev_anc_child:
                 continue
             node = Tree(name=str(cell_sigma) if names else "")
-            node.add_feature("time", season)
+            node.add_feature("time", time)
             if cell_sigma in prev_anc_child:
                 for child in prev_anc_child[cell_sigma]:
                     node.add_child(child)
@@ -94,7 +101,7 @@ def make_trees(seasons, dead_ends=True, names=True, single_leaf=True):
     trees = []
     for anc_sigma, children in prev_anc_child.items():
         root = Tree(name=anc_sigma if names else "")
-        # The roots date from the start of the first season
+        # The roots date from the start of the simulation
         # Unfortunately, root attributes can't be saved in NHX, so adding it as a feature is
         # futile
         for child in children:

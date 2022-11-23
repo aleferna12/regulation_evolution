@@ -125,8 +125,6 @@ public:
     last_meal = src.last_meal;
 
     owner=src.owner;
-    particles=src.particles;
-    eatprob=src.eatprob;
     growth=src.growth;
     jlock = src.jlock;
     jkey = src.jkey;
@@ -211,8 +209,6 @@ public:
     amount++;
     owner=src.owner;
 
-    particles=src.particles;
-    eatprob=src.eatprob;
     growth = src.growth;
     neighbours=src.neighbours;
 
@@ -607,9 +603,6 @@ public:
   }
   inline int Gextiming() const{
     return gextiming;
-  }
-  inline void SetEatProb(double par_eatprob){
-    eatprob=par_eatprob;
   }
 
   //This is for keeping track of who is neigh, how much contact and for how long
@@ -1046,11 +1039,7 @@ protected:
   int target_area;
   int half_div_area;
 
-  //food intake
-  double eatprob;
-  int particles;
-
-  //food-conversion-to-growth rate
+    //food-conversion-to-growth rate
   double growth;
 
   double v[2];

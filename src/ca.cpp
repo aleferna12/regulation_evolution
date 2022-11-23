@@ -1400,7 +1400,6 @@ void CellularPotts::ConstructInitCells(Dish &beast) {
   {
     for (auto &c: *cell) {
       c.setMu(0.0);
-      c.SetEatProb(par.eatprob);
 
       if (par.target_area) {
         c.SetTargetArea(par.target_area);

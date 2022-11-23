@@ -94,7 +94,6 @@ class Parameter {
   char *food_influx_location;
   int initial_food_amount;
   int metabperiod;
-  double eatprob;
   double growth;
   double ardecay;
   double gradnoise;

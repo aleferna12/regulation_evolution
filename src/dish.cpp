@@ -561,40 +561,39 @@ int Dish::WritePeaksData() const {
 void Dish::CellsEat(int time) {
   for (auto &c: cell) {
     if (c.AliveP()) {
-      if (time % par.metabperiod == 0)
-        --c.food;
+      if (c.getTau() == PREY) {
 
-      int chemsumx = 0, chemsumy = 0, chemtotal = 0;
-      BoundingBox bb = c.getBoundingBox();
-      int pixel_count = 0;
-      for (int x = bb.getMinX(); x < bb.getMaxX(); ++x) {
-        for (int y = bb.getMinY(); y < bb.getMaxY(); ++y) {
-          if (CPM->Sigma(x, y) == c.Sigma()) {
-            ++pixel_count;
-            if (time - c.last_meal > par.eatperiod) {
-              int fp_id = FoodPlane->Sigma(x, y);
-              if (fp_id != -1) {
-                c.food += fpatches[fp_id].consumeFood(x, y);
-                c.last_meal = time;
-                if (c.getTau() != PREY)
-                  // There's nothing left to do so just skip to next cell on the vector
-                  goto next_cell;
+        if (time % par.metabperiod == 0)
+          --c.food;
+
+        int chemsumx = 0, chemsumy = 0, chemtotal = 0;
+        BoundingBox bb = c.getBoundingBox();
+        int pixel_count = 0;
+        for (int x = bb.getMinX(); x < bb.getMaxX(); ++x) {
+          for (int y = bb.getMinY(); y < bb.getMaxY(); ++y) {
+            if (CPM->Sigma(x, y) == c.Sigma()) {
+              ++pixel_count;
+              if (time - c.last_meal > par.eatperiod) {
+                int fp_id = FoodPlane->Sigma(x, y);
+                if (fp_id != -1) {
+                  c.food += fpatches[fp_id].consumeFood(x, y);
+                  c.last_meal = time;
+                }
               }
+              int chem_xy = ChemPlane->Sigma(x, y);
+              chemsumx += x * chem_xy;
+              chemsumy += y * chem_xy;
+              chemtotal += chem_xy;
             }
-            int chem_xy = ChemPlane->Sigma(x, y);
-            chemsumx += x * chem_xy;
-            chemsumy += y * chem_xy;
-            chemtotal += chem_xy;
           }
         }
-      }
-      if (pixel_count != c.Area()) {
-        cerr << "Cell area is " << c.Area() << " but only " << pixel_count
-             << " pixels were found inside bounding box";
-        cerr << "Terminating the program";
-        exit(1);
-      }
-      if (c.getTau() == PREY) {
+        if (pixel_count != c.Area()) {
+          cerr << "Cell area is " << c.Area() << " but only " << pixel_count
+               << " pixels were found inside bounding box";
+          cerr << "Terminating the program";
+          exit(1);
+        }
+
         if (chemtotal) {
           double xvector = chemsumx / (double) chemtotal - c.meanx;
           double yvector = chemsumy / (double) chemtotal - c.meany;
@@ -995,7 +994,7 @@ int Dish::SaveData(int Time) {
     ofs << " ";
 
     //ofs << icell->getXvec()<<" "<< icell->getYvec()<<" ";
-    ofs << icell->particles << " ";
+    ofs << icell->food << " ";
 
     // YOU SHOULD KEEP THIS AT THE LAST, because it's not constant
     for (auto i: icell->neighbours) {
@@ -1092,7 +1091,7 @@ void Dish::MakeBackup(int Time) {
         << " " << c.prevx << " " << c.prevy << " "
         << c.persdur << " " << c.perstime << " " << c.mu << " " << c.chemmu << " " << c.chemvecx << " " << c.chemvecy
         << " " << c.target_area << " "
-        << c.half_div_area << " " << c.length << " " << c.eatprob << " " << c.particles << " " << c.growth << " "
+        << c.half_div_area << " " << c.length << " " << c.last_meal << " " << c.food << " " << c.growth << " "
         << c.gextiming << " " << c.dividecounter << " " << c.grad_conc << " ";
     for (auto x: c.jkey) ofs << x; //key
     ofs << " ";
@@ -1258,7 +1257,7 @@ int Dish::ReadBackup(char *filename) {
              >> rc->prevy >> rc->persdur
              >> rc->perstime >> rc->mu >> rc->chemmu >> rc->chemvecx >> rc->chemvecy >> rc->target_area
              >> rc->half_div_area >> rc->length >>
-             rc->eatprob >> rc->particles >> rc->growth >> rc->gextiming >> rc->dividecounter >> rc->grad_conc
+             rc->last_meal >> rc->food >> rc->growth >> rc->gextiming >> rc->dividecounter >> rc->grad_conc
              >> jkey >> jlock;
       //read the key and lock into the cell
       for (char &c: jkey) {

@@ -1,7 +1,7 @@
 ### Max time (max # monte carlo steps) ###
 # takes about 1hour per 100000 timesteps
 #mcs = 200000000
-mcs = 100000000
+mcs = 30000000
 
 #cells in blobs move at 0.0055 px/mcs
 # duration of season could then be larger than field size/ speed
@@ -184,10 +184,6 @@ eatperiod = 10
 is_there_food = 0
 
 # The params bellow might be out of use?
-# default initial_food_amount = 5
-initial_food_amount = 0
-# default eatprob = 1.
-eatprob = 1.0
 # default growth = 10.
 growth = 0.
 # default ardecay = 0.5

@@ -3,8 +3,6 @@ project(regulation_evolution)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS -Wall)
-set(CMAKE_CXX_FLAGS_DEBUG -g)
-set(CMAKE_CXX_FLAGS_RELEASE -O2)
 
 add_executable(cell_evolution
         src/cell_evolution.cpp

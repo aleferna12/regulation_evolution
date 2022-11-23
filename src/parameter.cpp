@@ -99,7 +99,6 @@ Parameter::Parameter() {
   save_text_file_period = 100;
   food_influx_location = strdup("nowhere");
   metabperiod=20;
-  eatprob=0.;
   growth=0;
   ardecay=0.;
   gradnoise=0.1;
@@ -701,7 +700,6 @@ void Parameter::Read(const char *filename) {
   food_influx_location = sgetpar(fp,"food_influx_location" , "nowhere",true);
   initial_food_amount = igetpar(fp, "initial_food_amount", 0, true);
   metabperiod = fgetpar(fp, "metabperiod", 20, true);
-  eatprob = fgetpar(fp, "eatprob", 0., true);
   ardecay = fgetpar(fp, "ardecay", 0., true);
   growth = fgetpar(fp, "growth", 0., true);
   gradnoise = fgetpar(fp, "gradnoise", 0.1, true);
@@ -945,7 +943,6 @@ void Parameter::Write(ostream &os) const {
   os << " initial_food_amount = "<< initial_food_amount << endl;
   os << " food_influx_location = "<< food_influx_location <<endl;
   os << " metabperiod = " << metabperiod << endl;
-  os << " eatprob = " << eatprob << endl;
   os << " ardecay = " << ardecay << endl;
   os << " growth = " << growth << endl;
   os << " gradnoise = " << gradnoise << endl;

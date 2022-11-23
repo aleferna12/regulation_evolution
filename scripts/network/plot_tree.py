@@ -14,7 +14,7 @@ _cs = Palette.load()
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    season = int(sys.argv[1])
+    timepoint = int(sys.argv[1])
     treepath = Path(sys.argv[2]).resolve()
     neighpath = Path(sys.argv[3]).resolve()
     outpath = Path(sys.argv[4]).resolve()
@@ -22,12 +22,12 @@ def main():
     reroot = True if len(sys.argv) > 6 and sys.argv[6] in ["true", '1'] else False
     colored = False if len(sys.argv) > 7 and sys.argv[7] in ["false", '0'] else True
 
-    plot_tree(season, treepath, neighpath, outpath, min_cluster, reroot, colored)
+    plot_tree(timepoint, treepath, neighpath, outpath, min_cluster, reroot, colored)
 
 
-def plot_tree(season, treepath, neighpath, outpath, min_cluster, reroot, colored):
+def plot_tree(timepoint, treepath, neighpath, outpath, min_cluster, reroot, colored):
     logging.info("Reading tree file")
-    tree = Tree(str(treepath))
+    tree = Tree(str(treepath), format=5)
     # When tree is constructed by neighbour joining they are unrooted so we must estimate
     if reroot:
         mid = tree.get_midpoint_outgroup()
@@ -36,14 +36,14 @@ def plot_tree(season, treepath, neighpath, outpath, min_cluster, reroot, colored
     logging.info("Reading neighbours file")
     if os.path.isfile(neighpath):
         with open(neighpath, "r") as file:
-            neighs = json.load(file)[str(season)]
+            neighs = json.load(file)[str(timepoint)]
     else:
         logging.warning("Neighbours file not found")
         logging.info(f"Try to build neighbours from '{neighpath}'")
-        neighs = read_neighbours(neighpath, season_filter=[season])[season]
+        neighs = read_neighbours(neighpath, season_filter=[timepoint])[timepoint]
 
-    logging.info(f"Writing tree to '{outpath}'")
-    make_tree_plot(tree, neighs, str(outpath), min_cluster, colored)
+    logging.info(f"Writing figure to '{outpath}'")
+    make_tree_plot(tree, neighs, outpath, min_cluster, colored)
     logging.info("Finished")
 
 
@@ -52,7 +52,12 @@ def get_cluster_colors(clusters, min_cluster):
     palpath = Path(__file__).resolve().parent.parent.parent / "data"
     pal = StackPalette.load("carnival", palettes_dir=palpath)
     # Only allocate colors for clusters with at least min_cluster neighbours
-    colors = PolarGrad(pal, color_sys=HCLuv).n_colors(len(clusters))
+    grad = PolarGrad(pal, color_sys=HCLuv)
+    # There is a bug that prevents colorir.Grad.n_colors(1)
+    if len(clusters) == 1:
+        colors = [grad.n_colors(3)[1]]
+    else:
+        colors = grad.n_colors(len(clusters))
     # Shuffle colors to avoid confusion of similar colors
     seed(0)
     shuffle(colors)
@@ -66,7 +71,7 @@ def make_tree_plot(tree: Tree, clusters, outpath, min_cluster=2, colored=True):
         for leaf in cluster:
             leaf_color[str(leaf)] = color
 
-    last_season = getattr(tree.get_farthest_leaf()[0], "time", None)
+    last_timepoint = getattr(tree.get_farthest_leaf()[0], "time", None)
     for node in tree.traverse():
         node.img_style["size"] = 0
         if node.is_leaf():
@@ -75,7 +80,7 @@ def make_tree_plot(tree: Tree, clusters, outpath, min_cluster=2, colored=True):
             face = AttrFace("name")
             node.add_face(face, column=0)
             # Color unicellular nodes black and doesn't color dead-end nodes
-            if colored and getattr(node, "time", None) == last_season:
+            if colored and getattr(node, "time", None) == last_timepoint:
                 color = leaf_color.get(node.name, _cs.darkgray)
                 node.img_style["bgcolor"] = color
                 node.img_style["hz_line_color"] = color
@@ -84,7 +89,7 @@ def make_tree_plot(tree: Tree, clusters, outpath, min_cluster=2, colored=True):
     ts.root_opening_factor = 0.1
     ts.show_leaf_name = False
     ts.mode = 'c'
-    tree.render(outpath, tree_style=ts, w=250, units="mm")
+    tree.render(str(outpath), tree_style=ts, w=250, units="mm")
 
 
 def figtree_nexus_str(newick, clusters, min_cluster=2):
@@ -92,7 +97,8 @@ def figtree_nexus_str(newick, clusters, min_cluster=2):
 
     This approach was abandoned because the clusters couldn't be distinguished in the end result.
     That said, the distances between the branches are much easier to see in FigTree thanks to the
-    "radial" view.
+    "radial" view (but you don't need this function for that, just open the normal tree in FigTree
+    or Dendroscope).
     """
     def sub_color(match):
         number = match.group(1)
