@@ -561,11 +561,10 @@ int Dish::WritePeaksData() const {
 void Dish::CellsEat(int time) {
   for (auto &c: cell) {
     if (c.AliveP()) {
+      if (time % par.metabperiod == 0)
+        --c.food;
+
       if (c.getTau() == PREY) {
-
-        if (time % par.metabperiod == 0)
-          --c.food;
-
         int chemsumx = 0, chemsumy = 0, chemtotal = 0;
         BoundingBox bb = c.getBoundingBox();
         int pixel_count = 0;
@@ -621,7 +620,6 @@ void Dish::CellsEat(int time) {
         }
       }
     }
-    next_cell:;
   }
 
   // TODO: This needs big changes to only update the right sections (call to removeFPatch)
