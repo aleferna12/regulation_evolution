@@ -60,12 +60,6 @@ public:
     ConstructorBody(settau,setrecycledsigma);
   }
 
-  Cell() {
-    if(par.n_chem){
-      chem = new double[par.n_chem];
-    }
-  };
-
   ~Cell();
 
 

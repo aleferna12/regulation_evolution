@@ -726,7 +726,7 @@ void Dish::UpdateCellParameters(int Time) {
   for (c = cell.begin(), ++c; c != cell.end(); ++c) {
     if (c->AliveP()) {
       // Mark cell to die
-      if (c->food <= 0) {
+      if (c->food <= 0 or RANDOM() < 0.0001) {
         to_kill.push_back(c->Sigma());
         continue;
       }

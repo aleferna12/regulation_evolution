@@ -64,7 +64,7 @@ Cell::~Cell() {
     free(J);
     capacity = 0;
     maxsigma = 0;
-    J = 0;
+    J = nullptr;
   }
   if (par.n_chem) {
     delete[] chem;
