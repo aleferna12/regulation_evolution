@@ -112,10 +112,8 @@ INIT {
       }
 
       cout << "Done initialising genome"<<endl;
-
-      //Set function pointer for food update, depending on parameters
-                                     // but NOT to IncreaseVal if it points to IncreaseValEverywhere
-
+      for (int i = 0; i < par.foodpatches; ++i)
+        addRandomFPatch();
       // Initialises food plane (now the gradient plane)
       cout<<"done with food"<<endl;
       //run CPM for some time without persistent motion
@@ -150,10 +148,12 @@ INIT {
       cout<<"backup file is "<<par.backupfile<<endl;
       par.starttime=ReadBackup(par.backupfile);
       int networktime=par.starttime;
+      // TODO: Fix sometimes this causes seg errors because there is no networkfile to read at this time point
       //now get the right network into the cells. first find which time point to use
       while(networktime%par.season_duration){
         networktime+=1000;
       }
+      cout << "Reading networks" << endl;
       char fname[300];
       for(auto &c: cell) {
         if(c.Sigma() && c.AliveP()){
@@ -164,6 +164,7 @@ INIT {
           c.ReadGenomeFromFile(fname);
         }
       }
+      updateChemPlane();
       CPM->InitializeEdgeList(false);
       InitContactLength();
       InitVectorJ();

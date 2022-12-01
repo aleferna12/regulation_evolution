@@ -64,11 +64,8 @@ Dish::Dish() {
 
   FoodPlane = new IntPlane(par.sizex, par.sizey, -1);
   fpatches = vector<FoodPatch>{};
-  for (int i = 0; i < par.foodpatches; ++i)
-    addRandomFPatch();
 
   ChemPlane = new IntPlane(par.sizex, par.sizey);
-  updateChemPlane();
 
   Cell::maxsigma = 0;
   // Allocate the first "cell": this is the medium (tau=0)
@@ -726,7 +723,7 @@ void Dish::UpdateCellParameters(int Time) {
   for (c = cell.begin(), ++c; c != cell.end(); ++c) {
     if (c->AliveP()) {
       // Mark cell to die
-      if (c->food <= 0 or RANDOM() < 0.0001) {
+      if (c->food <= 0 or RANDOM() < 0.00001) {
         to_kill.push_back(c->Sigma());
         continue;
       }
@@ -1072,10 +1069,14 @@ void Dish::MakeBackup(int Time) {
 
   ofs.open(filename, std::ofstream::out | std::ofstream::app);
   ofs << Time << endl;
+  // Can't check using id because first few patches could be empty
+  bool first = true;
   for (auto &fp : fpatches) {
     if (not fp.empty) {
-      if (fp.getId() > 0) {
+      if (not first) {
         ofs << ",";
+      } else {
+        first = false;
       }
       ofs << fp.getX() << " " << fp.getY();
     }
@@ -1237,9 +1238,9 @@ int Dish::ReadBackup(char *filename) {
       getline(strstr2, substr, ',');
       peakss.push_back(substr);
     }
-    for (size_t i = 0; i < fpatches.size(); i++) {
+    for (auto &peak : peakss) {
       int x, y;
-      stringstream(peakss[i]) >> x >> y;
+      stringstream(peak) >> x >> y;
       addFPatch(x, y);
     }
 
