@@ -114,7 +114,6 @@ INIT {
       cout << "Done initialising genome"<<endl;
       for (int i = 0; i < par.foodpatches; ++i)
         addRandomFPatch();
-      // Initialises food plane (now the gradient plane)
       cout<<"done with food"<<endl;
       //run CPM for some time without persistent motion
       for(int init_time=0;init_time<10;init_time++){
@@ -141,9 +140,7 @@ INIT {
       InitCellMigration();
       UpdateCellParameters(0);//update cell status //UpdateCellParameters2();
       par.starttime=0;
-    }
-
-    else {
+    } else {
       cout << "Reading backfile" << endl;
       cout<<"backup file is "<<par.backupfile<<endl;
       par.starttime=ReadBackup(par.backupfile);
@@ -164,11 +161,12 @@ INIT {
           c.ReadGenomeFromFile(fname);
         }
       }
-      updateChemPlane();
       CPM->InitializeEdgeList(false);
       InitContactLength();
       InitVectorJ();
     }
+    // Initialize gradients
+    updateChemPlane();
   } catch(const char* error) {
     cerr << "Caught exception\n";
     std::cerr << error << "\n";

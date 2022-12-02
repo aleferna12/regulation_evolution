@@ -560,7 +560,7 @@ void Dish::CellsEat(int time) {
     if (c.AliveP()) {
       if (time % par.metabperiod == 0)
         --c.food;
-
+      // TODO: Make dividing cells able to eat again
       if (c.getTau() == PREY) {
         int chemsumx = 0, chemsumy = 0, chemtotal = 0;
         BoundingBox bb = c.getBoundingBox();
@@ -723,7 +723,10 @@ void Dish::UpdateCellParameters(int Time) {
   for (c = cell.begin(), ++c; c != cell.end(); ++c) {
     if (c->AliveP()) {
       // Mark cell to die
-      if (c->food <= 0 or RANDOM() < 0.00001) {
+      // Only calculate prob every 25 mcs
+      // TODO: Make parameter
+      int death_period = 25;
+      if (c->food <= 0 or (Time % death_period == 0 and RANDOM() < 0.0001)) {
         to_kill.push_back(c->Sigma());
         continue;
       }
@@ -751,7 +754,7 @@ void Dish::UpdateCellParameters(int Time) {
             if (c->Area() > 30) {
               //cout<<"cell "<<c->Sigma()<<" will divide"<<endl;
               if (!par.nodivisions) {
-                // Divide cells latter. Updating params while dividing did not work (Segmentation faults)
+                // Divide cells later. Updating params while dividing did not work (Segmentation faults)
                 to_divide.push_back(c->Sigma());
               } else {
                 c->AddTimesDivided();
