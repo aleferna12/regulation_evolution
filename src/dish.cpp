@@ -994,8 +994,12 @@ int Dish::SaveData(int Time) {
     //ofs << icell->getXvec()<<" "<< icell->getYvec()<<" ";
     ofs << icell->food << " ";
 
+    // Get adhesion with medium
+    ofs << 0 << " " << icell->getVJ()[0] << " ";
     // YOU SHOULD KEEP THIS AT THE LAST, because it's not constant
     for (auto i: icell->neighbours) {
+      if (i.first == 0)
+        continue;
       int thisj = icell->getVJ()[i.first];
       ofs << cell[i.first].getTau() << " " << thisj << " "; // get J val with neighbors
     }

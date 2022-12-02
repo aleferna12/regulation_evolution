@@ -402,7 +402,7 @@ int Cell::updateNeighbourDuration(int cell, int durationmodification) {
 }
 
 // This could also be implemented as an attribute that can be updated each ConvertSpin iteration
-// That could be much faster since the boxes would be tight around the cells
+// That could be faster since the boxes would be tight around the cells
 BoundingBox Cell::getBoundingBox() {
   int maxx = owner->CPM->SizeX();
   int maxy = owner->CPM->SizeY();

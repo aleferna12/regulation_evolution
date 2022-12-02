@@ -49,15 +49,20 @@ def plot_adhesion(neighpath, datafile, outfile, start_season, n_seasons):
 
     logging.info(f"Plotting figure to {outfile}")
     fig = make_plots(neighs, adhesion_info)
-    fig.write_image(outfile)
-    fig.show()
+
+    if "html" in outfile.name:
+        fig.write_html(outfile)
+    else:
+        fig.write_image(outfile)
     logging.info("Finished")
 
 
 def make_plots(neighs, adhesion_info):
-    fig = make_subplots(2, 1, subplot_titles=["Prevalence of multicellularity",
-                                              "Medium gamma of neighbouring cells"])
+    fig = make_subplots(3, 1, subplot_titles=["Prevalence of multicellularity",
+                                              "Medium gamma of neighbouring cells",
+                                              "Medium gamma of all x all cells"])
 
+    logging.info("Plotting prevalence of multicellularity")
     x1 = []
     y1 = []
     for season, clusters in sorted(neighs.items(), key=lambda kv: int(kv[0])):
@@ -77,9 +82,12 @@ def make_plots(neighs, adhesion_info):
     ), row=1, col=1)
     fig.update_yaxes(title="% of adhering cells", range=[0, 1], row=1, col=1)
 
+    sorted_adhesion = sorted(adhesion_info.items(), key=lambda kv: int(kv[0]))
+
+    logging.info("Plotting medium gamma of neighbouring cells")
     x2 = []
     y2 = []
-    for season, cells in sorted(adhesion_info.items(), key=lambda kv: int(kv[0])):
+    for season, cells in sorted_adhesion:
         x2.append(int(season))
         gammas = []
         for c_info in cells.values():
@@ -93,6 +101,21 @@ def make_plots(neighs, adhesion_info):
     ), row=2, col=1)
     fig.update_yaxes(title="gamma", row=2, col=1)
 
+    logging.info("Plotting medium gamma of all x all cells")
+    x3 = []
+    y3 = []
+    for season, cells in sorted_adhesion:
+        x3.append(int(season))
+
+        keylock_matrix = np.array([[c_info["key"], c_info["lock"]] for c_info in cells.values()])
+        y3.append(get_medium_gamma(keylock_matrix, 4, 8, np.array([4, 3, 2, 1, 1, 1]), 50))
+    fig.add_trace(go.Scatter(
+        x=x3,
+        y=y3,
+        mode="lines",
+    ), row=3, col=1)
+    fig.update_yaxes(title="gamma", row=3, col=1)
+
     return fig.update_layout(showlegend=False)
 
 
@@ -102,11 +125,12 @@ def parse_adhesion_info(datafile, season_filter: List[int] = None):
         text = file.read()
 
     matches = re.finditer(
-        r"^(\d+) (\d+) [\d. -]+ ([01]{24}) ([01]{24}) \d+ 0 (\d+) ((?:\d+ \d+ )*)",
+        r"^(\d+) (\d+) [\d. -]+ ([01]{24}) ([01]{24}) [\d.]+ 0 (\d+) ((?:\d+ \d+ )*)",
         text,
         flags=re.MULTILINE
     )
     for m in matches:
+        print(m.group())
         season_i = int(m.group(1))
         if season_i not in season_filter:
             continue
@@ -146,15 +170,18 @@ def get_medium_gamma(key_locks, ja, jam, f_arr, n=None):
     :return:
     """
     if n is not None:
+        np.random.seed(0)
         indexes = np.random.randint(0, len(key_locks), n)
         key_locks = key_locks[indexes]
 
     gammas = []
     for k1, l1 in key_locks:
         for k2, l2 in key_locks:
+            # print(np.all(k1 == k2) and np.all(l1 == l2))
+            #print(l1, k1, l2, k2)
             gammas.append(gamma(ja, jam, f_arr, l1, k1, l2, k2))
 
-    return np.median(gammas)
+    return np.mean(gammas)
 
 
 def cell_cell_j(ja, l1, k1, l2, k2):
@@ -167,6 +194,7 @@ def cell_med_j(jam, f_arr, key):
 
 
 def gamma(ja, jam, f_seq, l1, k1, l2, k2):
+    # print(cell_med_j(jam, f_seq, k1), cell_cell_j(ja, l1, k1, l2, k2))
     return cell_med_j(jam, f_seq, k1) - cell_cell_j(ja, l1, k1, l2, k2) / 2
 
 
