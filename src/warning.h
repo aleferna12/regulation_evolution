@@ -40,8 +40,8 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 /* These functions were a gift from Josh Barnes */
 /* I changed the name "eprintf" to "warning" */
 
-#ifdef __cplusplus 
-extern "C" { 
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 void error(char *, ...);

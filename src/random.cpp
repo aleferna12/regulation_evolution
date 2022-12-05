@@ -28,62 +28,56 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "random.h"
 
 //std::mt19937_64 my_rng {}; // Define engine
-std::mt19937_64 my_rng {};
+std::mt19937_64 my_rng{};
 std::uniform_real_distribution<double> my_unif_real_dist(0., 1.); //Define distribution
 std::binomial_distribution<int> my_binomial_dist;
 std::normal_distribution<double> d;
 
-int Seed(int seed)
-{
-  if (seed < 0) {
-    std::cerr << "Randomizing random generator, seed is ";
-    int rseed=Randomize();
-    my_rng.seed(rseed);
-    return rseed;
-  } else {
-    my_rng.seed(seed);
-    return seed;
-  }
+int Seed(int seed) {
+    if (seed < 0) {
+        std::cerr << "Randomizing random generator, seed is ";
+        int rseed = Randomize();
+        my_rng.seed(rseed);
+        return rseed;
+    } else {
+        my_rng.seed(seed);
+        return seed;
+    }
 }
 
-double RANDOM(void)
-{
-  return my_unif_real_dist(my_rng);
+double RANDOM(void) {
+    return my_unif_real_dist(my_rng);
 }
 
-double RANDNORMAL(double mean, double stdev)
-{
-  std::normal_distribution<double> d(mean,stdev);
-  return d(my_rng);
+double RANDNORMAL(double mean, double stdev) {
+    std::normal_distribution<double> d(mean, stdev);
+    return d(my_rng);
 }
 
 
-int BinomialDeviate(int N, double p)
-{
-  std::binomial_distribution<int> my_binomial_dist(N,p);
-  return my_binomial_dist(my_rng);
+int BinomialDeviate(int N, double p) {
+    std::binomial_distribution<int> my_binomial_dist(N, p);
+    return my_binomial_dist(my_rng);
 }
 
 /*! Returns a random integer value between 1 and 'max'
  *  \param The maximum value (long)
  *  \return A random integer (long)
  **/
-long RandomNumber(long max)
-{
-  return((long)(RANDOM()*max+1));
+long RandomNumber(long max) {
+    return ((long) (RANDOM() * max + 1));
 }
 
 /*! Interactively ask for the seed
  * \param void
  * \return void
  **/
-void AskSeed(void)
-{
-  int seed;
-  printf("Please enter a random seed: ");
-  scanf("%d",&seed);
-  printf("\n");
-  Seed(seed);
+void AskSeed(void) {
+    int seed;
+    printf("Please enter a random seed: ");
+    scanf("%d", &seed);
+    printf("\n");
+    Seed(seed);
 }
 
 
@@ -94,16 +88,16 @@ void AskSeed(void)
 
 int Randomize(void) {
 
-  // Set the seed according to the local time
-  struct timeb t;
-  int seed;
+    // Set the seed according to the local time
+    struct timeb t;
+    int seed;
 
-  ftime(&t);
+    ftime(&t);
 
-  seed=abs((int)((t.time*t.millitm)%655337));
-  Seed(seed);
-  fprintf(stderr,"Random seed is %d\n",seed);
-  return seed;
+    seed = abs((int) ((t.time * t.millitm) % 655337));
+    Seed(seed);
+    fprintf(stderr, "Random seed is %d\n", seed);
+    return seed;
 }
 
 

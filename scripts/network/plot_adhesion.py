@@ -13,6 +13,7 @@ from parse_neighbours import read_neighbours
 
 def main():
     logging.basicConfig(level=logging.INFO)
+
     neighpath = Path(sys.argv[1]).resolve()
     datafile = Path(sys.argv[2]).resolve()
     outfile = Path(sys.argv[3]).resolve()

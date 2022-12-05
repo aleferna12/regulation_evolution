@@ -139,15 +139,15 @@ public:
 
     //! \brief Returns a reference to cell number "c"
     inline Cell &getCell(int c) {
-      return cell[c];
+        return cell[c];
     }
 
     const FoodPatch &getFPatch(int id) {
-      return fpatches[id];
+        return fpatches[id];
     }
 
     inline int GetGradSources() const {
-      return grad_sources;
+        return grad_sources;
     }
 
     // Get distance of coordinate to the closest source of resources
@@ -163,7 +163,7 @@ public:
     // Writes a few rows of the sigma lattice to par.peaksdatafile
     int WritePeaksData() const;
 
-    static double DetermineMinDist(int n) ;
+    static double DetermineMinDist(int n);
 
     double distMostIsolatedPoint();
 
@@ -176,10 +176,10 @@ public:
     void removeFPatch(int id);
 
     int getFoodLeft() {
-      int food = 0;
-      for (auto &fp : fpatches)
-        food += fp.getFoodLeft();
-      return food;
+        int food = 0;
+        for (auto &fp: fpatches)
+            food += fp.getFoodLeft();
+        return food;
     }
 
     PDE *PDEfield;
@@ -201,6 +201,7 @@ protected:
 
     void FoodPlot(Graphics *g, int colori) const;
 
+    int WriteAttributes();
 };
 
 #define INIT void Dish::Init(void)

@@ -28,6 +28,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 /*! Implementation of the Glazier & Graner cellular Potts model **/
 #ifndef _CA_HH_
 #define _CA_HH_
+
 #include <vector>
 #include <stdio.h>
 #include <unordered_map>
@@ -40,33 +41,32 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 
 class Dish;
 
-namespace std
-{
+namespace std {
     //templates: typename is the variable type, which we can call T (can be int, char, vector, whatever)
-    template<typename T, size_t N>struct hash <const array<T, N> >{
+    template<typename T, size_t N>
+    struct hash<const array<T, N> > {
         typedef const array<T, N> argument_type;
         typedef size_t result_type;
 
-        result_type operator()(const argument_type& a) const{
+        result_type operator()(const argument_type &a) const {
             hash<T> hasher;
             result_type h = 1;
-            for (result_type i = 0; i < N; ++i)
-            {
+            for (result_type i = 0; i < N; ++i) {
                 h = h * hasher(a[i]);
             }
             return h;
         }
     };
-    template<typename T, size_t N>struct hash <array<T, N> >{
+
+    template<typename T, size_t N>
+    struct hash<array<T, N> > {
         typedef array<T, N> argument_type;
         typedef size_t result_type;
 
-        result_type operator()(const argument_type& a) const
-        {
+        result_type operator()(const argument_type &a) const {
             hash<T> hasher;
             result_type h = 1;
-            for (result_type i = 0; i < N; ++i)
-            {
+            for (result_type i = 0; i < N; ++i) {
                 h = h * hasher(a[i]);
             }
             return h;
@@ -75,141 +75,161 @@ namespace std
 }
 
 //template <class T>
-class Edges
-{
+class Edges {
 public:
-   // this defines the operator [] for the this unordered_map (in the const and not const case <---? why the latter though)
-   const std::unordered_map<std::array<int, 4>,int>::iterator & operator[](unsigned index) const { return edgevector[index]; }
-   std::unordered_map<std::array<int, 4>,int>::iterator & operator[](unsigned index) { return edgevector[index]; }
+    // this defines the operator [] for the this unordered_map (in the const and not const case <---? why the latter though)
+    const std::unordered_map<std::array<int, 4>, int>::iterator &
+    operator[](unsigned index) const { return edgevector[index]; }
 
-   //Edges(){};
-   //~Edges(){};
+    std::unordered_map<std::array<int, 4>, int>::iterator &operator[](unsigned index) { return edgevector[index]; }
 
-   bool insert(std::array<int,4> edge){
+    //Edges(){};
+    //~Edges(){};
+
+    bool insert(std::array<int, 4> edge) {
         int n = edgevector.size();
-       auto insertion = edgemap.insert({edge, n});
-       //unordered_map.insert()returns a pair object. first el is iterator to new element and second is bool indicating success of insert
-       if (insertion.second){
-         edgevector.push_back(insertion.first); //store iterator pointing to new element in edgemap.
-       }
-       else{
-         // cout << "edge already in set while trying to add" << endl;
-       }
-       return insertion.second;
-   }
+        auto insertion = edgemap.insert({edge, n});
+        //unordered_map.insert()returns a pair object. first el is iterator to new element and second is bool indicating success of insert
+        if (insertion.second) {
+            edgevector.push_back(insertion.first); //store iterator pointing to new element in edgemap.
+        } else {
+            // cout << "edge already in set while trying to add" << endl;
+        }
+        return insertion.second;
+    }
 
-   bool erase(std::array<int,4> edge){
-     // cout << "trying to erase, length = " << edgemap.size() <<endl;
-     try {
-       int index = edgemap.at(edge);
-       // std::unordered_map<std::array<int,4>,int>::iterator last_it = edgevector
-       std::swap(edgevector[index],edgevector.back()); //swap the item to be removed with the item at the back, then pop out of the vector
-       edgevector[index]->second = index; //item that used to be at the back gets the other's index
-       edgevector.pop_back();
-       edgemap.erase(edge);
+    bool erase(std::array<int, 4> edge) {
         // cout << "trying to erase, length = " << edgemap.size() <<endl;
-     }
-     catch (const std::out_of_range& oor) {
-       // cout << "edge not present while trying to delete" << endl;
-       return false;
-     }
-     return true;
-   }
+        try {
+            int index = edgemap.at(edge);
+            // std::unordered_map<std::array<int,4>,int>::iterator last_it = edgevector
+            std::swap(edgevector[index],
+                      edgevector.back()); //swap the item to be removed with the item at the back, then pop out of the vector
+            edgevector[index]->second = index; //item that used to be at the back gets the other's index
+            edgevector.pop_back();
+            edgemap.erase(edge);
+            // cout << "trying to erase, length = " << edgemap.size() <<endl;
+        }
+        catch (const std::out_of_range &oor) {
+            // cout << "edge not present while trying to delete" << endl;
+            return false;
+        }
+        return true;
+    }
 
-   unsigned size_map() const{
-       return edgemap.size();
-   }
+    unsigned size_map() const {
+        return edgemap.size();
+    }
 
-   unsigned size_vector() const{
-     return edgevector.size();
-   }
+    unsigned size_vector() const {
+        return edgevector.size();
+    }
 
 private:
-   std::unordered_map<std::array<int,4>,int> edgemap; //the edges are the keys, the value is length of edgevector upon insertion.
-   std::vector<std::unordered_map<std::array<int, 4>,int>::iterator> edgevector; //iterators to elements in edgemap, ordered by time of insertion
+    std::unordered_map<std::array<int, 4>, int> edgemap; //the edges are the keys, the value is length of edgevector upon insertion.
+    std::vector<std::unordered_map<std::array<int, 4>, int>::iterator> edgevector; //iterators to elements in edgemap, ordered by time of insertion
 };
 
 class Dir {
 
-  /* To store a celldirection matrix */
-  friend class CellularPotts;
+    /* To store a celldirection matrix */
+    friend class CellularPotts;
+
 public:
 
-  Dir() {
-    meanx=-1; meany=-1.;
-    aa1=0.; aa2=0.;
-    bb1=0.; bb2=0.;
-    lb1=0.; lb2=0.;
-  }
+    Dir() {
+        meanx = -1;
+        meany = -1.;
+        aa1 = 0.;
+        aa2 = 0.;
+        bb1 = 0.;
+        bb2 = 0.;
+        lb1 = 0.;
+        lb2 = 0.;
+    }
 
-  double  meanx,meany;
-  double  aa1,aa2;
-  double  bb1,bb2;
-  double  lb1,lb2;
+    double meanx, meany;
+    double aa1, aa2;
+    double bb1, bb2;
+    double lb1, lb2;
 };
 
 class CellularPotts {
 
-  friend class Info;
-  friend class Morphometry;
+    friend class Info;
+
+    friend class Morphometry;
 
 public:
-  //! \brief Constructs a CA field. This should be done in "Dish".
-  explicit CellularPotts(std::vector<Cell> *cells, int sizex=200,
-		int sizey=200 );
-  // empty constructor
-  // (necessary for derivation)
-  CellularPotts();
+    //! \brief Constructs a CA field. This should be done in "Dish".
+    explicit CellularPotts(std::vector<Cell> *cells, int sizex = 200,
+                           int sizey = 200);
 
-  // Keyword virtual means, that derived classed (cppvmCellularPotts) can override
-  // this function and carry out the memory allocation in their preferred way
-  // Every time AllocateSigma is called in the base class methods
-  // the function belonging the actual type will be called
-  virtual void AllocateSigma(int sx, int sy);
+    // empty constructor
+    // (necessary for derivation)
+    CellularPotts();
 
-  // destructor must also be virtual
-  virtual ~CellularPotts();
-  void InitializeEdgeList(bool init_single_cell_center); //Set the initial edgelist which are eligible to change
+    // Keyword virtual means, that derived classed (cppvmCellularPotts) can override
+    // this function and carry out the memory allocation in their preferred way
+    // Every time AllocateSigma is called in the base class methods
+    // the function belonging the actual type will be called
+    virtual void AllocateSigma(int sx, int sy);
 
-  /*! \brief Plots the dish to the screen or to a movie and searches the
-   neighbours.
+    // destructor must also be virtual
+    virtual ~CellularPotts();
 
-   These distinct tasks have been lumped together in the
-   same method because both for drawing the black lines between the
-   cells and for searching the neighbours, the cell borders have to be
-   determined. */
-  int **SearchNandPlot(Graphics *g=nullptr, bool get_neighbours=true);
-  void CellAngleColour(Graphics *g=nullptr);
-  void CellOrderColour(Graphics *g=nullptr);
-  //! Plot the dish to Graphics window g
-  inline void Plot(Graphics *g, int colour) {
-    switch (colour) {
-      case 0: SearchNandPlot(g, false); break;
-      case 1: CellAngleColour(g); break;
-      case 2: CellOrderColour(g); break;
-      default: cerr <<"CPM Plot: invalid option. exiting..."<<endl; exit(1);
+    void InitializeEdgeList(bool init_single_cell_center); //Set the initial edgelist which are eligible to change
+
+    /*! \brief Plots the dish to the screen or to a movie and searches the
+     neighbours.
+
+     These distinct tasks have been lumped together in the
+     same method because both for drawing the black lines between the
+     cells and for searching the neighbours, the cell borders have to be
+     determined. */
+    int **SearchNandPlot(Graphics *g = nullptr, bool get_neighbours = true);
+
+    void CellAngleColour(Graphics *g = nullptr);
+
+    void CellOrderColour(Graphics *g = nullptr);
+
+    //! Plot the dish to Graphics window g
+    inline void Plot(Graphics *g, int colour) {
+        switch (colour) {
+            case 0:
+                SearchNandPlot(g, false);
+                break;
+            case 1:
+                CellAngleColour(g);
+                break;
+            case 2:
+                CellOrderColour(g);
+                break;
+            default:
+                cerr << "CPM Plot: invalid option. exiting..." << endl;
+                exit(1);
+        }
     }
-  }
 
-  //! Searches the cells' neighbors without plotting
-  inline int **SearchNeighbours(void) {
-    return SearchNandPlot(0, true);
-  }
-
-  //! Return the total area occupied by the cells
-  inline int Mass() {
-    int mass=0;
-    for (int i=0;i<sizex*sizey;i++) {
-      if (sigma[0][i]>0) mass++;
+    //! Searches the cells' neighbors without plotting
+    inline int **SearchNeighbours(void) {
+        return SearchNandPlot(0, true);
     }
-    return mass;
-  }
 
-  /*! Plot the cells according to their cell identity, not their type.
+    //! Return the total area occupied by the cells
+    inline int Mass() {
+        int mass = 0;
+        for (int i = 0; i < sizex * sizey; i++) {
+            if (sigma[0][i] > 0) mass++;
+        }
+        return mass;
+    }
 
-  The black lines are omitted.
-  */
-  void PlotSigma(Graphics *g, int mag=2);
+    /*! Plot the cells according to their cell identity, not their type.
+
+    The black lines are omitted.
+    */
+    void PlotSigma(Graphics *g, int mag = 2);
 
     // Tells the cell cell_sigma to divide, given its boundingbox
     // TODO: Put in cell.h
@@ -232,111 +252,127 @@ public:
 
     //! Returns the number of completed Monte Carlo steps.
     inline int Time() const {
-      return thetime;
+        return thetime;
     }
 
 
     // not currently used? In Critter implementation (see Hogeweg
     // 2000) this was used to have cells divide at double their original area.
-  inline int ZygoteArea() const {
-    return zygote_area;
-  }
+    inline int ZygoteArea() const {
+        return zygote_area;
+    }
 
-  //! \brief Return the horizontal size of the CA plane.
-  inline int SizeX() const {
-    return sizex;
-  }
+    //! \brief Return the horizontal size of the CA plane.
+    inline int SizeX() const {
+        return sizex;
+    }
 
-  //! \brief Return the vertical size of the CA plane.
-  inline int SizeY() const {
-    return sizey;
-  }
+    //! \brief Return the vertical size of the CA plane.
+    inline int SizeY() const {
+        return sizey;
+    }
 
-  /*! \brief Return the value of lattice site (x,y).
+    /*! \brief Return the value of lattice site (x,y).
 
-  i.e. This will return the index of the cell which occupies site (x,y). */
-  inline int Sigma(const int x, const int y) const {
-    return sigma[x][y];
-  }
+    i.e. This will return the index of the cell which occupies site (x,y). */
+    inline int Sigma(const int x, const int y) const {
+        return sigma[x][y];
+    }
 
-  //this function facilitates creation from a backup file
-  int SetNextSigma(int sig);
+    //this function facilitates creation from a backup file
+    int SetNextSigma(int sig);
 
-  /*! In this method the principal axes of the cells are computed using
-   the method described in "Biometry", box 15.5
-   \return a pointer to a "new[]"ed array containing the directions.
-   The memory has to be freed afterwards using the delete[] operator
-  */
-  Dir *FindCellDirections3() const;
-  int GrowInCells(int n_cells, int cell_size, int sx, int sy, int offset_x, int offset_y);
-  int PlaceCellsRandomly(int n_cells, int cellsize);
-  int PlaceCellsOrderly(int n_cells, int cellsize);
-  int Place2Groups(int placement,int size_init_cells, int groupsize);
-  //! \brief Adds a new Cell and returns a reference to it.
-  inline Cell &AddCell(Dish &beast) {
-    cell->push_back(Cell(beast));
-    return cell->back();
-  }
-  void RemoveCell(Cell* cellid,int min_area, int meanx, int meany);
-  int FancyloopX(int loopdepth, int meanx, int meany, int thissig, bool above);
-  int FancyloopY(int loopdepth, int meanx, int meany, int thissig, bool left);
+    /*! In this method the principal axes of the cells are computed using
+     the method described in "Biometry", box 15.5
+     \return a pointer to a "new[]"ed array containing the directions.
+     The memory has to be freed afterwards using the delete[] operator
+    */
+    Dir *FindCellDirections3() const;
 
-  /*! \brief Give each cell a random cell type.
+    int GrowInCells(int n_cells, int cell_size, int sx, int sy, int offset_x, int offset_y);
 
-  The number of cell types is defined by the J parameter file. (See
-  Jtable in parameter file).ount
-  */
-  void SetRandomTypes();
+    int PlaceCellsRandomly(int n_cells, int cellsize);
 
-  inline Cell &getCell(int c) {
-    return (*cell)[c];
-  }
+    int PlaceCellsOrderly(int n_cells, int cellsize);
+
+    int Place2Groups(int placement, int size_init_cells, int groupsize);
+
+    //! \brief Adds a new Cell and returns a reference to it.
+    inline Cell &AddCell(Dish &beast) {
+        cell->push_back(Cell(beast));
+        return cell->back();
+    }
+
+    void RemoveCell(Cell *cellid, int min_area, int meanx, int meany);
+
+    int FancyloopX(int loopdepth, int meanx, int meany, int thissig, bool above);
+
+    int FancyloopY(int loopdepth, int meanx, int meany, int thissig, bool left);
+
+    /*! \brief Give each cell a random cell type.
+
+    The number of cell types is defined by the J parameter file. (See
+    Jtable in parameter file).ount
+    */
+    void SetRandomTypes();
+
+    inline Cell &getCell(int c) {
+        return (*cell)[c];
+    }
 
 
-  //This used to be private but I want to use it elsewhere
-  static const int nx[25], ny[25];
-  static const int nbh_level[5];
-  int n_nb;
-  void MeasureCellSizes();
+    //This used to be private but I want to use it elsewhere
+    static const int nx[25], ny[25];
+    static const int nbh_level[5];
+    int n_nb;
+
+    void MeasureCellSizes();
 
     void killCell(int c_sigma);
 
 private:
-  int DeltaH(int x,int y, int xp, int yp, PDE *PDEfield=nullptr);
-  int DeltaHWithMedium(int x,int y, PDE *PDEfield=nullptr);
-  double Adhesion_Energy(int sigma1, int sigma2);
-  void ConvertSpin(int x,int y,int xp,int yp);
-  void ConvertSpinToMedium(int x, int y );
-  static int CopyvProb(int DH,  double stiff);
+    int DeltaH(int x, int y, int xp, int yp, PDE *PDEfield = nullptr);
 
-  void MeasureCellSize(Cell &c);
-  static void CopyProb(double T);
-  bool ConnectivityPreservedP(int x, int y);
+    int DeltaHWithMedium(int x, int y, PDE *PDEfield = nullptr);
 
-  // little debugging function to print the site and its neighbourhood
-  inline void PrintSite(int x,int y) {
-	  std::cerr << "--------\n";
-	  std::cerr << "[" << sigma[x-1][y-1] << " " << sigma[x][y-1] << " " << sigma[x+1][y-1] << "]\n";
-	  std::cerr << "[" << sigma[x-1][y] << " " << sigma[x][y] << " " << sigma[x+1][y] << "]\n";
-	  std::cerr << "[" << sigma[x-1][y+1] << " " << sigma[x][y+1] << " " << sigma[x+1][y+1] << "]\n";
-  }
+    double Adhesion_Energy(int sigma1, int sigma2);
+
+    void ConvertSpin(int x, int y, int xp, int yp);
+
+    void ConvertSpinToMedium(int x, int y);
+
+    static int CopyvProb(int DH, double stiff);
+
+    void MeasureCellSize(Cell &c);
+
+    static void CopyProb(double T);
+
+    bool ConnectivityPreservedP(int x, int y);
+
+    // little debugging function to print the site and its neighbourhood
+    inline void PrintSite(int x, int y) {
+        std::cerr << "--------\n";
+        std::cerr << "[" << sigma[x - 1][y - 1] << " " << sigma[x][y - 1] << " " << sigma[x + 1][y - 1] << "]\n";
+        std::cerr << "[" << sigma[x - 1][y] << " " << sigma[x][y] << " " << sigma[x + 1][y] << "]\n";
+        std::cerr << "[" << sigma[x - 1][y + 1] << " " << sigma[x][y + 1] << " " << sigma[x + 1][y + 1] << "]\n";
+    }
 
 
 protected:
-	void BaseInitialisation(std::vector<Cell> *cell);
+    void BaseInitialisation(std::vector<Cell> *cell);
 
 protected:
-  int **sigma;
-  int sizex;
-  int sizey;
+    int **sigma;
+    int sizex;
+    int sizey;
 
 
 private:
-  Edges edgeSetVector;
-  bool frozen;
-  std::vector<Cell> *cell;
-  int zygote_area;
-  int thetime;
+    Edges edgeSetVector;
+    bool frozen;
+    std::vector<Cell> *cell;
+    int zygote_area;
+    int thetime;
 
 };
 

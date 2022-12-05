@@ -30,43 +30,44 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 */
 
 class Graphics;
+
 class Dish;
 //class ostream;
 
 class Info {
 
 public:
-  
-  /*! \brief Constructs and Info class dish with specified graphics window.
 
-  \param dish: The virtual Petri dish to query.
-  \param graphics: The Graphics window displaying the dish.
-  \param out: (optional) Stream into which info is written. Default: console.
-  */
-  Info(Dish &dish, Graphics &graphics, std::ostream &out=std::cout);
-  
-  /*! \brief Reads out key presses in the Graphics window and interprets them.
-    
-  If you want to define extra interactive queries, redefine this method.
+    /*! \brief Constructs and Info class dish with specified graphics window.
 
-  If you want a nice GUI menu, reimplement this method.
-  */
-  void Menu(void);
-  
-  /*! \brief Writes center of mass of cell "cell_id" to stream out.
-   */
-  void WriteCOM(int cell_id, std::ostream &out=std::cout);
+    \param dish: The virtual Petri dish to query.
+    \param graphics: The Graphics window displaying the dish.
+    \param out: (optional) Stream into which info is written. Default: console.
+    */
+    Info(Dish &dish, Graphics &graphics, std::ostream &out = std::cout);
 
-  /*! \brief Waits until the user clicks a cell and returns a reference to it.
-   */
-  Cell &ClickCell(Graphics *g);
-  
-private:
-  Info(void);
+    /*! \brief Reads out key presses in the Graphics window and interprets them.
 
+    If you want to define extra interactive queries, redefine this method.
+
+    If you want a nice GUI menu, reimplement this method.
+    */
+    void Menu(void);
+
+    /*! \brief Writes center of mass of cell "cell_id" to stream out.
+     */
+    void WriteCOM(int cell_id, std::ostream &out = std::cout);
+
+    /*! \brief Waits until the user clicks a cell and returns a reference to it.
+     */
+    Cell &ClickCell(Graphics *g);
 
 private:
-  Graphics *graphics;
-  Dish *dish;
-  std::ostream *os;
+    Info(void);
+
+
+private:
+    Graphics *graphics;
+    Dish *dish;
+    std::ostream *os;
 };

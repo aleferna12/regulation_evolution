@@ -48,27 +48,27 @@ public:
      * \param sy: vertical size of PDE planes
     */
 
-    IntPlane(int sx, int sy,  int fill = 0);
+    IntPlane(int sx, int sy, int fill = 0);
 
     // destructor must also be virtual
     virtual ~IntPlane();
 
     //! \brief Returns the horizontal size of the PDE planes.
     inline int SizeX() const {
-      return sizex;
+        return sizex;
     }
 
     //! \brief Returns the vertical size of the PDE planes.
     inline int SizeY() const {
-      return sizey;
+        return sizey;
     }
 
     double getDiagonal() const {
-      return sqrt(sizex * sizex + sizey * sizey);
+        return sqrt(sizex * sizex + sizey * sizey);
     }
 
     int getArea() const {
-      return sizex * sizey;
+        return sizex * sizey;
     }
 
     /*! \brief Returns the value of grid point x,y of PDE plane "layer".
@@ -78,7 +78,7 @@ public:
     \param x, y: grid point to probe.
     */
     inline int Sigma(const int x, const int y) const {
-      return sigma[x * sizey + y];
+        return sigma[x * sizey + y];
     }
 
     /*! \brief Sets grid point x,y of PDE plane "layer" to value "value".
@@ -88,19 +88,20 @@ public:
 
     */
     inline void setSigma(const int x, const int y, const int value) {
-      sigma[x * sizey + y] = value;
+        sigma[x * sizey + y] = value;
     }
 
     int SetNextVal(int sig);
 
     pair<int, int> getMinMax() const {
-      int maxval = 0;
-      int minval = INT_MAX;
-      for (int i = 1; i < sizex - 1; ++i) for (int j = 1; j < sizey - 1; ++j) {
-        minval = min(Sigma(i, j), minval);
-        maxval = max(Sigma(i, j), maxval);
-      }
-      return {minval, maxval};
+        int maxval = 0;
+        int minval = INT_MAX;
+        for (int i = 1; i < sizex - 1; ++i)
+            for (int j = 1; j < sizey - 1; ++j) {
+                minval = min(Sigma(i, j), minval);
+                maxval = max(Sigma(i, j), maxval);
+            }
+        return {minval, maxval};
     }
 
 protected:

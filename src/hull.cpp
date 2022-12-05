@@ -20,12 +20,11 @@
 
 
 inline float
-isLeft( Point P0, Point P1, Point P2 )
-{
-    return (P1.x - P0.x)*(P2.y - P0.y) - (P2.x - P0.x)*(P1.y - P0.y);
+isLeft(Point P0, Point P1, Point P2) {
+    return (P1.x - P0.x) * (P2.y - P0.y) - (P2.x - P0.x) * (P1.y - P0.y);
 }
 //===================================================================
- 
+
 
 // chainHull_2D(): Andrew's monotone chain 2D convex hull algorithm
 //     Input:  P[] = an array of 2D points
@@ -34,46 +33,44 @@ isLeft( Point P0, Point P1, Point P2 )
 //     Output: H[] = an array of the convex hull vertices (max is n)
 //     Return: the number of points in H[]
 int
-chainHull_2D( Point* P, int n, Point* H )
-{
+chainHull_2D(Point *P, int n, Point *H) {
     // the output array H[] will be used as the stack
-    int    bot=0, top=(-1);  // indices for bottom and top of the stack
-    int    i;                // array scan index
+    int bot = 0, top = (-1);  // indices for bottom and top of the stack
+    int i;                // array scan index
 
     // Get the indices of points with min x-coord and min|max y-coord
     int minmin = 0, minmax;
     float xmin = P[0].x;
-    for (i=1; i<n; i++)
+    for (i = 1; i < n; i++)
         if (P[i].x != xmin) break;
-    minmax = i-1;
-    if (minmax == n-1) {       // degenerate case: all x-coords == xmin
+    minmax = i - 1;
+    if (minmax == n - 1) {       // degenerate case: all x-coords == xmin
         H[++top] = P[minmin];
         if (P[minmax].y != P[minmin].y) // a nontrivial segment
             H[++top] = P[minmax];
         H[++top] = P[minmin];           // add polygon endpoint
-        return top+1;
+        return top + 1;
     }
 
     // Get the indices of points with max x-coord and min|max y-coord
-    int maxmin, maxmax = n-1;
-    float xmax = P[n-1].x;
-    for (i=n-2; i>=0; i--)
+    int maxmin, maxmax = n - 1;
+    float xmax = P[n - 1].x;
+    for (i = n - 2; i >= 0; i--)
         if (P[i].x != xmax) break;
-    maxmin = i+1;
+    maxmin = i + 1;
 
     // Compute the lower hull on the stack H
     H[++top] = P[minmin];      // push minmin point onto stack
     i = minmax;
-    while (++i <= maxmin)
-    {
+    while (++i <= maxmin) {
         // the lower line joins P[minmin] with P[maxmin]
-        if (isLeft( P[minmin], P[maxmin], P[i]) >= 0 && i < maxmin)
+        if (isLeft(P[minmin], P[maxmin], P[i]) >= 0 && i < maxmin)
             continue;          // ignore P[i] above or on the lower line
 
         while (top > 0)        // there are at least 2 points on the stack
         {
             // test if P[i] is left of the line at the stack top
-            if (isLeft( H[top-1], H[top], P[i]) > 0)
+            if (isLeft(H[top - 1], H[top], P[i]) > 0)
                 break;         // P[i] is a new hull vertex
             else
                 top--;         // pop top point off stack
@@ -86,16 +83,15 @@ chainHull_2D( Point* P, int n, Point* H )
         H[++top] = P[maxmax];  // push maxmax point onto stack
     bot = top;                 // the bottom point of the upper hull stack
     i = maxmin;
-    while (--i >= minmax)
-    {
+    while (--i >= minmax) {
         // the upper line joins P[maxmax] with P[minmax]
-        if (isLeft( P[maxmax], P[minmax], P[i]) >= 0 && i > minmax)
+        if (isLeft(P[maxmax], P[minmax], P[i]) >= 0 && i > minmax)
             continue;          // ignore P[i] below or on the upper line
 
         while (top > bot)    // at least 2 points on the upper stack
         {
             // test if P[i] is left of the line at the stack top
-            if (isLeft( H[top-1], H[top], P[i]) > 0)
+            if (isLeft(H[top - 1], H[top], P[i]) > 0)
                 break;         // P[i] is a new hull vertex
             else
                 top--;         // pop top point off stack
@@ -105,6 +101,6 @@ chainHull_2D( Point* P, int n, Point* H )
     if (minmax != minmin)
         H[++top] = P[minmin];  // push joining endpoint onto stack
 
-    return top+1;
+    return top + 1;
 }
 

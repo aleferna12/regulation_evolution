@@ -45,14 +45,19 @@ extern std::uniform_real_distribution<double> my_unif_real_dist;
 extern std::binomial_distribution<int> my_binomial_dist;
 
 int Seed(int seed);
+
 double RANDOM();
+
 double RANDNORMAL(double mean, double stdev);
+
 long RandomNumber(long max);
+
 void AskSeed();
+
 int Randomize(void);
 
 int BinomialDeviate(int N, double p); //returns a random number from binomial distr.
-                                      // with parameters N,p
+// with parameters N,p
 
 
 

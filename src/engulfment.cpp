@@ -39,7 +39,9 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #ifdef QTGRAPHICS
 #include "qtgraph.h"
 #else
+
 #include "x11graph.h"
+
 #endif
 
 
@@ -47,107 +49,107 @@ using namespace std;
 
 INIT {
 
-  try {
+    try {
 
-    CPM->SetRandomTypes();
+        CPM->SetRandomTypes();
 
-  } catch(const char* error) {
-    cerr << "Caught exception\n";
-    std::cerr << error << "\n";
-    exit(1);
-  }
+    } catch (const char *error) {
+        cerr << "Caught exception\n";
+        std::cerr << error << "\n";
+        exit(1);
+    }
 
 }
 
-TIMESTEP { 
- 
-  try {
+TIMESTEP {
 
-    static int i=0;
-  
-    static Dish *beast=new Dish();
-   
-    beast->CPM->AmoebaeMove(beast->PDEfield);
-    
-    //cerr << "Done\n";
-    if (par.graphics && !(i%10)) {
-      
-      
-      int tx,ty;
-      BeginScene();
-      ClearImage();
-      beast->Plot(this);
+    try {
 
-      //char title[400];
-      //snprintf(title,399,"CellularPotts: %d MCS",i);
-      //ChangeTitle(title);
-      EndScene();
-  
-     
+        static int i = 0;
+
+        static Dish *beast = new Dish();
+
+        beast->CPM->AmoebaeMove(beast->PDEfield);
+
+        //cerr << "Done\n";
+        if (par.graphics && !(i % 10)) {
+
+
+            int tx, ty;
+            BeginScene();
+            ClearImage();
+            beast->Plot(this);
+
+            //char title[400];
+            //snprintf(title,399,"CellularPotts: %d MCS",i);
+            //ChangeTitle(title);
+            EndScene();
+
+
+        }
+
+        if (par.store && !(i % par.storage_stride)) {
+            char fname[200];
+            sprintf(fname, "%s/extend%05d.png", par.datadir, i);
+
+            BeginScene();
+
+            beast->Plot(this);
+
+            EndScene();
+
+            Write(fname);
+
+        }
+
+        i++;
+    } catch (const char *error) {
+        cerr << "Caught exception\n";
+        std::cerr << error << "\n";
+        exit(1);
     }
-  
-    if (par.store && !(i%par.storage_stride)) {
-      char fname[200];
-      sprintf(fname,"%s/extend%05d.png",par.datadir,i);
-    
-      BeginScene();
-    
-      beast->Plot(this);
-      
-      EndScene();
-    
-      Write(fname);
-        
-    }
-
-    i++;
-  } catch(const char* error) {
-    cerr << "Caught exception\n";
-    std::cerr << error << "\n";
-    exit(1);
-  }
 }
 
 int main(int argc, char *argv[]) {
-  
-	
-  try {
+
+
+    try {
 
 #ifdef QTGRAPHICS
-    QApplication a(argc, argv);
+        QApplication a(argc, argv);
 #endif
-    // Read parameters
-    par.Read(argv[1]);
-    
-    Seed(par.rseed);
-    
-    //QMainWindow mainwindow w;
-#ifdef QTGRAPHICS
-    QtGraphics g(par.sizex*2,par.sizey*2);
-    a.setMainWidget( &g );
-    a.connect(&g, SIGNAL(SimulationDone(void)), SLOT(quit(void)) );
+        // Read parameters
+        par.Read(argv[1]);
 
-    if (par.graphics)
-      g.show();
-    
-    a.exec();
+        Seed(par.rseed);
+
+        //QMainWindow mainwindow w;
+#ifdef QTGRAPHICS
+        QtGraphics g(par.sizex*2,par.sizey*2);
+        a.setMainWidget( &g );
+        a.connect(&g, SIGNAL(SimulationDone(void)), SLOT(quit(void)) );
+
+        if (par.graphics)
+          g.show();
+
+        a.exec();
 #else
-    X11Graphics g(par.sizex*2,par.sizey*2);
-    int t;
+        X11Graphics g(par.sizex * 2, par.sizey * 2);
+        int t;
 
-    for (t=0;t<par.mcs;t++) {
+        for (t = 0; t < par.mcs; t++) {
 
-      g.TimeStep();
-    
-    }
+            g.TimeStep();
+
+        }
 #endif
-    
-  } catch(const char* error) {
-    std::cerr << error << "\n";
-    exit(1);
-  }
-  catch(...) {
-    std::cerr << "An unknown exception was caught\n";
-  }
-  return 0;
+
+    } catch (const char *error) {
+        std::cerr << error << "\n";
+        exit(1);
+    }
+    catch (...) {
+        std::cerr << "An unknown exception was caught\n";
+    }
+    return 0;
 }

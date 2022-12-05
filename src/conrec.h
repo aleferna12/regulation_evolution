@@ -76,16 +76,16 @@ class Graphics;
 C-code Copyright (c) 1996-1997 Nicholas Yue.
 */
 int conrec(double **d,
-	   int ilb,
-	   int iub,
-	   int jlb,
-	   int jub,
-	   double *x,
-	   double *y,
-	   int nc,
-	   double *z,
-	   Graphics *g,
-	   int colour=1);
+           int ilb,
+           int iub,
+           int jlb,
+           int jub,
+           double *x,
+           double *y,
+           int nc,
+           double *z,
+           Graphics *g,
+           int colour = 1);
 // d               ! matrix of data to contour
 // ilb,iub,jlb,jub ! index bounds of data matrix
 // x               ! data matrix column coordinates

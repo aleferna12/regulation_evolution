@@ -26,10 +26,15 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define REMARK 56
 
 
-int ReadNumber(FILE *file,int *number);
+int ReadNumber(FILE *file, int *number);
+
 int YesNoP(const char *message);
-char *GetFileName(const char *message,const char *ftype);
-int FileExists(FILE **fp,const char *fname,const char *ftype);
-int ReadDouble(FILE *file,double *number);
+
+char *GetFileName(const char *message, const char *ftype);
+
+int FileExists(FILE **fp, const char *fname, const char *ftype);
+
+int ReadDouble(FILE *file, double *number);
+
 // Finds positive root of quadratic equation using Bhaskara's
 double SolveQuadradic(double a, double b, double c);

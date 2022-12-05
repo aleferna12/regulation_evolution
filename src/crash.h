@@ -21,9 +21,15 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 
 */
 void StartSIGINTHandling();
+
 void HandleSIGINT(int dummy);
+
 void StartSIGSEGVHandling();
+
 void HandleSIGSEGV(int dummy);
+
 void NiceMessage();
+
 void MemoryWarning(void);
+
 void Crash(char *message);

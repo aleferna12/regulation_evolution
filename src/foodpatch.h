@@ -33,64 +33,64 @@ public:
     virtual ~FoodPatch();
 
     int getX() const {
-      return x;
+        return x;
     }
 
     int getY() const {
-      return y;
+        return y;
     }
 
     double getCenterX() const {
-      return x + length / (double) 2;
+        return x + length / (double) 2;
     }
 
     double getCenterY() const {
-      return y + length / (double) 2;
+        return y + length / (double) 2;
     }
 
     int getId() const {
-      return id;
+        return id;
     }
 
     int getLength() const {
-      return length;
+        return length;
     }
 
     int getFoodPerSpot() const {
-      return food_per_spot;
+        return food_per_spot;
     }
-    
+
     int getFoodLeft() const {
-      return food_left;
+        return food_left;
     }
 
     int getSigma(int i, int j) const {
-      return sigma[i * length + j];
+        return sigma[i * length + j];
     }
 
     void setSigma(int i, int j, int val) {
-      sigma[i * length + j] = val;
+        sigma[i * length + j] = val;
     }
 
     int getGlobalX(int i) const {
-      return i + x;
+        return i + x;
     }
 
     int getGlobalY(int j) const {
-      return j + y;
+        return j + y;
     }
 
     int getLocalX(int i) const {
-      return i - x;
+        return i - x;
     }
 
     int getLocalY(int j) const {
-      return j - y;
+        return j - y;
     }
 
     // TODO
     BoundingBox &getGradBox() {
-      throw logic_error("grad boxes are yet to be implemented");
+        throw logic_error("grad boxes are yet to be implemented");
     }
 
     void initSigmas();

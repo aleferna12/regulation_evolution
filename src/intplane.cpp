@@ -36,44 +36,44 @@ extern Parameter par;
 /** PRIVATE **/
 
 IntPlane::IntPlane(const int sx, const int sy, int fill) {
-  sizex = sx;
-  sizey = sy;
+    sizex = sx;
+    sizey = sy;
 
-  sigma = new int[sizex * sizey]{};
-  if (fill != 0) {
-    fill_n(sigma, sizex * sizey, fill);
-  }
+    sigma = new int[sizex * sizey]{};
+    if (fill != 0) {
+        fill_n(sigma, sizex * sizey, fill);
+    }
 }
 
 
 IntPlane::IntPlane() {
-  sigma = nullptr;
-  sizex = 0;
-  sizey = 0;
+    sigma = nullptr;
+    sizex = 0;
+    sizey = 0;
 }
 
 // destructor (virtual)
 IntPlane::~IntPlane() {
-  delete[] sigma;
+    delete[] sigma;
 }
 
 //copy of this function in ca.cpp
 int IntPlane::SetNextVal(int pos) {
-  //the plane has a 1 px boundary on all size, therefore we place the pixels
-  //within that boundary
-  static int xcount = 1, ycount = 1;
+    //the plane has a 1 px boundary on all size, therefore we place the pixels
+    //within that boundary
+    static int xcount = 1, ycount = 1;
 
-  if (xcount >= sizex - 1 || ycount >= sizey - 1) {
-    return 1;
-  }
+    if (xcount >= sizex - 1 || ycount >= sizey - 1) {
+        return 1;
+    }
 
-  setSigma(xcount, ycount, pos);
-  ycount++;
-  if (ycount == sizey - 1) {
-    ycount = 1;
-    xcount++;
-  }
-  return 0;
+    setSigma(xcount, ycount, pos);
+    ycount++;
+    if (ycount == sizey - 1) {
+        ycount = 1;
+        xcount++;
+    }
+    return 0;
 }
 
 

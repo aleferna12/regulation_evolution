@@ -22,47 +22,47 @@ public:
     BoundingBox(int minx, int miny, int maxx, int maxy) : minx(minx), miny(miny), maxx(maxx), maxy(maxy) {}
 
     int getMinX() const {
-      return minx;
+        return minx;
     }
 
     void setMinX(int val) {
-      minx = val;
+        minx = val;
     }
 
     int getMinY() const {
-      return miny;
+        return miny;
     }
 
     void setMinY(int val) {
-      miny = val;
+        miny = val;
     }
 
     int getMaxX() const {
-      return maxx;
+        return maxx;
     }
 
     void setMaxX(int val) {
-      maxx = val;
+        maxx = val;
     }
 
     int getMaxY() const {
-      return maxy;
+        return maxy;
     }
 
     void setMaxY(int val) {
-      maxy = val;
+        maxy = val;
     }
 
     int getSideX() const {
-      return maxx - minx;
+        return maxx - minx;
     }
 
     int getSideY() const {
-      return maxy - miny;
+        return maxy - miny;
     }
 
     int getArea() const {
-      return getSideX() * getSideY();
+        return getSideX() * getSideY();
     }
 
     pair<int, int> getOverlapLengths(const BoundingBox &box) const;

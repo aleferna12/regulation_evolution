@@ -53,22 +53,21 @@ Subject: error.c
 #include <stdlib.h>
 #include "warning.h"
 
-int Quiet=0;
+int Quiet = 0;
 
 /*
  * ERROR: scream and die quickly.
  */
 
-void error(char * fmt, ...)
-{
+void error(char *fmt, ...) {
     va_list ap;
 
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);		/* invoke interface to printf       */
-    fprintf(stderr,"\n");     /* automatic \n by Roeland */
-    fflush(stderr);			/* drain std error buffer 	    */
+    vfprintf(stderr, fmt, ap);        /* invoke interface to printf       */
+    fprintf(stderr, "\n");     /* automatic \n by Roeland */
+    fflush(stderr);            /* drain std error buffer 	    */
     va_end(ap);
-    exit(1);				/* quit with error status	    */
+    exit(1);                /* quit with error status	    */
 }
 
 /*
@@ -77,16 +76,15 @@ void error(char * fmt, ...)
  * and added an automatic "\n"
  */
 
-void warning(char * fmt, ...)
-{
-  va_list ap;
-  if (Quiet) return;
-  
-  va_start(ap, fmt);
-  vfprintf(stderr, fmt, ap);		/* invoke interface to printf       */
-  fprintf(stderr,"\n");     /* automatic \n by Roeland */
-  fflush(stderr);			/* drain std error buffer 	    */
-  va_end(ap);
+void warning(char *fmt, ...) {
+    va_list ap;
+    if (Quiet) return;
+
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);        /* invoke interface to printf       */
+    fprintf(stderr, "\n");     /* automatic \n by Roeland */
+    fflush(stderr);            /* drain std error buffer 	    */
+    va_end(ap);
 }
 
 #ifdef TESTBED

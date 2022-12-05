@@ -28,7 +28,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define TRUE     1
 #define OK 1
 #define TESTCELLS 1
-#define BOLTZMANN 1024 
+#define BOLTZMANN 1024
 
 
 #define MAXSEED 65531349
@@ -61,8 +61,8 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define PMUT2 .1
 #define DMUT 0.0021
 #define PCO 0.
-#define NETSIZE 29 
-#define INETSIZE 16 
+#define NETSIZE 29
+#define INETSIZE 16
 #define INP_PROT 16 /* number of negative inputs (connectivity) */
 #define POTPROT 16 /* number of potential proteins */
 //#define EXTCONNECTIONS 0
@@ -71,6 +71,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define NHHIST 10
 #define NH_TH 0.5
 #define ENDOFSTATES 1<<(NETSIZE+2)
+
 /* function definitions */
 
 double RANDOM();

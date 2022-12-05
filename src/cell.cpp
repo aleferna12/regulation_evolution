@@ -57,186 +57,186 @@ using namespace std;
 
 Cell::~Cell() {
 
-  amount--;
-  if (amount == 0) {
-    // clear J if last cell has been destructed
-    free(J[0]);
-    free(J);
-    capacity = 0;
-    maxsigma = 0;
-    J = nullptr;
-  }
-  if (par.n_chem) {
-    delete[] chem;
-  }
+    amount--;
+    if (amount == 0) {
+        // clear J if last cell has been destructed
+        free(J[0]);
+        free(J);
+        capacity = 0;
+        maxsigma = 0;
+        J = nullptr;
+    }
+    if (par.n_chem) {
+        delete[] chem;
+    }
 }
 
 
 void Cell::CellBirth(Cell &mother_cell) {
 
-  colour = mother_cell.colour;
-  //cerr<< "daughter colour is "<<colour<<" mother colour is "<<mother_cell.colour<<endl;
-  alive = mother_cell.alive;
-  v[0] = mother_cell.v[0];
-  v[1] = mother_cell.v[1];
+    colour = mother_cell.colour;
+    //cerr<< "daughter colour is "<<colour<<" mother colour is "<<mother_cell.colour<<endl;
+    alive = mother_cell.alive;
+    v[0] = mother_cell.v[0];
+    v[1] = mother_cell.v[1];
 
-  // Administrate ancestry
-  ancestor = mother_cell.ancestor;
-  mother_cell.daughter = this->sigma;
-  mother = mother_cell.sigma;
-  mother_cell.AddTimesDivided();
-  times_divided = mother_cell.times_divided;
+    // Administrate ancestry
+    ancestor = mother_cell.ancestor;
+    mother_cell.daughter = this->sigma;
+    mother = mother_cell.sigma;
+    mother_cell.AddTimesDivided();
+    times_divided = mother_cell.times_divided;
 
-  owner = mother_cell.owner;
+    owner = mother_cell.owner;
 
-  date_of_birth = owner->Time();
-  //cerr<<"sigma:"<<sigma<<" I am born at: "<<date_of_birth<<endl<<endl; //this works fine
+    date_of_birth = owner->Time();
+    //cerr<<"sigma:"<<sigma<<" I am born at: "<<date_of_birth<<endl<<endl; //this works fine
 
-  colour_of_birth = mother_cell.colour;
-  colour = mother_cell.colour;
+    colour_of_birth = mother_cell.colour;
+    colour = mother_cell.colour;
 
-  alive = mother_cell.alive;
+    alive = mother_cell.alive;
 
-  tau = mother_cell.tau;
-  target_area = mother_cell.target_area;
-  target_length = mother_cell.target_length;
-  half_div_area = mother_cell.half_div_area;
+    tau = mother_cell.tau;
+    target_area = mother_cell.target_area;
+    target_length = mother_cell.target_length;
+    half_div_area = mother_cell.half_div_area;
 
-  genome = mother_cell.genome;
-  gextiming = mother_cell.gextiming;
-  dividecounter = 0;
-  mother_cell.dividecounter = 0;
-  //genome.MutateGenome();
+    genome = mother_cell.genome;
+    gextiming = mother_cell.gextiming;
+    dividecounter = 0;
+    mother_cell.dividecounter = 0;
+    //genome.MutateGenome();
 
-  // Do not add moments here, they are going to be calculated from scratch
-  // and are initialised to zero in ConstructorBody(), called right before this
-  meanx = mother_cell.meanx;
-  meany = mother_cell.meany;
+    // Do not add moments here, they are going to be calculated from scratch
+    // and are initialised to zero in ConstructorBody(), called right before this
+    meanx = mother_cell.meanx;
+    meany = mother_cell.meany;
 
-  startTarVec();  //why this?
-  mother_cell.startTarVec(); //randomises mother cell target vector
-  // this fixes the biased movement bug!
-  // also biologically it makes sense,
-  // because cell polarity is all screwed after cell division
-  //tvecx=mother_cell.tvecx;
-  //tvecy=mother_cell.tvecy;
+    startTarVec();  //why this?
+    mother_cell.startTarVec(); //randomises mother cell target vector
+    // this fixes the biased movement bug!
+    // also biologically it makes sense,
+    // because cell polarity is all screwed after cell division
+    //tvecx=mother_cell.tvecx;
+    //tvecy=mother_cell.tvecy;
 
-  prevx = mother_cell.prevx; //in startTarVec prevx is set to meanx, so we re-set this here
-  prevy = mother_cell.prevy;
-  persdur = mother_cell.persdur;
-  perstime = int(persdur * RANDOM()); //assign random persistence duration upon birth.
-  mu = mother_cell.mu;
+    prevx = mother_cell.prevx; //in startTarVec prevx is set to meanx, so we re-set this here
+    prevy = mother_cell.prevy;
+    persdur = mother_cell.persdur;
+    perstime = int(persdur * RANDOM()); //assign random persistence duration upon birth.
+    mu = mother_cell.mu;
 
-  for (int ch = 0; ch < par.n_chem; ch++)
-    chem[ch] = mother_cell.chem[ch];
+    for (int ch = 0; ch < par.n_chem; ch++)
+        chem[ch] = mother_cell.chem[ch];
 
-  n_copies = 0;
+    n_copies = 0;
 
-  chemmu = mother_cell.chemmu;
-  chemvecx = mother_cell.chemvecx;
-  chemvecy = mother_cell.chemvecy;
-  grad_conc = mother_cell.grad_conc;
+    chemmu = mother_cell.chemmu;
+    chemvecx = mother_cell.chemvecx;
+    chemvecy = mother_cell.chemvecy;
+    grad_conc = mother_cell.grad_conc;
 
-  grad[0] = mother_cell.grad[0];
-  grad[1] = mother_cell.grad[1];
+    grad[0] = mother_cell.grad[0];
+    grad[1] = mother_cell.grad[1];
 
-  growth = mother_cell.growth;
+    growth = mother_cell.growth;
 
-  food = mother_cell.food;
-  last_meal = mother_cell.last_meal;
+    food = mother_cell.food;
+    last_meal = mother_cell.last_meal;
 
-  clearNeighbours(); //neighbours will be reassigned during the division function
+    clearNeighbours(); //neighbours will be reassigned during the division function
 
-  jlock = mother_cell.jlock;
-  jkey = mother_cell.jkey;
-  vJ = mother_cell.vJ;
+    jlock = mother_cell.jlock;
+    jkey = mother_cell.jkey;
+    vJ = mother_cell.vJ;
 
-  time_since_birth = 0;
-  mother_cell.SetTimeSinceBirth(0);
+    time_since_birth = 0;
+    mother_cell.SetTimeSinceBirth(0);
 }
 
 
 void Cell::ConstructorBody(int settau, int setrecycledsigma) {
 
-  //cout<<"Tomato 2, do you come here?"<<endl;
+    //cout<<"Tomato 2, do you come here?"<<endl;
 
-  // Note: Constructor of Cytoplasm will be called first
-  alive = true;
-  colour = 1; // undifferentiated
+    // Note: Constructor of Cytoplasm will be called first
+    alive = true;
+    colour = 1; // undifferentiated
 
-  colour_of_birth = 1;
-  date_of_birth = 0;
-  times_divided = 0;
-  mother = 0;
-  daughter = 0;
+    colour_of_birth = 1;
+    date_of_birth = 0;
+    times_divided = 0;
+    mother = 0;
+    daughter = 0;
 
-  // add new elements to each of the dimensions of "J"
+    // add new elements to each of the dimensions of "J"
 
 
-  // maxsigma keeps track of the last cell identity number given out to a cell
-  if (setrecycledsigma == -1) {
-    // amount gives the total number of Cell instantiations (including copies)
-    amount++;
+    // maxsigma keeps track of the last cell identity number given out to a cell
+    if (setrecycledsigma == -1) {
+        // amount gives the total number of Cell instantiations (including copies)
+        amount++;
 
-    sigma = maxsigma++;
-    //cout<<"check: not recycling, new sigma is "<<sigma<<endl;
-  } else {
-    sigma = setrecycledsigma;
-    //cout<<"check: YES recycling, new sigma is "<<sigma<<endl;
-  }
+        sigma = maxsigma++;
+        //cout<<"check: not recycling, new sigma is "<<sigma<<endl;
+    } else {
+        sigma = setrecycledsigma;
+        //cout<<"check: YES recycling, new sigma is "<<sigma<<endl;
+    }
 
-  ancestor = sigma;
+    ancestor = sigma;
 
-  //if (!J) {
-  //  ReadStaticJTable(par.Jtable);
-  //}
+    //if (!J) {
+    //  ReadStaticJTable(par.Jtable);
+    //}
 
-  // This should not be here
-  //if(!vJ){
-  //  ReadKeyLockFromFile(par.keylock_list_filename)
-  //}
+    // This should not be here
+    //if(!vJ){
+    //  ReadKeyLockFromFile(par.keylock_list_filename)
+    //}
 
-  //create the genome: use parameters for size. This is a randomly generated genome.
-  //genome.InitGenome(par.innodes, par.regnodes, par.outnodes);
-  //let's do this separately.
-  gextiming = 0;
-  tau = settau;
-  area = 0;
-  target_area = 0;
-  half_div_area = 0;
-  length = 0;
-  target_length = par.target_length;
-  sum_x = 0;
-  sum_y = 0;
-  sum_xx = 0;
-  sum_yy = 0;
-  sum_xy = 0;
-  growth = par.growth;
+    //create the genome: use parameters for size. This is a randomly generated genome.
+    //genome.InitGenome(par.innodes, par.regnodes, par.outnodes);
+    //let's do this separately.
+    gextiming = 0;
+    tau = settau;
+    area = 0;
+    target_area = 0;
+    half_div_area = 0;
+    length = 0;
+    target_length = par.target_length;
+    sum_x = 0;
+    sum_y = 0;
+    sum_xx = 0;
+    sum_yy = 0;
+    sum_xy = 0;
+    growth = par.growth;
 
-  v[0] = 0.;
-  v[1] = 0.;
-  n_copies = 0;
-  mu = 0.0;
-  tvecx = 0.;
-  tvecy = 0.;
-  prevx = 0.;
-  prevy = 0.;
+    v[0] = 0.;
+    v[1] = 0.;
+    n_copies = 0;
+    mu = 0.0;
+    tvecx = 0.;
+    tvecy = 0.;
+    prevx = 0.;
+    prevy = 0.;
 
-  chemvecx = 0.;
-  chemvecy = 0.;
+    chemvecx = 0.;
+    chemvecy = 0.;
 
-  food = par.foodstart;
-  last_meal = 0;
+    food = par.foodstart;
+    last_meal = 0;
 
-  time_since_birth = 0;
+    time_since_birth = 0;
 
-  persdur = 0;
-  perstime = 0;
-  if (par.n_chem) {
-    chem = new double[par.n_chem];
-  }
+    persdur = 0;
+    perstime = 0;
+    if (par.n_chem) {
+        chem = new double[par.n_chem];
+    }
 
-  //cerr<<"sigma="<<sigma <<" date of birth: "<<date_of_birth<<endl; //this works fine
+    //cerr<<"sigma="<<sigma <<" date of birth: "<<date_of_birth<<endl; //this works fine
 }
 
 
@@ -246,57 +246,57 @@ void Cell::ConstructorBody(int settau, int setrecycledsigma) {
  ending with n elements */
 void Cell::ReadStaticJTable(const char *fname) {
 
-  cerr << "Reading J's...\n";
-  ifstream jtab(fname);
-  if (!jtab)
-    perror(fname);
+    cerr << "Reading J's...\n";
+    ifstream jtab(fname);
+    if (!jtab)
+        perror(fname);
 
-  int n; // number of taus
-  jtab >> n;
-  cerr << "Number of celltypes:" << n << endl;
-  maxtau = n - 1;
+    int n; // number of taus
+    jtab >> n;
+    cerr << "Number of celltypes:" << n << endl;
+    maxtau = n - 1;
 
-  // Allocate
-  if (J) {
-    free(J[0]);
-    free(J);
-  }
-  J = (int **) malloc(n * sizeof(int *));
-  J[0] = (int *) malloc(n * n * sizeof(int));
-  for (int i = 1; i < n; i++) {
-    J[i] = J[i - 1] + n;
-  }
-
-  capacity = n;
-  {
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j <= i; j++) {
-        jtab >> J[i][j];
-        // symmetric...
-        J[j][i] = J[i][j];
-      }
-
+    // Allocate
+    if (J) {
+        free(J[0]);
+        free(J);
     }
-  }
+    J = (int **) malloc(n * sizeof(int *));
+    J[0] = (int *) malloc(n * n * sizeof(int));
+    for (int i = 1; i < n; i++) {
+        J[i] = J[i - 1] + n;
+    }
+
+    capacity = n;
+    {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j <= i; j++) {
+                jtab >> J[i][j];
+                // symmetric...
+                J[j][i] = J[i][j];
+            }
+
+        }
+    }
 }
 
 
 int Cell::EnergyDifference(const Cell &cell2) const {
 
-  if (sigma == cell2.sigma) {
-    //cerr<<"EnergyDifference(): Warning. sigma and sigma2 are the same"<<endl;
-    return 0;
-  }
-  //return J[tau][cell2.tau]; //old version
-  //cerr<<"Hello EnergyDifference 0.1: this is vJ of cell with sigma = "<<sigma<<endl;
-  //for (auto i: vJ)
-  //  cerr << i << " ";
-  //cerr<<endl;
+    if (sigma == cell2.sigma) {
+        //cerr<<"EnergyDifference(): Warning. sigma and sigma2 are the same"<<endl;
+        return 0;
+    }
+    //return J[tau][cell2.tau]; //old version
+    //cerr<<"Hello EnergyDifference 0.1: this is vJ of cell with sigma = "<<sigma<<endl;
+    //for (auto i: vJ)
+    //  cerr << i << " ";
+    //cerr<<endl;
 
-  //cerr<<"In contrast, this is what J[tau][cell2.tau] would give: "<<J[tau][cell2.tau]<<endl;
-  /*if(vJ[cell2.sigma]<=1){
-    cerr<<"tau="<<tau<<" sigma="<<sigma<<", tau2="<<cell2.tau<<" sigma2="<<cell2.sigma<<", J=" <<vJ[cell2.sigma]<<"=?"<<cell2.vJ[sigma]<<endl;
-  */
+    //cerr<<"In contrast, this is what J[tau][cell2.tau] would give: "<<J[tau][cell2.tau]<<endl;
+    /*if(vJ[cell2.sigma]<=1){
+      cerr<<"tau="<<tau<<" sigma="<<sigma<<", tau2="<<cell2.tau<<" sigma2="<<cell2.sigma<<", J=" <<vJ[cell2.sigma]<<"=?"<<cell2.vJ[sigma]<<endl;
+    */
 //     for (auto i = jkey.begin(); i != jkey.end(); ++i)
 //       std::cout << *i ;
 //     std::cout << ' ';
@@ -313,106 +313,106 @@ int Cell::EnergyDifference(const Cell &cell2) const {
 //
 //     exit(1);
 //   }
-  return vJ[cell2.sigma]; //new version
+    return vJ[cell2.sigma]; //new version
 }
 
 
 void Cell::setNeighbour(int neighbour, int boundarylength, int contactduration) {
 
-  if (boundarylength == 0)//remove this neighbour
-    neighbours.erase(neighbour);
-  else
-    neighbours[neighbour] = make_pair(boundarylength,
-                                      contactduration); //if the element is already present, the boundarylength will be modified, otherwise a new element will be created.
+    if (boundarylength == 0)//remove this neighbour
+        neighbours.erase(neighbour);
+    else
+        neighbours[neighbour] = make_pair(boundarylength,
+                                          contactduration); //if the element is already present, the boundarylength will be modified, otherwise a new element will be created.
 
 }
 
 int Cell::returnBoundaryLength(int cell) {
-  if (neighbours.count(cell))
-    return neighbours[cell].first;
+    if (neighbours.count(cell))
+        return neighbours[cell].first;
 
-  return 0;
+    return 0;
 }
 
 
 int Cell::returnDuration(int cell) {
-  if (neighbours.count(cell))
-    return neighbours[cell].second;
+    if (neighbours.count(cell))
+        return neighbours[cell].second;
 
-  return 0;
+    return 0;
 }
 
 void Cell::clearNeighbours() {
-  neighbours.clear();
+    neighbours.clear();
 }
 
 int Cell::updateNeighbourBoundary(int cell, int boundarymodification) {
-  //cerr<<"Hello updNeiBound begin"<<endl;
+    //cerr<<"Hello updNeiBound begin"<<endl;
 
-  if (!neighbours.count(cell) && boundarymodification < 0) {
-    printf("Cell.updateNeighbourBoundary: error: negatively updating contact of cell %d with nonexisting neighbour %d\n",
-           sigma, cell);
-    exit(1);
-    //return 1;
-  } else if (!neighbours.count(cell)) {
-    //cerr<<"Hello updNeiBound 0"<<endl;
-    neighbours[cell] = make_pair(boundarymodification, 0);
-    //cerr<<"Hello updNeiBound 1"<<endl;
-  } else if (neighbours.count(cell)) {
-    //cerr<<"Hello updNeiBound 2"<<endl;
-    neighbours[cell].first += boundarymodification;
-    //cerr<<"Hello updNeiBound 3"<<endl;
-    //DO this after one MCS for duration reasons
+    if (!neighbours.count(cell) && boundarymodification < 0) {
+        printf("Cell.updateNeighbourBoundary: error: negatively updating contact of cell %d with nonexisting neighbour %d\n",
+               sigma, cell);
+        exit(1);
+        //return 1;
+    } else if (!neighbours.count(cell)) {
+        //cerr<<"Hello updNeiBound 0"<<endl;
+        neighbours[cell] = make_pair(boundarymodification, 0);
+        //cerr<<"Hello updNeiBound 1"<<endl;
+    } else if (neighbours.count(cell)) {
+        //cerr<<"Hello updNeiBound 2"<<endl;
+        neighbours[cell].first += boundarymodification;
+        //cerr<<"Hello updNeiBound 3"<<endl;
+        //DO this after one MCS for duration reasons
 //     if(neighbours[cell].first==0)//remove this neighbour
 //     {
 //       neighbours.erase(cell);
 //     }
-  }
+    }
 
-  if (neighbours[cell].first < 0) {
-    neighbours.erase(cell);
-    printf("Cell.updateNeighbourBoundary: error: updating contact of cell %d with neighbour %d to negative value\n",
-           sigma, cell);
-    return 2;
-  }
+    if (neighbours[cell].first < 0) {
+        neighbours.erase(cell);
+        printf("Cell.updateNeighbourBoundary: error: updating contact of cell %d with neighbour %d to negative value\n",
+               sigma, cell);
+        return 2;
+    }
 
-  return 0;
+    return 0;
 }
 
 int Cell::SetNeighbourDurationFromMother(int cell, int motherduration) {
-  if (!neighbours.count(cell)) {
-    printf("Cell.SetNeighbourDurationFromMother: error: Nonexisting neighbour %d\n", cell);
-    return 1;
-  } else
-    neighbours[cell].second = motherduration;
+    if (!neighbours.count(cell)) {
+        printf("Cell.SetNeighbourDurationFromMother: error: Nonexisting neighbour %d\n", cell);
+        return 1;
+    } else
+        neighbours[cell].second = motherduration;
 
-  return 0;
+    return 0;
 }
 
 int Cell::updateNeighbourDuration(int cell, int durationmodification) {
-  if (!neighbours.count(cell)) {
-    printf("Cell.updateNeighbourDuration: error: Nonexisting neighbour %d\n", cell);
-    return 1;
-  } else if (neighbours.count(cell)) {
-    neighbours[cell].second += durationmodification;
-  }
+    if (!neighbours.count(cell)) {
+        printf("Cell.updateNeighbourDuration: error: Nonexisting neighbour %d\n", cell);
+        return 1;
+    } else if (neighbours.count(cell)) {
+        neighbours[cell].second += durationmodification;
+    }
 
 
-  return 0;
+    return 0;
 }
 
 // This could also be implemented as an attribute that can be updated each ConvertSpin iteration
 // That could be faster since the boxes would be tight around the cells
 BoundingBox Cell::getBoundingBox() {
-  int maxx = owner->CPM->SizeX();
-  int maxy = owner->CPM->SizeY();
-  double scale = 3;
-  return BoundingBox{
-          (int) max(meanx - scale * Length(), 1.),
-          (int) max(meany - scale * Length(), 1.),
-          (int) min(meanx + scale * Length(), maxx - 1.),
-          (int) min(meany + scale * Length(), maxy - 1.)
-  };
+    int maxx = owner->CPM->SizeX();
+    int maxy = owner->CPM->SizeY();
+    double scale = 3;
+    return BoundingBox{
+            (int) max(meanx - scale * Length(), 1.),
+            (int) max(meany - scale * Length(), 1.),
+            (int) min(meanx + scale * Length(), maxx - 1.),
+            (int) min(meany + scale * Length(), maxy - 1.)
+    };
 }
 
 int Cell::MutateKeyAndLock() {
@@ -423,41 +423,41 @@ int Cell::MutateKeyAndLock() {
 //   cerr<<endl;
 
 
-  //double mutrate=0.2; // probability per bit to be flipped
-  int nmut;
-  //calculate how many mutations from binomial distribution for both key and lock
-  int keysize = jkey.size();
-  int locksize = jlock.size();
-  int keylocksize = keysize + locksize;
+    //double mutrate=0.2; // probability per bit to be flipped
+    int nmut;
+    //calculate how many mutations from binomial distribution for both key and lock
+    int keysize = jkey.size();
+    int locksize = jlock.size();
+    int keylocksize = keysize + locksize;
 
 //   cerr<<"mut rate is: "<<par.mut_rate<<endl;
 
-  nmut = BinomialDeviate(keylocksize, par.mut_rate);
-  //if zero, return 0
-  if (0 == nmut) return 0;
+    nmut = BinomialDeviate(keylocksize, par.mut_rate);
+    //if zero, return 0
+    if (0 == nmut) return 0;
 
-  //else randomize positions, and flip bits
-  //return number of mutations
-  int positions[keylocksize];
-  for (int i = 0; i < keylocksize; i++) positions[i] = i; //initialise array of positions
-  int where = keylocksize;
-  for (int i = 0; i < nmut; i++) {
-    int mutpos = (int) (where * RANDOM());
-    int tmp = positions[mutpos];
-    positions[mutpos] = positions[where - 1];
-    positions[where - 1] = tmp;
-    where--;
+    //else randomize positions, and flip bits
+    //return number of mutations
+    int positions[keylocksize];
+    for (int i = 0; i < keylocksize; i++) positions[i] = i; //initialise array of positions
+    int where = keylocksize;
+    for (int i = 0; i < nmut; i++) {
+        int mutpos = (int) (where * RANDOM());
+        int tmp = positions[mutpos];
+        positions[mutpos] = positions[where - 1];
+        positions[where - 1] = tmp;
+        where--;
 
-    //key or lock
-    if (positions[keylocksize - i - 1] < keysize) {
-      int pos = positions[keylocksize - i - 1];
-      jkey[pos] = 1 - jkey[pos]; // 0 if 1, and 1 if 0
-    } else {
-      int pos = positions[keylocksize - i - 1] - keysize;
-      jlock[pos] = 1 - jlock[pos]; // 0 if 1, and 1 if 0
+        //key or lock
+        if (positions[keylocksize - i - 1] < keysize) {
+            int pos = positions[keylocksize - i - 1];
+            jkey[pos] = 1 - jkey[pos]; // 0 if 1, and 1 if 0
+        } else {
+            int pos = positions[keylocksize - i - 1] - keysize;
+            jlock[pos] = 1 - jlock[pos]; // 0 if 1, and 1 if 0
+        }
+
     }
-
-  }
 
 
 //   cerr<<"Ney: ";
@@ -472,6 +472,6 @@ int Cell::MutateKeyAndLock() {
 //   cerr<<endl;
 //   exit(1);
 //
-  return nmut;
+    return nmut;
 
 }

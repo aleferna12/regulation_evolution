@@ -22,6 +22,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 */
 #ifndef _QTGRAPH_H_
 #define _QTGRAPH_H_
+
 #include <QApplication>
 #include <QtCore/QCoreApplication>
 #include <QTimer>
@@ -42,78 +43,93 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "graph.h"
 
 
-
 class QtGraphics : public QWidget, public Graphics {
 
-  Q_OBJECT
+    Q_OBJECT
 
-  public:
-    QtGraphics(int xfield, int yfield, const char *movie_file=0);
-    QtGraphics(QWidget *parent, const char *name, int xfield, int yfield, const char *movie_file=0) : QWidget(parent, name) {
-      QtGraphics(xfield, yfield, movie_file);
+public:
+    QtGraphics(int xfield, int yfield, const char *movie_file = 0);
+
+    QtGraphics(QWidget *parent, const char *name, int xfield, int yfield, const char *movie_file = 0) : QWidget(parent,
+                                                                                                                name) {
+        QtGraphics(xfield, yfield, movie_file);
     }
-  
-  virtual ~QtGraphics(void);
-  virtual void BeginScene(void);
-  virtual void EndScene(void);
-  /*inline void Flush(void) {
-    XFlush(display);
-    } */
-  virtual void Point( int colour, int i, int j);
-  virtual void Line ( int x1, int y1,int x2,int y2,int colour );
-  /*void Field (const int **r, int mag=1);
-    void PlotNumber(int number, int x, int y);*/
-  
-  virtual int GetXYCoo(int *X,int *Y);
-  /*char *ChangeTitle (const char *message);
-  void RecoverTitle(void);*/
-  //LineType CropSize(void);
-  //Coordinate ReplaceBeast(Coordinate old_size,Coordinate new_size);
-  virtual int XField(void) const {return width();}
-  virtual int YField(void) const {return height();}
 
-  virtual void Write(char *fname, int quality=-1);
-  inline void ClearImage(void) {
+    virtual ~QtGraphics(void);
 
-    pixmap->fill(pens[0].color());
-  }
-  
-  virtual void TimeStep(void);
-	virtual void resizeEvent( QResizeEvent *event);
-  public slots:
-    void TimeStepWrap(void);
+    virtual void BeginScene(void);
 
-  signals:
-    void SimulationDone(void);
+    virtual void EndScene(void);
 
- private:
-  void paintEvent( QPaintEvent* );
-  void mousePressEvent( QMouseEvent *e);
-  void mouseReleaseEvent( QMouseEvent *e);
-  QPainter *picture;
-  QLabel *label;
-  Q3Picture pic;
-  QPen *pens;
-  QTimer *timer;
-  QPixmap *pixmap;
-  QLabel *image;
+    /*inline void Flush(void) {
+      XFlush(display);
+      } */
+    virtual void Point(int colour, int i, int j);
 
-  int mouse_x;
-  int mouse_y;
-	
-	int init_size_x;
-	int init_size_y;
-	
-	double mag;
-  Qt::ButtonState mouse_button;
+    virtual void Line(int x1, int y1, int x2, int y2, int colour);
 
-  // private methods
-  void ReadColorTable(QPen *pens, const char *colortable_filename);
-  void GenerateColorTable(QPen *pens);
-  QTimer *t;
-  
-  
-  
+    /*void Field (const int **r, int mag=1);
+      void PlotNumber(int number, int x, int y);*/
+
+    virtual int GetXYCoo(int *X, int *Y);
+    /*char *ChangeTitle (const char *message);
+    void RecoverTitle(void);*/
+    //LineType CropSize(void);
+    //Coordinate ReplaceBeast(Coordinate old_size,Coordinate new_size);
+    virtual int XField(void) const { return width(); }
+
+    virtual int YField(void) const { return height(); }
+
+    virtual void Write(char *fname, int quality = -1);
+
+    inline void ClearImage(void) {
+
+        pixmap->fill(pens[0].color());
+    }
+
+    virtual void TimeStep(void);
+
+    virtual void resizeEvent(QResizeEvent *event);
+
+public
+    slots:
+            void TimeStepWrap(void);
+
+    signals:
+            void SimulationDone(void);
+
+private:
+    void paintEvent(QPaintEvent *);
+
+    void mousePressEvent(QMouseEvent *e);
+
+    void mouseReleaseEvent(QMouseEvent *e);
+
+    QPainter *picture;
+    QLabel *label;
+    Q3Picture pic;
+    QPen *pens;
+    QTimer *timer;
+    QPixmap *pixmap;
+    QLabel *image;
+
+    int mouse_x;
+    int mouse_y;
+
+    int init_size_x;
+    int init_size_y;
+
+    double mag;
+    Qt::ButtonState mouse_button;
+
+    // private methods
+    void ReadColorTable(QPen *pens, const char *colortable_filename);
+
+    void GenerateColorTable(QPen *pens);
+
+    QTimer *t;
+
+
 };
 
 #include <qapplication.h>
