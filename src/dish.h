@@ -195,13 +195,8 @@ protected:
     // Number of resource sources
     int grad_sources;
     vector<FoodPatch> fpatches;
-    // Coefficient for how the resources decrease according to their distance from the sources
-    // TODO: Should this be a parameter?
-    double dist_coef;
 
     void FoodPlot(Graphics *g, int colori) const;
-
-    int WriteAttributes();
 };
 
 #define INIT void Dish::Init(void)

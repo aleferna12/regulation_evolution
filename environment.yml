@@ -4,7 +4,6 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - nlohmann_json==3.11.2
   - pip:
     - colorir==1.3.14
     - colormath==3.0.0

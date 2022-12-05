@@ -43,10 +43,8 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "intplane.h"
 #include "misc.h"
 #include <chrono>
-#include <nlohmann/json.hpp>
 
 using namespace std::chrono;
-using json = nlohmann::json;
 
 #define EXTERNAL_OFF
 
@@ -57,8 +55,6 @@ using namespace std;
 Dish::Dish() {
     sizex = par.sizex;
     sizey = par.sizey;
-    // This should be always 1 if we keep the gradients linear
-    dist_coef = 1;
 
     grad_sources = par.foodpatches;
 
@@ -1052,10 +1048,6 @@ void Dish::SaveAdheringNeighbours(int Time) {
     ofs.close();
 }
 
-int Dish::WriteAttributes() {
-
-}
-
 void Dish::MakeBackup(int Time) {
     std::ofstream ofs;
 
@@ -1084,11 +1076,8 @@ void Dish::MakeBackup(int Time) {
     for (auto &c: cell) {
         if (c.sigma == 0) continue;
         ofs << c.sigma << " " << c.tau << " " << c.alive << " " << c.time_since_birth << " " << c.tvecx << " "
-            << c.tvecy
-            << " " << c.prevx << " " << c.prevy << " "
-            << c.persdur << " " << c.perstime << " " << c.mu << " " << c.chemmu << " " << c.chemvecx << " "
-            << c.chemvecy
-            << " " << c.target_area << " "
+            << c.tvecy << " " << c.prevx << " " << c.prevy << " " << c.persdur << " " << c.perstime << " " << c.mu
+            << " " << c.chemmu << " " << c.chemvecx << " " << c.chemvecy << " " << c.target_area << " "
             << c.half_div_area << " " << c.length << " " << c.last_meal << " " << c.food << " " << c.growth << " "
             << c.gextiming << " " << c.dividecounter << " " << c.grad_conc << " ";
         for (auto x: c.jkey) ofs << x; //key
@@ -1123,6 +1112,95 @@ void Dish::MakeBackup(int Time) {
     }
     ofs << endl;
 }
+
+
+int Dish::ReadBackup(char *filename) {
+    //for file reading
+    std::ifstream ifs;
+    string line;
+    Cell *rc;
+    //return value: time at which the simulation restarts
+    int starttime;
+
+    string jkey, jlock; //read them first as a string, then put into vector?
+    int pos;
+
+    ifs.open(filename, std::ifstream::in);
+
+    if (ifs.is_open()) {
+        //first read the time stamp
+        getline(ifs, line);
+        stringstream strstr(line);
+        strstr >> starttime;
+
+        //second read peakx and peaky
+        getline(ifs, line);
+        stringstream strstr2(line);
+        vector<string> peakss;
+        while (strstr2.good()) {
+            string substr;
+            getline(strstr2, substr, ',');
+            peakss.push_back(substr);
+        }
+        for (auto &peak: peakss) {
+            int x, y;
+            stringstream(peak) >> x >> y;
+            addFPatch(x, y);
+        }
+
+        //now read all the cell variables
+        getline(ifs, line);
+        while (line.length()) {
+            rc = new Cell(*this); //temporary pointer to cell object
+            strstr.clear();
+            strstr.str(std::string());
+            strstr << line;
+            //read the straightforward cell variables from the line
+            strstr >> rc->sigma >> rc->tau >> rc->alive >> rc->time_since_birth >> rc->tvecx >> rc->tvecy >> rc->prevx
+                   >> rc->prevy >> rc->persdur >> rc->perstime >> rc->mu >> rc->chemmu >> rc->chemvecx >> rc->chemvecy
+                   >> rc->target_area >> rc->half_div_area >> rc->length >> rc->last_meal >> rc->food >> rc->growth
+                   >> rc->gextiming >> rc->dividecounter >> rc->grad_conc >> jkey >> jlock;
+            //read the key and lock into the cell
+            for (char &c : jkey) {
+                rc->jkey.push_back(c - '0');
+            }
+            for (char &c : jlock) {
+                rc->jlock.push_back(c - '0');
+            }
+            rc->meanx = 0.5 * par.sizex;
+            rc->meany = 0.5 * par.sizey;
+            cell.push_back(*rc);
+
+            //read the next line
+            getline(ifs, line);
+        }
+
+        //now read the planes
+        //hopefully, plane allocation already happened during dish creation
+        //this does assume size parameters match, so be careful!
+        getline(ifs, line);
+        while (line.length()) {
+            strstr.clear();
+            strstr.str(std::string());
+            strstr << line;
+            while (strstr >> pos) {
+                int wrong = CPM->SetNextSigma(pos);
+                if (wrong) {
+                    cerr << "ReadBackup error in reading CA plane. more values than fit in plane." << endl;
+                    exit(1);
+                }
+            }
+            getline(ifs, line);
+        }
+    } else {
+        cerr << "ReadBackup error: could not open file. exiting..." << endl;
+        exit(1);
+    }
+
+    return starttime;
+
+}
+
 
 int Dish::ReadCompetitionFile(char *filename) {
     std::ifstream ifs;
@@ -1205,114 +1283,6 @@ int Dish::ReadCompetitionFile(char *filename) {
         }
     }
     return 0;
-}
-
-
-int Dish::ReadBackup(char *filename) {
-    //for file reading
-    std::ifstream ifs;
-    string line;
-    Cell *rc;
-    //return value: time at which the simulation restarts
-    int starttime;
-
-    string jkey, jlock; //read them first as a string, then put into vector?
-    int pos;
-
-    ifs.open(filename, std::ifstream::in);
-
-    if (ifs.is_open()) {
-        //first read the time stamp
-        getline(ifs, line);
-        stringstream strstr(line);
-        strstr >> starttime;
-
-        //second read peakx and peaky
-        getline(ifs, line);
-        stringstream strstr2(line);
-
-        vector<string> peakss;
-        while (strstr2.good()) {
-            string substr;
-            getline(strstr2, substr, ',');
-            peakss.push_back(substr);
-        }
-        for (auto &peak: peakss) {
-            int x, y;
-            stringstream(peak) >> x >> y;
-            addFPatch(x, y);
-        }
-
-        //now read all the cell variables
-        getline(ifs, line);
-        while (line.length()) {
-            rc = new Cell(*this); //temporary pointer to cell object
-            strstr.clear();
-            strstr.str(std::string());
-            strstr << line;
-            //read the straightforward cell variables from the line
-            strstr >> rc->sigma >> rc->tau >> rc->alive >> rc->time_since_birth >> rc->tvecx >> rc->tvecy >> rc->prevx
-                   >> rc->prevy >> rc->persdur
-                   >> rc->perstime >> rc->mu >> rc->chemmu >> rc->chemvecx >> rc->chemvecy >> rc->target_area
-                   >> rc->half_div_area >> rc->length >>
-                   rc->last_meal >> rc->food >> rc->growth >> rc->gextiming >> rc->dividecounter >> rc->grad_conc
-                   >> jkey >> jlock;
-            //read the key and lock into the cell
-            for (char &c: jkey) {
-                rc->jkey.push_back(c - '0');
-            }
-            for (char &c: jlock) {
-                rc->jlock.push_back(c - '0');
-            }
-            rc->meanx = 0.5 * par.sizex;
-            rc->meany = 0.5 * par.sizey;
-            cell.push_back(*rc);
-
-            //read the next line
-            getline(ifs, line);
-        }
-
-        //now read the planes
-        //hopefully, plane allocation already happened during dish creation
-        //this does assume size parameters match, so be careful!
-        getline(ifs, line);
-        while (line.length()) {
-            strstr.clear();
-            strstr.str(std::string());
-            strstr << line;
-            while (strstr >> pos) {
-                int wrong = CPM->SetNextSigma(pos);
-                if (wrong) {
-                    cerr << "ReadBackup error in reading CA plane. more values than fit in plane." << endl;
-                    exit(1);
-                }
-            }
-            getline(ifs, line);
-        }
-
-        //read the food intplane
-        getline(ifs, line);
-        while (line.length()) {
-            strstr.clear();
-            strstr.str(std::string());
-            strstr << line;
-            while (strstr >> pos) {
-                int wrong = ChemPlane->SetNextVal(pos);
-                if (wrong) {
-                    cerr << "ReadBackup error in reading ChemPlane plane. more values than fit in plane." << endl;
-                    exit(1);
-                }
-            }
-            getline(ifs, line);
-        }
-    } else {
-        cerr << "ReadBackup error: could not open file. exiting..." << endl;
-        exit(1);
-    }
-
-
-    return starttime;
-
 }
 
 int Dish::SizeX() const { return CPM->SizeX(); }
