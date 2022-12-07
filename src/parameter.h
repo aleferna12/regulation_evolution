@@ -97,7 +97,7 @@ public:
     double mindeathprob;
     double maxdeathprob;
     double fitscale;
-    char *datadir;
+    char *moviedir;
     char *networkdir;
     char *datafile;
     char *peaksdatafile;

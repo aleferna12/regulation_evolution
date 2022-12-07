@@ -93,7 +93,7 @@ Parameter::Parameter() {
     motiledeath = 1.0;
     dividingdeath = 0.;
     fitscale = 100.;
-    datadir = strdup("data_film");
+    moviedir = strdup("data_film");
     datafile = strdup("data_cellcount.txt");
     peaksdatafile = strdup("peaks_data.csv");
     save_text_file_period = 100;
@@ -158,8 +158,8 @@ void Parameter::CleanUp(void) {
         free(decay_rate);
     if (secr_rate)
         free(secr_rate);
-    if (datadir)
-        free(datadir);
+    if (moviedir)
+        free(moviedir);
     if (genomefile)
         free(genomefile);
     if (backupdir)
@@ -177,11 +177,11 @@ void Parameter::PrintWelcomeStatement(void) {
     cerr << "./cell_evolution path/to/data [optional arguments]" << endl;
     cerr << "Arguments: " << endl;
     cerr
-            << " -name path/to/name_for_all_output # gives a name to all output, alternative to -datafile -datadir -backupdir -networkdir -peaksdatafile"
+            << " -name path/to/name_for_all_output # gives a name to all output, alternative to -datafile -moviedir -backupdir -networkdir -peaksdatafile"
             << endl;
     cerr << " -datafile path/to/datafile # output file" << endl;
     cerr << " -peaksdatafile path/to/peaksdatafile # output file" << endl;
-    cerr << " -datadir path/to/datadir # output movie dir" << endl;
+    cerr << " -moviedir path/to/moviedir # output movie dir" << endl;
     cerr << " -backupdir path/to/backupdir # output backup dir" << endl;
     cerr << " -networkdir path/to/networkdir # output network dir" << endl;
     cerr << " -store # store pictures" << endl;
@@ -226,7 +226,7 @@ void Parameter::PrintWelcomeStatement(void) {
     cerr << " -target_area [INT_NUMBER] that (initial) target area of cells" << endl;
     cerr << " -init_cell_config [0-3] initial configuration of cells when placed in center, see ca.cpp" << endl;
     cerr << " -cell_placement [1-4] field position of cells, (0=center) see ca.cpp" << endl;
-    cerr << endl << "Will not execute if datafile and datadir already exist" << endl;
+    cerr << endl << "Will not execute if datafile and moviedir already exist" << endl;
     cerr << "Also, parameter file and Jtable should be in the same directory (unless you used option -keylockfilename)"
          << endl;
     cerr << "Have fun!" << endl;
@@ -262,19 +262,19 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             peaksdatafile = strdup(argv[i]);
             cerr << "New value for peaksdatafile: " << peaksdatafile << endl;
 //       exit(1);
-        } else if (0 == strcmp(argv[i], "-datadir")) {
+        } else if (0 == strcmp(argv[i], "-moviedir")) {
             i++;
             if (i == argc) {
-                cerr << "Something odd in datadir?" << endl;
+                cerr << "Something odd in moviedir?" << endl;
                 return 1;  //check if end of arguments, exit with error in case
             }
-            //strcpy(datadir, argv[i]);
-            free(datadir);
-            datadir = (char *) malloc(
+            //strcpy(moviedir, argv[i]);
+            free(moviedir);
+            moviedir = (char *) malloc(
                     5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
-            datadir = strdup(argv[i]);
+            moviedir = strdup(argv[i]);
 
-            cerr << "New value for datadir: " << datadir << endl;
+            cerr << "New value for moviedir: " << moviedir << endl;
 
         } else if (0 == strcmp(argv[i], "-backupdir")) {
             i++;
@@ -282,7 +282,7 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
                 cerr << "Something odd in backupdir?" << endl;
                 return 1;  //check if end of arguments, exit with error in case
             }
-            //strcpy(datadir, argv[i]);
+            //strcpy(moviedir, argv[i]);
             free(backupdir);
             backupdir = (char *) malloc(
                     5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
@@ -296,7 +296,7 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
                 cerr << "Something odd in networkdir?" << endl;
                 return 1;  //check if end of arguments, exit with error in case
             }
-            //strcpy(datadir, argv[i]);
+            //strcpy(moviedir, argv[i]);
             free(networkdir);
             networkdir = (char *) malloc(
                     5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
@@ -325,7 +325,7 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
                 cerr << "Something odd in genomefile?" << endl;
                 return 1;  //check if end of arguments, exit with error in case
             }
-            //strcpy(datadir, argv[i]);
+            //strcpy(moviedir, argv[i]);
             free(genomefile);
             genomefile = (char *) malloc(
                     5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
@@ -339,7 +339,7 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
                 cerr << "Something odd in competitionfile?" << endl;
                 return 1;  //check if end of arguments, exit with error in case
             }
-            //strcpy(datadir, argv[i]);
+            //strcpy(moviedir, argv[i]);
             free(competitionfile);
             competitionfile = (char *) malloc(
                     5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
@@ -613,7 +613,7 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             // I'm just going to work in c++ strings - a lot easier
             free(datafile);
             free(peaksdatafile);
-            free(datadir);
+            free(moviedir);
             free(backupdir);
             free(networkdir);
 
@@ -655,13 +655,13 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
 
             datafile = (char *) malloc(
                     50 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
-            datadir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
+            moviedir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             peaksdatafile = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             backupdir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             networkdir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             datafile = strdup(name_outfile.c_str());
             peaksdatafile = strdup(name_outfile.c_str());
-            datadir = strdup(name_moviedir.c_str());
+            moviedir = strdup(name_moviedir.c_str());
             backupdir = strdup(name_backupdir.c_str());
             networkdir = strdup(name_networkdir.c_str());
             // this took a while to code :P
@@ -742,7 +742,7 @@ void Parameter::Read(const char *filename) {
     motiledeath = fgetpar(fp, "motiledeath", 1.0, true);
     dividingdeath = fgetpar(fp, "dividingdeath", 0.0, true);
     fitscale = fgetpar(fp, "fitscale", 100., true);
-    datadir = sgetpar(fp, "datadir", "data_film", true);
+    moviedir = sgetpar(fp, "moviedir", "data_film", true);
     datafile = sgetpar(fp, "datafile", "data_cellcount.txt", true);
     peaksdatafile = sgetpar(fp, "peaksdatafile", "peaks_data.csv", true);
     save_text_file_period = igetpar(fp, "save_text_file_period", 100, true);
@@ -1022,8 +1022,8 @@ void Parameter::Write(ostream &os) const {
     os << " backupdir = " << backupdir << endl;
     os << " networkdir = " << networkdir << endl;
     os << " save_backup_period = " << save_backup_period << endl;
-    if (datadir)
-        os << " datadir = " << datadir << endl;
+    if (moviedir)
+        os << " moviedir = " << moviedir << endl;
     os << " howmany_makeit_for_nextgen = " << howmany_makeit_for_nextgen << endl;
     os << " popsize = " << popsize << endl;
     os << " the_line = " << the_line << endl;
