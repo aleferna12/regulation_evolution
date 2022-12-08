@@ -23,6 +23,8 @@ private:
     Dish *owner;
     BoundingBox grad_box{};
 
+    void checkEmpty();
+
 public:
     FoodPatch(Dish *owner, int id, int x, int y, int length, int food_per_spot);
 
@@ -72,6 +74,13 @@ public:
         sigma[i * length + j] = val;
     }
 
+    vector<int> getSigmasAsVector() {
+        vector<int> v {};
+        for (int i = 0; i < length * length; i ++)
+            v.push_back(sigma[i]);
+        return v;
+    }
+
     int getGlobalX(int i) const {
         return i + x;
     }
@@ -106,8 +115,6 @@ public:
     // If true, we can recycle the position on fpatches
     // If true, empty is also true
     bool removed = false;
-
-    void checkEmpty();
 };
 
 

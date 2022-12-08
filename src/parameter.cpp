@@ -121,6 +121,7 @@ Parameter::Parameter() {
     persduration = 0;
     scaling_cell_to_ca_time = 1;
     backupdir = strdup("backup");
+    datadir = strdup("data");
     networkdir = strdup("networks");
     save_backup_period = 0;
     init_chemmu = 0.;
@@ -164,6 +165,8 @@ void Parameter::CleanUp(void) {
         free(genomefile);
     if (backupdir)
         free(backupdir);
+    if (datadir)
+        free(datadir);
     if (networkdir)
         free(networkdir);
     if (backupfile)
@@ -177,12 +180,13 @@ void Parameter::PrintWelcomeStatement(void) {
     cerr << "./cell_evolution path/to/data [optional arguments]" << endl;
     cerr << "Arguments: " << endl;
     cerr
-            << " -name path/to/name_for_all_output # gives a name to all output, alternative to -datafile -moviedir -backupdir -networkdir -peaksdatafile"
+            << " -name path/to/name_for_all_output # gives a name to all output, alternative to -datafile -moviedir -backupdir -datadir -networkdir -peaksdatafile"
             << endl;
     cerr << " -datafile path/to/datafile # output file" << endl;
     cerr << " -peaksdatafile path/to/peaksdatafile # output file" << endl;
     cerr << " -moviedir path/to/moviedir # output movie dir" << endl;
     cerr << " -backupdir path/to/backupdir # output backup dir" << endl;
+    cerr << " -datadir path/to/datadir # output data dir" << endl;
     cerr << " -networkdir path/to/networkdir # output network dir" << endl;
     cerr << " -store # store pictures" << endl;
     cerr << " -keylockfilename path/to/keylockfilename" << endl;
@@ -285,10 +289,24 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             //strcpy(moviedir, argv[i]);
             free(backupdir);
             backupdir = (char *) malloc(
-                    5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
+                5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
             backupdir = strdup(argv[i]);
 
             cerr << "New value for backupdir: " << backupdir << endl;
+
+        } else if (0 == strcmp(argv[i], "-datadir")) {
+            i++;
+            if (i == argc) {
+                cerr << "Something odd in datadir?" << endl;
+                return 1;  //check if end of arguments, exit with error in case
+            }
+            //strcpy(moviedir, argv[i]);
+            free(datadir);
+            datadir = (char *) malloc(
+                5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
+            datadir = strdup(argv[i]);
+
+            cerr << "New value for datadir: " << datadir << endl;
 
         } else if (0 == strcmp(argv[i], "-networkdir")) {
             i++;
@@ -615,6 +633,7 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             free(peaksdatafile);
             free(moviedir);
             free(backupdir);
+            free(datadir);
             free(networkdir);
 
             string maybepath_and_name(argv[i]);
@@ -644,6 +663,10 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             name_backupdir.append("backup_");
             name_backupdir.append(name);
 
+            string name_datadir = dir;
+            name_datadir.append("data_");
+            name_datadir.append(name);
+
             string name_networkdir = dir;
             name_networkdir.append("networkdir_");
             name_networkdir.append(name);
@@ -651,6 +674,7 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             std::cerr << "New value for output filename: " << name_outfile << '\n';
             std::cerr << "New value for name_moviedir: " << name_moviedir << '\n';
             std::cerr << "New value for name_backupdir: " << name_backupdir << '\n';
+            std::cerr << "New value for name_datadir: " << name_datadir << '\n';
             std::cerr << "New value for name_networkdir: " << name_networkdir << '\n';
 
             datafile = (char *) malloc(
@@ -658,11 +682,13 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             moviedir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             peaksdatafile = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             backupdir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
+            datadir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             networkdir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             datafile = strdup(name_outfile.c_str());
             peaksdatafile = strdup(name_outfile.c_str());
             moviedir = strdup(name_moviedir.c_str());
             backupdir = strdup(name_backupdir.c_str());
+            datadir = strdup(name_datadir.c_str());
             networkdir = strdup(name_networkdir.c_str());
             // this took a while to code :P
         } else {
@@ -774,6 +800,7 @@ void Parameter::Read(const char *filename) {
     Jmed_rule_input = sgetpar(fp, "Jmed_rule_input", "0a0", true);
     scaling_cell_to_ca_time = igetpar(fp, "scaling_cell_to_ca_time", 1, true);
     backupdir = sgetpar(fp, "backupdir", "backup", true);
+    datadir = sgetpar(fp, "datadir", "data", true);
     networkdir = sgetpar(fp, "networkdir", "networks", true);
     save_backup_period = igetpar(fp, "save_backup_period", 0, true);
     howmany_makeit_for_nextgen = igetpar(fp, "howmany_makeit_for_nextgen", 1, true);
@@ -1020,6 +1047,7 @@ void Parameter::Write(ostream &os) const {
     os << " startmu = " << startmu << endl;
     os << " scaling_cell_to_ca_time = " << scaling_cell_to_ca_time << endl;
     os << " backupdir = " << backupdir << endl;
+    os << " datadir = " << datadir << endl;
     os << " networkdir = " << networkdir << endl;
     os << " save_backup_period = " << save_backup_period << endl;
     if (moviedir)

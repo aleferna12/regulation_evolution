@@ -136,6 +136,7 @@ public:
     double dividingdeath;
     int popsize;
     char *backupdir;
+    char *datadir;
     char *backupfile;
     int starttime;
     int save_backup_period;

@@ -540,10 +540,10 @@ public:
         return --target_area;
     }
 
-    //! This is the oldest ancestor of this cell in the current season
+    //! This is the oldest ancestor of this cell since last time we saved the ancestry
     inline int getAncestor() const { return ancestor; }
 
-    //! Resets the ancestor to the itself. Called at the beginning of a new season.
+    //! Resets the ancestor to the itself. Called whenever the ancestry information is saved.
     inline void resetAncestor() {
         ancestor = Sigma();
     }
@@ -1046,13 +1046,14 @@ protected:
 
     static int maxtau;
 
-    // Amount: the number of Cell instantations, INCLUDING copies
+    // Amount: the number of Cell instantiations, INCLUDING copies
     // For internal use only.
     // Reading amount is NOT the way to get the number of cells!!
     static int amount;
     static int capacity;
     static int maxsigma; // the last cell identity number given out
 
+    // TODO: Change to saving a vector of ancestors (see notes on notebook)
     // This is the oldest ancestor of this cell in the current season
     int ancestor;
     // indices of mother and daughter

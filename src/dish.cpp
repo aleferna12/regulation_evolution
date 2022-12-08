@@ -28,29 +28,23 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <set>
 #include <algorithm>
 #include <fstream>
-#include <string.h>
-#include <sstream>
-#include <iterator>
+#include <cstring>
 #include <iostream>
-#include <errno.h>
-#include <math.h>
+#include <cmath>
 #include "dish.h"
 #include "sticky.h"
-#include "parameter.h"
 #include "info.h"
 #include "crash.h"
 #include "pde.h"
 #include "intplane.h"
 #include "misc.h"
-#include <chrono>
-
-using namespace std::chrono;
+#include <nlohmann/json.hpp>
 
 #define EXTERNAL_OFF
 
-extern Parameter par;
-
 using namespace std;
+using json = nlohmann::json;
+
 
 Dish::Dish() {
     sizex = par.sizex;
@@ -469,12 +463,6 @@ void Dish::ChemPlot(Graphics *g) const {
                     g->Point(colori, 2 * x + 1, 2 * y);
                     g->Point(colori, 2 * x, 2 * y + 1);
                     g->Point(colori, 2 * x + 1, 2 * y + 1);
-                } else { ;
-                    // it's getting a bit cumbersome to look at this, for now I'll do without
-                    // g->Point(60+ChemPlane->Sigma(x,y),2*x,2*y);
-                    // g->Point(60+ChemPlane->Sigma(x,y),2*x+1,2*y);
-                    // g->Point(60+ChemPlane->Sigma(x,y),2*x,2*y+1);
-                    // g->Point(60+ChemPlane->Sigma(x,y),2*x+1,2*y+1);
                 }
             }
 }
@@ -503,12 +491,12 @@ void Dish::Plot(Graphics *g, int colour) {
     if (par.startmu > 0) {
         for (auto &c: cell) {
             if (c.sigma == 0 or !c.alive) continue;
-            int x1 = 2 * c.meanx;
-            int y1 = 2 * c.meany;
-            int x2 = 2 * (c.meanx + 5 * c.tvecx);
+            int x1 = 2 * int(c.meanx);
+            int y1 = 2 * int(c.meany);
+            int x2 = 2 * int(c.meanx + 5 * c.tvecx);
             if (x2 >= 2 * par.sizex) x2 = 2 * par.sizex; //if too large or too small, truncate it
             else if (x2 < 0) x2 = 0;
-            int y2 = 2 * (c.meany + 5 * c.tvecy);
+            int y2 = 2 * int(c.meany + 5 * c.tvecy);
             if (y2 >= 2 * par.sizey) y2 = 2 * par.sizey;
             else if (y2 < 0) y2 = 0;
             //now we have to wrap this
@@ -1048,6 +1036,127 @@ void Dish::SaveAdheringNeighbours(int Time) {
     ofs.close();
 }
 
+int Dish::SaveDataJSON(int Time) {
+    json output;
+    output["time"] = Time;
+
+    int n_fpatches = 0;
+    for (auto &fp : fpatches) {
+        if (fp.empty)
+            continue;
+        output["foodpatches"]["x"].push_back(fp.getX());
+        output["foodpatches"]["y"].push_back(fp.getY());
+        output["foodpatches"]["length"].push_back(fp.getLength());
+        output["foodpatches"]["food_left"].push_back(fp.getFoodLeft());
+        output["foodpatches"]["sigma_array"].push_back(fp.getSigmasAsVector());
+        ++n_fpatches;
+    }
+    output["foodpatches"]["number"] = n_fpatches;
+
+    // If this becomes dynamic we will have to make a few modifications
+    output["cells"]["innodes"]["number"] = 2;
+    output["cells"]["regnodes"]["number"] = 3;
+    output["cells"]["outnodes"]["number"] = 1;
+    int n_cells = 0;
+    for (auto &c : cell) {
+        if (not c.AliveP() or c.Sigma() == 0)
+            continue;
+        ++n_cells;
+        output["cells"]["sigma"].push_back(c.sigma);
+        output["cells"]["tau"].push_back(c.tau);
+        output["cells"]["time_since_birth"].push_back(c.time_since_birth);
+        output["cells"]["tvecx"].push_back(c.tvecx);
+        output["cells"]["tvecy"].push_back(c.tvecy);
+        output["cells"]["prevx"].push_back(c.prevx);
+        output["cells"]["prevy"].push_back(c.prevy);
+        output["cells"]["persdur"].push_back(c.persdur);
+        output["cells"]["perstime"].push_back(c.perstime);
+        output["cells"]["mu"].push_back(c.mu);
+        output["cells"]["half_div_area"].push_back(c.half_div_area);
+        output["cells"]["length"].push_back(c.length);
+        output["cells"]["last_meal"].push_back(c.last_meal);
+        output["cells"]["food"].push_back(c.food);
+        output["cells"]["growth"].push_back(c.growth);
+        output["cells"]["gextiming"].push_back(c.gextiming);
+        output["cells"]["dividecounter"].push_back(c.dividecounter);
+        output["cells"]["grad_conc"].push_back(c.grad_conc);
+        output["cells"]["meanx"].push_back(c.getXpos());
+        output["cells"]["meany"].push_back(c.getYpos());
+        output["cells"]["chemvecx"].push_back(c.getChemXvec());
+        output["cells"]["chemvecy"].push_back(c.getChemYvec());
+        output["cells"]["chemmu"].push_back(c.chemmu);
+        output["cells"]["times_divided"].push_back(c.TimesDivided());
+        output["cells"]["colour"].push_back(c.Colour());
+        output["cells"]["medJ"].push_back(c.getVJ()[0]);
+
+
+        output["cells"]["innodes"]["scale"].push_back(c.genome.inputscale);
+        vector<double> reg_thres {};
+        vector<vector<double>> reg_w_in {};
+        vector<vector<double>> reg_w_reg {};
+        for (auto &g : c.genome.regnodes) {
+            reg_thres.push_back(g.threshold);
+            reg_w_in.push_back(g.w_innode);
+            reg_w_reg.push_back(g.w_regnode);
+        }
+        output["cells"]["regnodes"]["threshold"].push_back(reg_thres);
+        output["cells"]["regnodes"]["in_weights"].push_back(reg_w_in);
+        output["cells"]["regnodes"]["reg_weights"].push_back(reg_w_reg);
+        vector<double> out_thres {};
+        vector<vector<double>> out_w_reg {};
+        for (auto &g : c.genome.outputnodes) {
+            out_thres.push_back(g.threshold);
+            out_w_reg.push_back(g.w_regnode);
+        }
+        output["cells"]["outnodes"]["threshold"].push_back(out_thres);
+        output["cells"]["outnodes"]["reg_weights"].push_back(out_w_reg);
+
+        vector<int> neigh_sigmas {};
+        vector<int> neigh_Js {};
+        for (auto &n : c.neighbours) {
+            if (not cell[n.first].AliveP())
+                continue;
+            neigh_sigmas.push_back(n.first);
+            neigh_Js.push_back(c.getVJ()[n.first]);
+        }
+        output["cells"]["neighbours"].push_back(neigh_sigmas);
+        output["cells"]["neighbourJs"].push_back(neigh_Js);
+
+        stringstream jkey;
+        for (auto x : c.jkey)
+            jkey << x;
+        stringstream jlock;
+        for (auto x : c.jlock)
+            jlock << x;
+        output["cells"]["jkey"].push_back(jkey.str());
+        output["cells"]["jlock"].push_back(jlock.str());
+
+        output["cells"]["ancestor"].push_back(c.getAncestor());
+        // You should reset the ancestor every time you save it
+        c.resetAncestor();
+    }
+    output["cells"]["number"] = n_cells;
+
+    char filename[300];
+    sprintf(filename, "%s/t%09d.txt", par.datadir, Time);
+
+    ofstream file(filename);
+    if (not file) {
+        return 1;
+    }
+    file << output.dump() << endl;
+    file.close();
+
+    return 0;
+}
+
+
+// TODO: Add all information here
+//       First season time, then peaks, then cells as follows:
+//          Attr: <cell attributes that are necessary to reconstruct the cell>
+//          Genome: <cell genome>
+//          Neighbours: <cell neighbours>
+//       Then save the CPM lattice
 void Dish::MakeBackup(int Time) {
     std::ofstream ofs;
 
@@ -1111,6 +1220,7 @@ void Dish::MakeBackup(int Time) {
         }
     }
     ofs << endl;
+    ofs.close();
 }
 
 
@@ -1255,7 +1365,7 @@ int Dish::ReadCompetitionFile(char *filename) {
             c.setGTiming((int) (RANDOM() * par.scaling_cell_to_ca_time));
             c.dividecounter = 0;
             c.SetTargetArea(par.target_area); //sets target area
-            if (c.getXpos() <= par.sizex / 2) {
+            if (c.getXpos() <= par.sizex / 2.) {
                 c.ReadGenomeFromFile(grnfile1);
                 //read the key and lock into the cell
                 for (char &k: key1) {

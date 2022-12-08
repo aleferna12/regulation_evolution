@@ -234,16 +234,11 @@ TIMESTEP {
                     std::cerr << "Time = " << i << '\n';
                     std::cerr << "End of season: there are " << dish->CountCells() << " cells" << '\n';
                     dish->SaveNetworks(i);
-                    dish->SaveAdheringNeighbours(i);
-                    dish->SaveAncestry(i);
+                    // Had to be disabled as not to call resetAncestor and screw with SaveDataJSON
+                    // dish->SaveAncestry(i);
                     //dish->RemoveMotileCells(par.popsize); //kill all nondividing cells and more if necessary; for noncontinuous reproduction
                     std::cerr << "After remove there are " << dish->CountCells() << " cells" << '\n';
 
-                    //  dish->ReproduceEndOfSeason(); //replenish the population; for noncontinuous sim
-                    //cout<<"done reproducing"<<endl;
-                    //dish->UpdateCellParameters2();//update cell status; for noncontinuous sim
-                    //cout<<"done updating"<<endl;
-                    dish->updateChemPlane(); //this has to be last thing to do here
                     std::cout << "End of season: Gradient switching at time (+/- 25 MCS) = " << i << '\n';
                     if (strlen(par.competitionfile)) {
                         //check if one of the groups is extinct. if yes, end simulation
@@ -296,13 +291,13 @@ TIMESTEP {
         if (par.store && !(i % par.storage_stride)) {
             if (par.readcolortable) {
                 char fname[300];
-                sprintf(fname, "%s/angle%09d.png", par.datadir, i);
+                sprintf(fname, "%s/angle%09d.png", par.moviedir, i);
                 BeginScene(); //this is an empty function for X11
                 ClearImage(); //
                 dish->Plot(this, 1); //everything contained here
                 EndScene();
                 Write(fname);
-                sprintf(fname, "%s/order%09d.png", par.datadir, i);
+                sprintf(fname, "%s/order%09d.png", par.moviedir, i);
                 BeginScene(); //this is an empty function for X11
                 ClearImage(); //
                 dish->Plot(this, 2); //everything contained here
@@ -311,7 +306,7 @@ TIMESTEP {
                 Write(fname); //FIXED SO THAT CODE AND IMAGE MATCH!
             } else {
                 char fname[300];
-                sprintf(fname, "%s/tau%09d.png", par.datadir, i);
+                sprintf(fname, "%s/tau%09d.png", par.moviedir, i);
                 // BeginScene(); //this is an empty function for X11
                 ClearImage();
                 dish->Plot(this, 0); // this is g //everything contained here
@@ -329,6 +324,7 @@ TIMESTEP {
         }
         // TO FILE FOR BACKUP
         if (!(i % par.save_backup_period)) {
+            dish->SaveDataJSON(i);
             dish->MakeBackup(i); //saves all permanent data
         }
 
@@ -388,8 +384,9 @@ int main(int argc, char *argv[]) {
              << endl << endl;
 
         //check if directory for movies exists, create it if not, exit otherwise
-        DoesDirExistsIfNotMakeit(par.datadir);  //see output.cpp
+        DoesDirExistsIfNotMakeit(par.moviedir);  //see output.cpp
         DoesDirExistsIfNotMakeit(par.backupdir);  //see output.cpp
+        DoesDirExistsIfNotMakeit(par.datadir);  //see output.cpp
         DoesDirExistsIfNotMakeit(par.networkdir);  //see output.cpp
 
         //check if data file exists, if not exit

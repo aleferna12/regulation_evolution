@@ -187,6 +187,8 @@ public:
     IntPlane *FoodPlane;
     CellularPotts *CPM;
 
+    int SaveDataJSON(int Time);
+
 protected:
     //! The cells in the Petri dish; accessible to derived classes
     std::vector<Cell> cell;
@@ -197,6 +199,7 @@ protected:
     vector<FoodPatch> fpatches;
 
     void FoodPlot(Graphics *g, int colori) const;
+
 };
 
 #define INIT void Dish::Init(void)
