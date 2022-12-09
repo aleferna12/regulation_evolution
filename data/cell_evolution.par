@@ -143,10 +143,8 @@ scatter_start = true
 motiledeath = 0.5
 dividingdeath = 0.5
 
-#scaling of death rates at end of season: for gradientbased cell death
-mindeathprob = 0.05
-maxdeathprob = 1.0
-fitscale = 40
+# death rate for random killing of cells every 25 MCS
+deathprob = 0.0001
 
 # PDE parameters (irrelevant for this simulation)
 n_chem = 0

@@ -94,9 +94,7 @@ public:
     int divdur; //duration once a cell starts division program
     double mu;
     double mustd;
-    double mindeathprob;
-    double maxdeathprob;
-    double fitscale;
+    double deathprob;
     char *moviedir;
     char *networkdir;
     char *datafile;

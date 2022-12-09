@@ -696,7 +696,7 @@ void Dish::UpdateCellParameters(int Time) {
             // TODO: Make parameters
             // TODO: Maybe synchronizing death like that is not a good idea and we should use c.time_since_birth to circumvent that
             int death_period = 25;
-            if (c->food <= 0 or (Time % death_period == 0 and RANDOM() < 0.0001)) {
+            if (c->food <= 0 or (Time % death_period == 0 and RANDOM() < par.deathprob)) {
                 to_kill.push_back(c->Sigma());
                 continue;
             }
@@ -794,44 +794,6 @@ int Dish::addFPatch(int x, int y) {
     }
     fpatches.emplace_back(this, fpatches.size(), x, y, par.foodpatchlength, par.foodperspot);
     return fpatches.back().getId();
-}
-
-//death based on distance from the gradient until popsize is restored
-void Dish::GradientBasedCellKill(int popsize) {
-    std::vector<pair<int, double> > sig_dist;
-    double distance, rn;
-    double deathprob;
-    //double fitness, totalfit, thisfit;
-    //totalfit=0.;
-    //int removei,removesig;
-
-
-    //determine final distance of those cells that are alive
-    for (auto &c: cell) {
-        if (c.Sigma() > 0 && c.AliveP()) {
-            distance = closestFPatch((int) round(c.getXpos()), (int) round(c.getYpos())).second;
-            //fitness=1./(1.+pow(distance,3.)/par.fitscale); //for relative version
-            //totalfit+=fitness; //for relative version
-            //sig_dist.push_back(make_pair(c.Sigma(),totalfit)); //for relative version
-            deathprob = par.mindeathprob + (par.maxdeathprob - par.mindeathprob) * pow(distance, 3.) /
-                                           (pow(par.fitscale, 3.) + pow(distance, 3.));
-            //cerr<<"distance is "<<distance<<", deathprob is "<<deathprob<<endl;
-            sig_dist.emplace_back(c.Sigma(), deathprob);
-        }
-    }
-
-    //this is a nonrelative version, based on an individually-determined death rate
-    for (auto &n: sig_dist) {
-        rn = RANDOM();//should be between 0 and 1
-
-        if (rn < n.second && cell[n.first].AliveP()) {
-            CPM->killCell(n.first);
-        } else if (cell[n.first].AliveP()) {
-            cell[n.first].ResetTimesDivided();
-            cell[n.first].ClearGenomeState();
-            cell[n.first].setTau(1);
-        }
-    }
 }
 
 int Dish::CountCells() const {

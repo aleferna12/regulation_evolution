@@ -86,13 +86,11 @@ Parameter::Parameter() {
     mustd = 0.1;
     divtime = 50;
     divdur = 10;
-    mindeathprob = 0.;
-    maxdeathprob = 1.;
+    deathprob = 0.0001;
     scatter_cells = false;
     scatter_start = true;
     motiledeath = 1.0;
     dividingdeath = 0.;
-    fitscale = 100.;
     moviedir = strdup("data_film");
     datafile = strdup("data_cellcount.txt");
     peaksdatafile = strdup("peaks_data.csv");
@@ -614,14 +612,6 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             }
             gradnoise = atof(argv[i]);
             cerr << "New value for gradnoise: " << gradnoise << endl;
-        } else if (0 == strcmp(argv[i], "-fitscale")) {
-            i++;
-            if (i == argc) {
-                cerr << "Something odd in fitscale?" << endl;
-                return 1;  //check if end of arguments, exit with error in case
-            }
-            fitscale = atof(argv[i]);
-            cerr << "New value for fitscale: " << fitscale << endl;
         } else if (0 == strcmp(argv[i], "-name")) {
             i++;
             if (i == argc) {
@@ -761,13 +751,11 @@ void Parameter::Read(const char *filename) {
     mustd = fgetpar(fp, "mustd", 0., true);
     divtime = igetpar(fp, "divtime", 200, true);
     divdur = igetpar(fp, "divdur", 50, true);
-    mindeathprob = fgetpar(fp, "mindeathprob", 0., true);
-    maxdeathprob = fgetpar(fp, "maxdeathprob", 1.0, true);
+    deathprob = fgetpar(fp, "deathprob", 0.0001, true);
     scatter_cells = bgetpar(fp, "scatter_cells", false, true);
     scatter_start = bgetpar(fp, "scatter_start", true, true);
     motiledeath = fgetpar(fp, "motiledeath", 1.0, true);
     dividingdeath = fgetpar(fp, "dividingdeath", 0.0, true);
-    fitscale = fgetpar(fp, "fitscale", 100., true);
     moviedir = sgetpar(fp, "moviedir", "data_film", true);
     datafile = sgetpar(fp, "datafile", "data_cellcount.txt", true);
     peaksdatafile = sgetpar(fp, "peaksdatafile", "peaks_data.csv", true);
@@ -1011,9 +999,7 @@ void Parameter::Write(ostream &os) const {
     os << " mustd = " << mustd << endl;
     os << " divtime= " << divtime << endl;
     os << " divdur = " << divdur << endl;
-    os << " fitscale = " << fitscale << endl;
-    os << " mindeathprob = " << mindeathprob << endl;
-    os << " maxdeathprob = " << maxdeathprob << endl;
+    os << " deathprob = " << deathprob << endl;
     os << " initial_food_amount = " << initial_food_amount << endl;
     os << " food_influx_location = " << food_influx_location << endl;
     os << " metabperiod = " << metabperiod << endl;

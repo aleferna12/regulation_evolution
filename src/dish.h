@@ -108,8 +108,6 @@ public:
 
     void UpdateCellParameters(int Time);
 
-    void GradientBasedCellKill(int currentsize);
-
     //! \brief. Returns the summed area of all cells in the dish
     int Area() const;
 
