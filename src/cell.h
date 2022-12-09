@@ -288,7 +288,7 @@ public:
         jlock = std::move(setjlock);
     }
 
-    inline vector<int> getVJ() {
+    inline vector<int> getVJ() const {
         return vJ;
     }
 

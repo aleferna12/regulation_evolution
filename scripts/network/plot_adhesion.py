@@ -126,12 +126,11 @@ def parse_adhesion_info(datafile, season_filter: List[int] = None):
         text = file.read()
 
     matches = re.finditer(
-        r"^(\d+) (\d+) [\d. -]+ ([01]{24}) ([01]{24}) [\d.]+ 0 (\d+) ((?:\d+ \d+ )*)",
+        r"^(\d+) (\d+) [\d. -]+ ([01]{24}) ([01]{24}) [.\d]+ 0 (\d+) ((?:\d+ \d+ )*)",
         text,
         flags=re.MULTILINE
     )
     for m in matches:
-        print(m.group())
         season_i = int(m.group(1))
         if season_i not in season_filter:
             continue
@@ -178,8 +177,6 @@ def get_medium_gamma(key_locks, ja, jam, f_arr, n=None):
     gammas = []
     for k1, l1 in key_locks:
         for k2, l2 in key_locks:
-            # print(np.all(k1 == k2) and np.all(l1 == l2))
-            #print(l1, k1, l2, k2)
             gammas.append(gamma(ja, jam, f_arr, l1, k1, l2, k2))
 
     return np.mean(gammas)
@@ -195,7 +192,6 @@ def cell_med_j(jam, f_arr, key):
 
 
 def gamma(ja, jam, f_seq, l1, k1, l2, k2):
-    # print(cell_med_j(jam, f_seq, k1), cell_cell_j(ja, l1, k1, l2, k2))
     return cell_med_j(jam, f_seq, k1) - cell_cell_j(ja, l1, k1, l2, k2) / 2
 
 

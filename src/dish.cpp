@@ -693,7 +693,8 @@ void Dish::UpdateCellParameters(int Time) {
         if (c->AliveP()) {
             // Mark cell to die
             // Only calculate prob every 25 mcs
-            // TODO: Make parameter
+            // TODO: Make parameters
+            // TODO: Maybe synchronizing death like that is not a good idea and we should use c.time_since_birth to circumvent that
             int death_period = 25;
             if (c->food <= 0 or (Time % death_period == 0 and RANDOM() < 0.0001)) {
                 to_kill.push_back(c->Sigma());
@@ -1036,10 +1037,36 @@ void Dish::SaveAdheringNeighbours(int Time) {
     ofs.close();
 }
 
-int Dish::SaveDataJSON(int Time) {
+void Dish::SaveLattice(int Time) const {
+    char filename[300];
+    sprintf(filename, "%s/t%09d.csv", par.backupdir, Time);
+
+    ofstream file(filename);
+    if (not file){
+        cerr << "Could not open file: " << filename << endl;
+    }
+
+    for (int x = 1; x < par.sizex - 1; x++) {
+        for (int y = 1; y < par.sizey - 1; y++) {
+            int isigma = CPM->Sigma(x, y);
+            // Skips dead cells (necessary because we are not saving info about them so cant interpret these sigmas)
+            if (not cell[isigma].AliveP()) {
+                isigma = 0;
+            }
+            file << isigma;
+            if (y < par.sizey - 2)
+                file << ",";
+        }
+        file << endl;
+    }
+}
+
+int Dish::SaveCellData(int Time) {
     json output;
     output["time"] = Time;
 
+    // The floting point precision is 10 digits, but nlohmann doesn't allow to reduce that
+    // If files become too big we will have to think about string manipulation or changing the json lib to rapidjson
     int n_fpatches = 0;
     for (auto &fp : fpatches) {
         if (fp.empty)
@@ -1138,16 +1165,16 @@ int Dish::SaveDataJSON(int Time) {
     output["cells"]["number"] = n_cells;
 
     char filename[300];
-    sprintf(filename, "%s/t%09d.txt", par.datadir, Time);
+    sprintf(filename, "%s/t%09d.json", par.datadir, Time);
 
     ofstream file(filename);
     if (not file) {
+        cerr << "Could not open file: " << filename << endl;
         return 1;
     }
-    file << output.dump() << endl;
-    file.close();
+    file << output.dump(4) << endl;
 
-    return 0;
+    return n_cells;
 }
 
 

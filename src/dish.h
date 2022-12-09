@@ -187,7 +187,10 @@ public:
     IntPlane *FoodPlane;
     CellularPotts *CPM;
 
-    int SaveDataJSON(int Time);
+    //! Saves information about the cells as a JSON file in the directory specified by par.datadir
+    int SaveCellData(int Time);
+
+    void SaveLattice(int Time) const;
 
 protected:
     //! The cells in the Petri dish; accessible to derived classes

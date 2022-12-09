@@ -316,15 +316,16 @@ TIMESTEP {
         }
         // TO FILE FOR TEXT
         if (!(i % par.save_text_file_period)) {
-            int popsize = dish->SaveData(i); //saves data to text
-            if (0 == popsize) {
-                cerr << "Global extinction after" << i << "time steps, simulation terminates now" << endl;
+            int popsize = dish->SaveCellData(i);
+            dish->SaveData(i); //saves data to text
+            if (not popsize) {
+                cerr << "Global extinction after " << i << " time steps, simulation terminates now" << endl;
                 exit(0);
             }
         }
         // TO FILE FOR BACKUP
         if (!(i % par.save_backup_period)) {
-            dish->SaveDataJSON(i);
+            dish->SaveLattice(i);
             dish->MakeBackup(i); //saves all permanent data
         }
 
