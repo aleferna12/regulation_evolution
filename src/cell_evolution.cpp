@@ -20,7 +20,6 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 02110-1301 USA
 
 */
-#include <stdio.h>
 
 #ifndef __APPLE__
 
@@ -31,15 +30,11 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <iostream>
 #include <cstdlib>
 #include <algorithm>
-#include <fstream>
 #include <cstring>
-#include <math.h>
 #include "dish.h"
 #include "random.h"
 #include "cell.h"
 #include "info.h"
-#include "parameter.h"
-#include "sqr.h"
 #include "output.h"
 
 #ifdef QTGRAPHICS
@@ -49,10 +44,6 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "x11graph.h"
 
 #endif
-
-#include <chrono>
-
-using namespace std::chrono;
 
 //NOTE: The bookkeeping for cell contacts is very extensive:
 // When cells are initially placed (call dish->InitContactLength afterwards)
@@ -73,7 +64,7 @@ INIT {
         // THIS IS JUST FOR EXPERIMENTS
         //CPM->PlaceOneCellsAtXY(par.sizex/2,par.sizey/2., par.size_init_cells, 1);
         //CPM->PlaceOneCellsAtXY(par.sizex/4,par.sizey/4, par.size_init_cells, 2);
-        if (!strlen(par.backupfile) && !strlen(par.competitionfile)) {
+        if (!strlen(par.latticefile) && !strlen(par.competitionfile)) {
             //THIS IS TO USE FOR NORMAL INITIALISATION
             if (par.scatter_start) {
                 CPM->PlaceCellsRandomly(par.n_init_cells, par.size_init_cells);
@@ -106,7 +97,7 @@ INIT {
                     //c.setGTiming(0);
                     c.dividecounter = 0;
                     c.SetTargetArea(
-                            par.target_area); //sets target area because in dividecells the new target area = area
+                        par.target_area); //sets target area because in dividecells the new target area = area
                     //initialise a cell's timing for gex Updating
                     //c.setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
                     //creates a cell's genome, either randomly or from file
@@ -124,6 +115,7 @@ INIT {
             for (int i = 0; i < par.foodpatches; ++i)
                 addRandomFPatch();
             cout << "done with food" << endl;
+            updateChemPlane();
             //run CPM for some time without persistent motion
             for (int init_time = 0; init_time < 10; init_time++) {
                 CPM->AmoebaeMove2(PDEfield);  //this changes neighs
@@ -150,31 +142,13 @@ INIT {
             par.starttime = 0;
         } else {
             cout << "Reading backfile" << endl;
-            cout << "backup file is " << par.backupfile << endl;
-            par.starttime = ReadBackup(par.backupfile);
-            int networktime = par.starttime;
-            // TODO: Fix sometimes this causes seg errors because there is no networkfile to read at this time point
-            //now get the right network into the cells. first find which time point to use
-            while (networktime % par.season_duration) {
-                networktime += 1000;
-            }
-            cout << "Reading networks" << endl;
-            char fname[300];
-            for (auto &c: cell) {
-                if (c.Sigma() && c.AliveP()) {
-                    //c.setGTiming((int)(RANDOM()*par.scaling_cell_to_ca_time));
-                    //c.dividecounter=0;
-                    //c.SetTargetArea(par.target_area); //sets target area because in dividecells the new target area = area
-                    sprintf(fname, "%s/t%010d_c%04d.txt", par.genomefile, networktime, c.Sigma());
-                    c.ReadGenomeFromFile(fname);
-                }
-            }
+            cout << "backup file is " << par.latticefile << endl;
+            par.starttime = ReadCellData();
+            ReadLattice();
             CPM->InitializeEdgeList(false);
             InitContactLength();
             InitVectorJ();
         }
-        // Initialize gradients
-        updateChemPlane();
     } catch (const char *error) {
         cerr << "Caught exception\n";
         std::cerr << error << "\n";
@@ -190,8 +164,6 @@ TIMESTEP {
         static Dish *dish = new Dish(); //here ca planes and cells are constructed
         static Info *info = new Info(*dish, *this);
         static int i = par.starttime; //starttime is set in Dish. Not the prettiest solution, but let's hope it works.
-        static int sum = 0, nr = 0;
-        int extinct = 0;
 
         if (!(i % 100000)) cerr << "TIME: " << i << endl;
 
@@ -212,7 +184,6 @@ TIMESTEP {
 
         dish->UpdateNeighDuration();
 
-        //Change the season and do evolution
         if (i % 25 == 0) {
             double emptiness = 1. - dish->getFoodLeft() / (double) par.maxfood;
             if (emptiness >= 0) {
@@ -227,22 +198,12 @@ TIMESTEP {
 
             if (par.evolsim) {
                 if (i > par.starttime && i % par.season_duration == 0) {
-                    // cout <<" duration average "<<sum/nr<<endl;
-                    //reproduce people based on fitness criterion
-                    //remove random cells until popsize is back to normal
-                    //reset food and gradient
                     std::cerr << "Time = " << i << '\n';
-                    std::cerr << "End of season: there are " << dish->CountCells() << " cells" << '\n';
-                    dish->SaveNetworks(i);
-                    // Had to be disabled as not to call resetAncestor and screw with SaveDataJSON
-                    // dish->SaveAncestry(i);
-                    //dish->RemoveMotileCells(par.popsize); //kill all nondividing cells and more if necessary; for noncontinuous reproduction
-                    std::cerr << "After remove there are " << dish->CountCells() << " cells" << '\n';
+                    std::cerr << "There are " << dish->CountCells() << " cells" << '\n';
 
-                    std::cout << "End of season: Gradient switching at time (+/- 25 MCS) = " << i << '\n';
                     if (strlen(par.competitionfile)) {
                         //check if one of the groups is extinct. if yes, end simulation
-                        extinct = dish->CountCellGroups();
+                        bool extinct = dish->CountCellGroups();
 
                         if (extinct) {
                             std::cout << "Group extinct after " << i << " time steps. ending simulation..." << endl;
@@ -315,18 +276,16 @@ TIMESTEP {
             }
         }
         // TO FILE FOR TEXT
-        if (!(i % par.save_text_file_period)) {
+        if (!(i % par.save_data_period)) {
             int popsize = dish->SaveCellData(i);
-            dish->SaveData(i); //saves data to text
             if (not popsize) {
                 cerr << "Global extinction after " << i << " time steps, simulation terminates now" << endl;
                 exit(0);
             }
         }
         // TO FILE FOR BACKUP
-        if (!(i % par.save_backup_period)) {
+        if (!(i % par.save_lattice_period)) {
             dish->SaveLattice(i);
-            dish->MakeBackup(i); //saves all permanent data
         }
 
         i++;
@@ -386,15 +345,8 @@ int main(int argc, char *argv[]) {
 
         //check if directory for movies exists, create it if not, exit otherwise
         DoesDirExistsIfNotMakeit(par.moviedir);  //see output.cpp
-        DoesDirExistsIfNotMakeit(par.backupdir);  //see output.cpp
+        DoesDirExistsIfNotMakeit(par.latticedir);  //see output.cpp
         DoesDirExistsIfNotMakeit(par.datadir);  //see output.cpp
-        DoesDirExistsIfNotMakeit(par.networkdir);  //see output.cpp
-
-        //check if data file exists, if not exit
-        if (FileExistsP(par.datafile)) {
-            cerr << "File " << par.datafile << " already exists, simulation not starting" << endl;
-            exit(1);
-        }
 
         if (par.periodic_boundaries && par.lambda2 > 0.) {
             cerr << "main(): Error. Cannot have wrapped periodic boundaries and lambda2>0" << endl;

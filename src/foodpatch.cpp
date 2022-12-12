@@ -7,16 +7,17 @@
 #include "dish.h"
 
 FoodPatch::FoodPatch(
-        Dish *owner,
-        int id,
-        int x,
-        int y,
-        int length,
-        int food_per_spot
+    Dish *owner,
+    int id,
+    int x,
+    int y,
+    int length,
+    int food_per_spot,
+    int *sigmas
 ) : id(id), x(x), y(y), length(length), food_per_spot(food_per_spot), owner(owner) {
     // TODO: Add some random noise so patches look more interesting
     sigma = new int[length * length]{};
-    initSigmas();
+    initSigmas(sigmas);
 }
 
 FoodPatch::FoodPatch(
@@ -60,22 +61,27 @@ FoodPatch::~FoodPatch() {
 }
 
 // Initialize the FoodPatch on both the FoodPlane of dish and its internal plane
-void FoodPatch::initSigmas() {
+void FoodPatch::initSigmas(int *sigmas) {
     int minx = max(2, x);
     int miny = max(2, y);
     int maxx = min(owner->SizeX() - 2, x + length);
     int maxy = min(owner->SizeY() - 2, y + length);
     for (int gi = minx; gi < maxx; ++gi) {
+        int i = getLocalX(gi);
         // Even though the actual border is only 0 and size - 1, for some reason
         // AmoebaMove also prevents cells from reaching pos 1 and size - 2
         // which is why this loop is smaller
         for (int gj = miny; gj < maxy; ++gj) {
-            int i = getLocalX(gi);
-            if (owner->FoodPlane->Sigma(gi, gj) == -1) {
-                int j = getLocalY(gj);
+            int j = getLocalY(gj);
+            int value;
+            if (sigmas == nullptr)
+                value = food_per_spot;
+            else
+                value = sigmas[i * length + j];
+            if (owner->FoodPlane->Sigma(gi, gj) == -1 and value != 0) {
                 owner->FoodPlane->setSigma(gi, gj, id);
-                setSigma(i, j, food_per_spot);
-                food_left += food_per_spot;
+                setSigma(i, j, value);
+                food_left += value;
             }
         }
     }

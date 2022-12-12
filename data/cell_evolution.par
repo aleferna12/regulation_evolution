@@ -99,7 +99,7 @@ scaling_cell_to_ca_time = 20  # scaling factor for: freq update food plane, pred
 howmany_makeit_for_nextgen = 100
 popsize = 100
 
-n_init_cells = 10
+n_init_cells = 15
 size_init_cells = 25
 
 #Initial configuration of cells, see ca.cpp placecellsorderly()
@@ -134,9 +134,7 @@ evolreg = true
 mu = 0.1
 mustd = 0.05
 
-#should cells be scattered at the end of the season?
-scatter_cells = false
-#should cells be scattered at the start of the first season?
+#should cells be scattered at the start of the simulation?
 scatter_start = true
 
 #death rates for different cell types
@@ -211,13 +209,10 @@ graphics = false
 store = true
 divisioncolour = true
 moviedir = ../runs/data_film2
-save_text_file_period = 10000
+save_data_period = 30000
 datafile = ../runs/data_cellcount.txt
-save_backup_period = 30000
-backupdir = ../runs/backup
-networkdir = ../runs/networks
-# Deprecated
-peaksdatadir = ../runs/peaks_data.csv
+save_lattice_period = 30000
+latticedir = ../runs/backup
 
 #if readcolortable is true, it reads the color table from "colortable_filename", otherwise it generates a pretty one internally
 readcolortable = false

@@ -26,11 +26,11 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <vector>
 #include <list>
 #include <set>
-#include <algorithm>
 #include <fstream>
 #include <cstring>
 #include <iostream>
 #include <cmath>
+#include <nlohmann/json.hpp>
 #include "dish.h"
 #include "sticky.h"
 #include "info.h"
@@ -38,7 +38,6 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "pde.h"
 #include "intplane.h"
 #include "misc.h"
-#include <nlohmann/json.hpp>
 
 #define EXTERNAL_OFF
 
@@ -507,23 +506,6 @@ void Dish::Plot(Graphics *g, int colour) {
     }
 }
 
-
-int Dish::WritePeaksData() const {
-    int num_rows = 5;
-    ofstream file;
-    file.open(par.peaksdatafile);
-    for (int i = 0; i < num_rows; i++) {
-        int row = i * sizex / num_rows + 1;
-        for (int col = 1; col < sizey - 1; col++) {
-            file << ChemPlane->Sigma(row, col) << ",";
-        }
-        file << endl;
-    }
-    file.close();
-    return 0;
-}
-
-
 void Dish::CellsEat(int time) {
     for (auto &c: cell) {
         if (c.AliveP()) {
@@ -788,7 +770,7 @@ int Dish::addFPatch(int x, int y) {
     for (auto &fp: fpatches) {
         if (fp.removed) {
             int id = fp.getId();
-            fpatches[id] = FoodPatch(this, id, x, y, fp.getLength(), fp.getFoodPerSpot());
+            fpatches[id] = FoodPatch(this, id, x, y, fp.getLength(), fp.getFoodPerSpot(), nullptr);
             return id;
         }
     }
@@ -887,121 +869,32 @@ double Dish::FoodAtPosition(int x, int y) {
     return dfood;
 }
 
-int Dish::SaveData(int Time) {
-    std::ofstream ofs;
-    ofs.open(par.datafile, std::ofstream::out | std::ofstream::app);
-    int pred = 0, prey = 0;
-
-    //make file where evey so often you dump everybody - EASY!
-    // save for each indiv
-    // Time pred/prey key lock J with medium, neighbors
-    auto icell = std::begin(cell);
-    ++icell;  //discard first element of vector cell, which is medium
-    for (auto end = std::end(cell); icell != end; ++icell) {
-        if (!icell->AliveP()) continue; //if cell is not alive, continue
-
-        int itau = icell->getTau();
-        int isigma = icell->Sigma();
-        if (itau == PREDATOR) pred++;
-        else if (itau == PREY) prey++;
-        else {
-            cerr << "SaveData(): Error. Got cell that is neither prey, nor predator" << endl;
-            exit(1);
-        }
-        ofs << Time << " " << isigma << " " << itau << " "; // Time now, tau of me
-        ofs << icell->getXpos() << " " << icell->getYpos() << " ";
-        ofs << icell->getXvec() << " " << icell->getYvec() << " ";
-        ofs << icell->getChemXvec() << " " << icell->getChemYvec() << " ";
-        ofs << icell->mu << " ";
-        ofs << icell->chemmu << " ";
-        ofs << icell->TimesDivided() << " ";
-        ofs << icell->grad_conc << " ";
-        // ... and all this seems to work fine. except here...
-        ofs << icell->GetTimeSinceBirth() << " "; // used to be date of birth, now it's time since birth
-        ofs << icell->Colour() << " "; //used during competition experiments, to delineate groups
-        for (auto x: icell->getJkey()) ofs << x; //key
-        ofs << " ";
-        for (auto x: icell->getJlock()) ofs << x; //lock
-        ofs << " ";
-
-        //ofs << icell->getXvec()<<" "<< icell->getYvec()<<" ";
-        ofs << icell->food << " ";
-
-        // Get adhesion with medium
-        ofs << 0 << " " << icell->getVJ()[0] << " ";
-        // YOU SHOULD KEEP THIS AT THE LAST, because it's not constant
-        for (auto i: icell->neighbours) {
-            if (i.first == 0)
-                continue;
-            int thisj = icell->getVJ()[i.first];
-            ofs << cell[i.first].getTau() << " " << thisj << " "; // get J val with neighbors
-        }
-
-        ofs << endl;
+void Dish::ReadLattice() {
+    if (cell.size() <= 1) {
+        cerr << "ReadLattice must be called after ReadCellData";
+        exit(1);
     }
 
-    //prey=CountPreys();
-    //pred=CountPredators();
-    //save
-    //ofs << Time << " "<< prey << " " << pred << endl;
-    ofs.flush();
-    ofs.close();
-    return (prey + pred);
-}
-
-void Dish::SaveAncestry(int Time) {
-    char fname[300];
-    sprintf(fname, "%s/anc_t%010d.txt", par.networkdir, Time);
-
-    ofstream ofs;
-    ofs.open(fname, ofstream::out);
-    for (auto &c: cell) {
-        if (c.AliveP()) {
-            ofs << c.Sigma() << " " << c.getAncestor() << endl;
-            c.resetAncestor();
+    ifstream file(par.latticefile);
+    if (not file.is_open()) {
+        cerr << "Error opening file " << par.latticefile << endl;
+        exit(1);
+    }
+    string line;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        while (ss.good()) {
+            string val;
+            getline(ss, val, ',');
+            CPM->SetNextSigma(stoi(val));
         }
     }
-}
-
-void Dish::SaveNetworks(int Time) {
-    char fname[300];
-
-    for (auto &c: cell) {
-        if (c.AliveP()) {
-            sprintf(fname, "%s/t%010d_c%04d.txt", par.networkdir, Time, c.Sigma());
-            c.WriteGenomeToFile(fname);
-        }
-    }
-}
-
-void Dish::SaveAdheringNeighbours(int Time) {
-    char fname[300];
-    sprintf(fname, "%s/neigh_t%010d.txt", par.networkdir, Time);
-
-    ofstream ofs;
-    ofs.open(fname, ofstream::out);
-    for (auto &c: cell) {
-        if (c.AliveP()) {
-            ofs << c.Sigma();
-            double e_medium = c.EnergyDifference(cell[0]);
-            for (auto &n: c.neighbours) {
-                // Skip cell 0 (medium)
-                if (n.first == 0)
-                    continue;
-                Cell &nc = cell[n.first];
-                double e_cell = c.EnergyDifference(nc) / 2.0;
-                if (nc.AliveP() and e_cell <= e_medium)
-                    ofs << " " << nc.Sigma();
-            }
-            ofs << endl;
-        }
-    }
-    ofs.close();
+    updateChemPlane();
 }
 
 void Dish::SaveLattice(int Time) const {
     char filename[300];
-    sprintf(filename, "%s/t%09d.csv", par.backupdir, Time);
+    sprintf(filename, "%s/t%09d.csv", par.latticedir, Time);
 
     ofstream file(filename);
     if (not file){
@@ -1023,9 +916,121 @@ void Dish::SaveLattice(int Time) const {
     }
 }
 
+int Dish::ReadCellData() {
+    ifstream file(par.datafile);
+    if (not file.is_open()) {
+        cerr << "Error opening file " << par.datafile << endl;
+        exit(1);
+    }
+    json input_json = json::parse(file);
+
+    // Read peak information
+    auto fp_attrs = input_json.at("foodpatches");
+    int n_fpatches = fp_attrs.at("number").get<int>();
+    // When fpi was called 'i' I got the weirdest bug ever (it wouldn't increment in the loop)
+    for (int i = 0; i < n_fpatches; i++) {
+        int length = fp_attrs.at("length").at(i).get<int>();
+        auto sigma_array = fp_attrs.at("sigma_array").at(i).get<vector<int>>();
+        FoodPatch fp{
+            this,
+            i,
+            fp_attrs.at("x").at(i).get<int>(),
+            fp_attrs.at("y").at(i).get<int>(),
+            length,
+            par.foodperspot,
+            &sigma_array[0]
+        };
+        fp.updateFoodLeft();
+        fpatches.push_back(fp);
+    }
+
+    // Read cell information
+    auto c_attrs = input_json.at("cells");
+    int n_cells = c_attrs.at("number").get<int>();
+    int innr = c_attrs.at("innodes").at("number").get<int>();
+    int regnr = c_attrs.at("regnodes").at("number").get<int>();
+    int outnr = c_attrs.at("outnodes").at("number").get<int>();
+
+    int last_sigma = 0;
+    for (int i = 0; i < n_cells; ++i) {
+        int sigma = c_attrs.at("sigma").at(i).get<int>();
+        Cell *rc;
+        // We need to preserve relation cell[sigma] = rc->sigma so dead cells need to be recreated
+        for (int j = 1; j < sigma - last_sigma; ++j) {
+            rc = new Cell(*this);
+            rc->alive = false;
+            rc->sigma = last_sigma + j;
+            rc->jkey = vector<int>(par.key_lock_length, -1);
+            rc->jlock = vector<int>(par.key_lock_length, -1);
+            cell.push_back(*rc);
+        }
+        last_sigma = sigma;
+        rc = new Cell(*this);
+        rc->alive = true;
+        rc->sigma = sigma;
+        rc->tau = c_attrs.at("tau").at(i).get<int>();
+        rc->time_since_birth = c_attrs.at("time_since_birth").at(i).get<int>();
+        rc->tvecx = c_attrs.at("tvecx").at(i).get<double>();
+        rc->tvecy = c_attrs.at("tvecy").at(i).get<double>();
+        rc->prevx = c_attrs.at("prevx").at(i).get<double>();
+        rc->prevy = c_attrs.at("prevy").at(i).get<double>();
+        rc->persdur = c_attrs.at("persdur").at(i).get<int>();
+        rc->perstime = c_attrs.at("perstime").at(i).get<int>();
+        rc->mu = c_attrs.at("mu").at(i).get<double>();
+        rc->half_div_area = c_attrs.at("half_div_area").at(i).get<int>();
+        rc->length = c_attrs.at("length").at(i).get<double>();
+        rc->last_meal = c_attrs.at("last_meal").at(i).get<int>();
+        rc->food = c_attrs.at("food").at(i).get<double>();
+        rc->growth = c_attrs.at("growth").at(i).get<double>();
+        rc->gextiming = c_attrs.at("gextiming").at(i).get<int>();
+        rc->dividecounter = c_attrs.at("dividecounter").at(i).get<int>();
+        rc->grad_conc = c_attrs.at("grad_conc").at(i).get<int>();
+        rc->meanx = c_attrs.at("meanx").at(i).get<double>();
+        rc->meany = c_attrs.at("meany").at(i).get<double>();
+        rc->chemvecx = c_attrs.at("chemvecx").at(i).get<double>();
+        rc->chemvecy = c_attrs.at("chemvecy").at(i).get<double>();
+        rc->target_area = c_attrs.at("target_area").at(i).get<int>();
+        rc->chemmu = c_attrs.at("chemmu").at(i).get<double>();
+        rc->times_divided = c_attrs.at("times_divided").at(i).get<int>();
+        rc->colour = c_attrs.at("colour").at(i).get<int>();
+        rc->ancestor = c_attrs.at("ancestor").at(i).get<int>();
+
+        rc->genome.innr = innr;
+        rc->genome.regnr = regnr;
+        rc->genome.outnr = outnr;
+        Gene *gene;
+        for (int gi = 0; gi < regnr; ++gi) {
+            gene = new Gene(1, gi + innr, innr, regnr);
+            gene->threshold = c_attrs.at("regnodes").at("threshold").at(i).at(gi).get<double>();
+            gene->w_innode = c_attrs.at("regnodes").at("w_innode").at(i).at(gi).get<vector<double>>();
+            gene->w_regnode = c_attrs.at("regnodes").at("w_regnode").at(i).at(gi).get<vector<double>>();
+            rc->genome.regnodes.push_back(*gene);
+        }
+        for (int gi = 0; gi < outnr; ++gi) {
+            gene = new Gene(2, gi + innr + regnr, innr, regnr);
+            gene->threshold = c_attrs.at("outnodes").at("threshold").at(i).at(gi).get<double>();
+            gene->w_regnode = c_attrs.at("outnodes").at("w_regnode").at(i).at(gi).get<vector<double>>();
+            rc->genome.outputnodes.push_back(*gene);
+        }
+        rc->genome.inputscale = c_attrs.at("innodes").at("scale").at(i).get<vector<double>>();
+
+        string jkey = c_attrs.at("jkey").at(i).get<string>();
+        string jlock = c_attrs.at("jlock").at(i).get<string>();
+        for (char &c : jkey) {
+            rc->jkey.push_back(c - '0');
+        }
+        for (char &c : jlock) {
+            rc->jlock.push_back(c - '0');
+        }
+
+        cell.push_back(*rc);
+    }
+    return input_json.at("time").get<int>();
+}
+
 int Dish::SaveCellData(int Time) {
-    json output;
-    output["time"] = Time;
+    json output_json;
+    output_json["time"] = Time;
 
     // The floting point precision is 10 digits, but nlohmann doesn't allow to reduce that
     // If files become too big we will have to think about string manipulation or changing the json lib to rapidjson
@@ -1033,53 +1038,58 @@ int Dish::SaveCellData(int Time) {
     for (auto &fp : fpatches) {
         if (fp.empty)
             continue;
-        output["foodpatches"]["x"].push_back(fp.getX());
-        output["foodpatches"]["y"].push_back(fp.getY());
-        output["foodpatches"]["length"].push_back(fp.getLength());
-        output["foodpatches"]["food_left"].push_back(fp.getFoodLeft());
-        output["foodpatches"]["sigma_array"].push_back(fp.getSigmasAsVector());
+        output_json["foodpatches"]["x"].push_back(fp.getX());
+        output_json["foodpatches"]["y"].push_back(fp.getY());
+        output_json["foodpatches"]["length"].push_back(fp.getLength());
+        output_json["foodpatches"]["food_left"].push_back(fp.getFoodLeft());
+        // Saving each sigma might be overkill, if we ever run sims with many fpatches we can disable this and
+        // just reconstruct them from x and y positions (or even just randomly reinitialize n fpaches)
+        output_json["foodpatches"]["sigma_array"].push_back(fp.getSigmasAsVector());
         ++n_fpatches;
     }
-    output["foodpatches"]["number"] = n_fpatches;
+    output_json["foodpatches"]["number"] = n_fpatches;
 
     // If this becomes dynamic we will have to make a few modifications
-    output["cells"]["innodes"]["number"] = 2;
-    output["cells"]["regnodes"]["number"] = 3;
-    output["cells"]["outnodes"]["number"] = 1;
+    output_json["cells"]["innodes"]["number"] = 2;
+    output_json["cells"]["regnodes"]["number"] = 3;
+    output_json["cells"]["outnodes"]["number"] = 1;
     int n_cells = 0;
     for (auto &c : cell) {
         if (not c.AliveP() or c.Sigma() == 0)
             continue;
         ++n_cells;
-        output["cells"]["sigma"].push_back(c.sigma);
-        output["cells"]["tau"].push_back(c.tau);
-        output["cells"]["time_since_birth"].push_back(c.time_since_birth);
-        output["cells"]["tvecx"].push_back(c.tvecx);
-        output["cells"]["tvecy"].push_back(c.tvecy);
-        output["cells"]["prevx"].push_back(c.prevx);
-        output["cells"]["prevy"].push_back(c.prevy);
-        output["cells"]["persdur"].push_back(c.persdur);
-        output["cells"]["perstime"].push_back(c.perstime);
-        output["cells"]["mu"].push_back(c.mu);
-        output["cells"]["half_div_area"].push_back(c.half_div_area);
-        output["cells"]["length"].push_back(c.length);
-        output["cells"]["last_meal"].push_back(c.last_meal);
-        output["cells"]["food"].push_back(c.food);
-        output["cells"]["growth"].push_back(c.growth);
-        output["cells"]["gextiming"].push_back(c.gextiming);
-        output["cells"]["dividecounter"].push_back(c.dividecounter);
-        output["cells"]["grad_conc"].push_back(c.grad_conc);
-        output["cells"]["meanx"].push_back(c.getXpos());
-        output["cells"]["meany"].push_back(c.getYpos());
-        output["cells"]["chemvecx"].push_back(c.getChemXvec());
-        output["cells"]["chemvecy"].push_back(c.getChemYvec());
-        output["cells"]["chemmu"].push_back(c.chemmu);
-        output["cells"]["times_divided"].push_back(c.TimesDivided());
-        output["cells"]["colour"].push_back(c.Colour());
-        output["cells"]["medJ"].push_back(c.getVJ()[0]);
+        output_json["cells"]["sigma"].push_back(c.sigma);
+        output_json["cells"]["tau"].push_back(c.tau);
+        output_json["cells"]["time_since_birth"].push_back(c.time_since_birth);
+        output_json["cells"]["tvecx"].push_back(c.tvecx);
+        output_json["cells"]["tvecy"].push_back(c.tvecy);
+        output_json["cells"]["prevx"].push_back(c.prevx);
+        output_json["cells"]["prevy"].push_back(c.prevy);
+        output_json["cells"]["persdur"].push_back(c.persdur);
+        output_json["cells"]["perstime"].push_back(c.perstime);
+        output_json["cells"]["mu"].push_back(c.mu);
+        output_json["cells"]["half_div_area"].push_back(c.half_div_area);
+        output_json["cells"]["length"].push_back(c.length);
+        output_json["cells"]["last_meal"].push_back(c.last_meal);
+        output_json["cells"]["food"].push_back(c.food);
+        output_json["cells"]["growth"].push_back(c.growth);
+        output_json["cells"]["gextiming"].push_back(c.gextiming);
+        output_json["cells"]["dividecounter"].push_back(c.dividecounter);
+        output_json["cells"]["grad_conc"].push_back(c.grad_conc);
+        output_json["cells"]["meanx"].push_back(c.meanx);
+        output_json["cells"]["meany"].push_back(c.meany);
+        output_json["cells"]["chemvecx"].push_back(c.chemvecx);
+        output_json["cells"]["chemvecy"].push_back(c.chemvecy);
+        output_json["cells"]["target_area"].push_back(c.target_area);
+        output_json["cells"]["chemmu"].push_back(c.chemmu);
+        output_json["cells"]["times_divided"].push_back(c.times_divided);
+        output_json["cells"]["colour"].push_back(c.colour);
+        output_json["cells"]["ancestor"].push_back(c.ancestor);
+        // You should reset the ancestor every time you save it
+        c.resetAncestor();
+        output_json["cells"]["medJ"].push_back(c.vJ[0]);
 
-
-        output["cells"]["innodes"]["scale"].push_back(c.genome.inputscale);
+        output_json["cells"]["innodes"]["scale"].push_back(c.genome.inputscale);
         vector<double> reg_thres {};
         vector<vector<double>> reg_w_in {};
         vector<vector<double>> reg_w_reg {};
@@ -1088,17 +1098,17 @@ int Dish::SaveCellData(int Time) {
             reg_w_in.push_back(g.w_innode);
             reg_w_reg.push_back(g.w_regnode);
         }
-        output["cells"]["regnodes"]["threshold"].push_back(reg_thres);
-        output["cells"]["regnodes"]["in_weights"].push_back(reg_w_in);
-        output["cells"]["regnodes"]["reg_weights"].push_back(reg_w_reg);
+        output_json["cells"]["regnodes"]["threshold"].push_back(reg_thres);
+        output_json["cells"]["regnodes"]["w_innode"].push_back(reg_w_in);
+        output_json["cells"]["regnodes"]["w_regnode"].push_back(reg_w_reg);
         vector<double> out_thres {};
         vector<vector<double>> out_w_reg {};
         for (auto &g : c.genome.outputnodes) {
             out_thres.push_back(g.threshold);
             out_w_reg.push_back(g.w_regnode);
         }
-        output["cells"]["outnodes"]["threshold"].push_back(out_thres);
-        output["cells"]["outnodes"]["reg_weights"].push_back(out_w_reg);
+        output_json["cells"]["outnodes"]["threshold"].push_back(out_thres);
+        output_json["cells"]["outnodes"]["w_regnode"].push_back(out_w_reg);
 
         vector<int> neigh_sigmas {};
         vector<int> neigh_Js {};
@@ -1108,8 +1118,8 @@ int Dish::SaveCellData(int Time) {
             neigh_sigmas.push_back(n.first);
             neigh_Js.push_back(c.getVJ()[n.first]);
         }
-        output["cells"]["neighbours"].push_back(neigh_sigmas);
-        output["cells"]["neighbourJs"].push_back(neigh_Js);
+        output_json["cells"]["neighbours"].push_back(neigh_sigmas);
+        output_json["cells"]["neighbourJs"].push_back(neigh_Js);
 
         stringstream jkey;
         for (auto x : c.jkey)
@@ -1117,14 +1127,10 @@ int Dish::SaveCellData(int Time) {
         stringstream jlock;
         for (auto x : c.jlock)
             jlock << x;
-        output["cells"]["jkey"].push_back(jkey.str());
-        output["cells"]["jlock"].push_back(jlock.str());
-
-        output["cells"]["ancestor"].push_back(c.getAncestor());
-        // You should reset the ancestor every time you save it
-        c.resetAncestor();
+        output_json["cells"]["jkey"].push_back(jkey.str());
+        output_json["cells"]["jlock"].push_back(jlock.str());
     }
-    output["cells"]["number"] = n_cells;
+    output_json["cells"]["number"] = n_cells;
 
     char filename[300];
     sprintf(filename, "%s/t%09d.json", par.datadir, Time);
@@ -1134,170 +1140,9 @@ int Dish::SaveCellData(int Time) {
         cerr << "Could not open file: " << filename << endl;
         return 1;
     }
-    file << output.dump(4) << endl;
+    file << output_json.dump() << endl;
 
     return n_cells;
-}
-
-
-// TODO: Add all information here
-//       First season time, then peaks, then cells as follows:
-//          Attr: <cell attributes that are necessary to reconstruct the cell>
-//          Genome: <cell genome>
-//          Neighbours: <cell neighbours>
-//       Then save the CPM lattice
-void Dish::MakeBackup(int Time) {
-    std::ofstream ofs;
-
-    //filename, c++11 strings are concatenated by summing them
-    // but because we live in the middle age we are going to use sprintf;
-    char filename[300];
-    sprintf(filename, "%s/backup_t%09d.txt", par.backupdir, Time);
-
-    ofs.open(filename, std::ofstream::out | std::ofstream::app);
-    ofs << Time << endl;
-    // Can't check using id because first few patches could be empty
-    bool first = true;
-    for (auto &fp: fpatches) {
-        if (not fp.empty) {
-            if (not first) {
-                ofs << ",";
-            } else {
-                first = false;
-            }
-            ofs << fp.getX() << " " << fp.getY();
-        }
-    }
-    ofs << endl;
-    //each cell's variables are written on a single line.
-    //don't store area or neighbours: can be inferred from the stored plane
-    for (auto &c: cell) {
-        if (c.sigma == 0) continue;
-        ofs << c.sigma << " " << c.tau << " " << c.alive << " " << c.time_since_birth << " " << c.tvecx << " "
-            << c.tvecy << " " << c.prevx << " " << c.prevy << " " << c.persdur << " " << c.perstime << " " << c.mu
-            << " " << c.chemmu << " " << c.chemvecx << " " << c.chemvecy << " " << c.target_area << " "
-            << c.half_div_area << " " << c.length << " " << c.last_meal << " " << c.food << " " << c.growth << " "
-            << c.gextiming << " " << c.dividecounter << " " << c.grad_conc << " ";
-        for (auto x: c.jkey) ofs << x; //key
-        ofs << " ";
-        for (auto x: c.jlock) ofs << x; //lock
-        ofs << endl;
-    }
-
-    // particle plane
-    // ca plane
-    // posix files can be at most 2048 characters long on this laptop (LINE_MAX)
-    // so a big field cannot be represented in );an obvious way,
-    // however we can save some lines if we print a few sigmas in the same line
-    //(anyway, field size is already specified above)... but howmany?
-    // well, conceivably I will never run anything larger than in the thousands by thousands pixels
-    // and so population size should be less than 10^5 <- so 5 characters+1 space,
-    // so I can print 100 sigmas, which should be max 6*100=600 << 2048
-    // ok!
-    int counter = 0;
-    int maxperline = 100;
-    ofs << endl;
-    for (int x = 1; x < par.sizex - 1; x++) {
-        for (int y = 1; y < par.sizey - 1; y++) {
-            int isigma = CPM->Sigma(x, y);
-            ofs << isigma << " ";
-            counter++;
-            if (counter >= maxperline) {
-                ofs << endl;
-                counter = 0;
-            }
-        }
-    }
-    ofs << endl;
-    ofs.close();
-}
-
-
-int Dish::ReadBackup(char *filename) {
-    //for file reading
-    std::ifstream ifs;
-    string line;
-    Cell *rc;
-    //return value: time at which the simulation restarts
-    int starttime;
-
-    string jkey, jlock; //read them first as a string, then put into vector?
-    int pos;
-
-    ifs.open(filename, std::ifstream::in);
-
-    if (ifs.is_open()) {
-        //first read the time stamp
-        getline(ifs, line);
-        stringstream strstr(line);
-        strstr >> starttime;
-
-        //second read peakx and peaky
-        getline(ifs, line);
-        stringstream strstr2(line);
-        vector<string> peakss;
-        while (strstr2.good()) {
-            string substr;
-            getline(strstr2, substr, ',');
-            peakss.push_back(substr);
-        }
-        for (auto &peak: peakss) {
-            int x, y;
-            stringstream(peak) >> x >> y;
-            addFPatch(x, y);
-        }
-
-        //now read all the cell variables
-        getline(ifs, line);
-        while (line.length()) {
-            rc = new Cell(*this); //temporary pointer to cell object
-            strstr.clear();
-            strstr.str(std::string());
-            strstr << line;
-            //read the straightforward cell variables from the line
-            strstr >> rc->sigma >> rc->tau >> rc->alive >> rc->time_since_birth >> rc->tvecx >> rc->tvecy >> rc->prevx
-                   >> rc->prevy >> rc->persdur >> rc->perstime >> rc->mu >> rc->chemmu >> rc->chemvecx >> rc->chemvecy
-                   >> rc->target_area >> rc->half_div_area >> rc->length >> rc->last_meal >> rc->food >> rc->growth
-                   >> rc->gextiming >> rc->dividecounter >> rc->grad_conc >> jkey >> jlock;
-            //read the key and lock into the cell
-            for (char &c : jkey) {
-                rc->jkey.push_back(c - '0');
-            }
-            for (char &c : jlock) {
-                rc->jlock.push_back(c - '0');
-            }
-            rc->meanx = 0.5 * par.sizex;
-            rc->meany = 0.5 * par.sizey;
-            cell.push_back(*rc);
-
-            //read the next line
-            getline(ifs, line);
-        }
-
-        //now read the planes
-        //hopefully, plane allocation already happened during dish creation
-        //this does assume size parameters match, so be careful!
-        getline(ifs, line);
-        while (line.length()) {
-            strstr.clear();
-            strstr.str(std::string());
-            strstr << line;
-            while (strstr >> pos) {
-                int wrong = CPM->SetNextSigma(pos);
-                if (wrong) {
-                    cerr << "ReadBackup error in reading CA plane. more values than fit in plane." << endl;
-                    exit(1);
-                }
-            }
-            getline(ifs, line);
-        }
-    } else {
-        cerr << "ReadBackup error: could not open file. exiting..." << endl;
-        exit(1);
-    }
-
-    return starttime;
-
 }
 
 

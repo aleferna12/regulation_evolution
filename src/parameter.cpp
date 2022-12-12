@@ -87,14 +87,13 @@ Parameter::Parameter() {
     divtime = 50;
     divdur = 10;
     deathprob = 0.0001;
-    scatter_cells = false;
     scatter_start = true;
     motiledeath = 1.0;
     dividingdeath = 0.;
     moviedir = strdup("data_film");
     datafile = strdup("data_cellcount.txt");
-    peaksdatafile = strdup("peaks_data.csv");
-    save_text_file_period = 100;
+    strdup("peaks_data.csv");
+    save_data_period = 100;
     food_influx_location = strdup("nowhere");
     metabperiod = 20;
     growth = 0;
@@ -118,12 +117,11 @@ Parameter::Parameter() {
     startmu = 0.0;
     persduration = 0;
     scaling_cell_to_ca_time = 1;
-    backupdir = strdup("backup");
+    latticedir = strdup("lattice");
     datadir = strdup("data");
-    networkdir = strdup("networks");
-    save_backup_period = 0;
+    save_lattice_period = 0;
     init_chemmu = 0.;
-    backupfile = strdup("");
+    latticefile = strdup("");
     starttime = 0;
 
     howmany_makeit_for_nextgen = 30;
@@ -148,7 +146,7 @@ Parameter::~Parameter() {
 
 }
 
-void Parameter::CleanUp(void) {
+void Parameter::CleanUp() const {
     if (Jtable)
         free(Jtable);
     if (diff_coeff)
@@ -161,29 +159,26 @@ void Parameter::CleanUp(void) {
         free(moviedir);
     if (genomefile)
         free(genomefile);
-    if (backupdir)
-        free(backupdir);
+    if (latticedir)
+        free(latticedir);
     if (datadir)
         free(datadir);
-    if (networkdir)
-        free(networkdir);
-    if (backupfile)
-        free(backupfile);
+    if (latticefile)
+        free(latticefile);
 
 }
 
-void Parameter::PrintWelcomeStatement(void) {
+void Parameter::PrintWelcomeStatement() {
     cerr << "CellEvol: v0.something (very much a prototype)" << endl;
     cerr << "Usage is: " << endl;
     cerr << "./cell_evolution path/to/data [optional arguments]" << endl;
     cerr << "Arguments: " << endl;
     cerr
-            << " -name path/to/name_for_all_output # gives a name to all output, alternative to -datafile -moviedir -backupdir -datadir -networkdir -peaksdatafile"
+            << " -name path/to/name_for_all_output # gives a name to all output, alternative to -datafile -moviedir -latticedir -datadir"
             << endl;
     cerr << " -datafile path/to/datafile # output file" << endl;
-    cerr << " -peaksdatafile path/to/peaksdatafile # output file" << endl;
     cerr << " -moviedir path/to/moviedir # output movie dir" << endl;
-    cerr << " -backupdir path/to/backupdir # output backup dir" << endl;
+    cerr << " -latticedir path/to/latticedir # output backup lattice dir" << endl;
     cerr << " -datadir path/to/datadir # output data dir" << endl;
     cerr << " -networkdir path/to/networkdir # output network dir" << endl;
     cerr << " -store # store pictures" << endl;
@@ -207,7 +202,7 @@ void Parameter::PrintWelcomeStatement(void) {
     cerr << " -noevolreg # No evolution of regulation parameters" << endl;
     cerr << " -scatter # spread cells after a season" << endl;
     cerr << " -nodivisions # do not execute divisions -> number of cells remains the same" << endl;
-    cerr << " -backupfile path/to/backupfile # to start simulation from backup" << endl;
+    cerr << " -latticefile path/to/latticefile # to start simulation from backup" << endl;
     cerr << " -season [INT_NUMBER] # season duration" << endl;
     cerr << " -metabperiod [INT_NUMBER] how often we deduce 1 food of each cell in MCS" << endl;
     cerr << " -gradscale [FLOAT_NUMBER] slope of the gradient (in percent units)" << endl;
@@ -251,19 +246,6 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             datafile = strdup(argv[i]);
             cerr << "New value for datafile: " << datafile << endl;
 //       exit(1);
-        } else if (0 == strcmp(argv[i], "-peaksdatafile")) {
-            i++;
-            if (i == argc) {
-                cerr << "Something odd in peaksdatafile?" << endl;
-                return 1;  //check if end of arguments, exit with error in case
-            }
-            //strcpy(datafile, argv[i]); //this can be buggy because it copies over a dynamically allocated char* (datafile) that can be a lot shorter
-            free(peaksdatafile);
-            peaksdatafile = (char *) malloc(
-                    5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
-            peaksdatafile = strdup(argv[i]);
-            cerr << "New value for peaksdatafile: " << peaksdatafile << endl;
-//       exit(1);
         } else if (0 == strcmp(argv[i], "-moviedir")) {
             i++;
             if (i == argc) {
@@ -278,19 +260,19 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
 
             cerr << "New value for moviedir: " << moviedir << endl;
 
-        } else if (0 == strcmp(argv[i], "-backupdir")) {
+        } else if (0 == strcmp(argv[i], "-latticedir")) {
             i++;
             if (i == argc) {
-                cerr << "Something odd in backupdir?" << endl;
+                cerr << "Something odd in latticedir?" << endl;
                 return 1;  //check if end of arguments, exit with error in case
             }
             //strcpy(moviedir, argv[i]);
-            free(backupdir);
-            backupdir = (char *) malloc(
+            free(latticedir);
+            latticedir = (char *) malloc(
                 5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
-            backupdir = strdup(argv[i]);
+            latticedir = strdup(argv[i]);
 
-            cerr << "New value for backupdir: " << backupdir << endl;
+            cerr << "New value for latticedir: " << latticedir << endl;
 
         } else if (0 == strcmp(argv[i], "-datadir")) {
             i++;
@@ -313,12 +295,6 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
                 return 1;  //check if end of arguments, exit with error in case
             }
             //strcpy(moviedir, argv[i]);
-            free(networkdir);
-            networkdir = (char *) malloc(
-                    5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
-            networkdir = strdup(argv[i]);
-
-            cerr << "New value for networkdir: " << networkdir << endl;
 
 
         } else if (0 == strcmp(argv[i], "-keylockfilename")) {
@@ -411,18 +387,18 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             }
             persduration = atoi(argv[i]);
             cerr << "New value for persistence of movement: " << persduration << endl;
-        } else if (0 == strcmp(argv[i], "-backupfile")) {
+        } else if (0 == strcmp(argv[i], "-latticefile")) {
             i++;
             if (i == argc) {
-                cerr << "Something odd in backupfile?" << endl;
+                cerr << "Something odd in latticefile?" << endl;
                 return 1;  //check if end of arguments, exit with error in case
             }
-            free(backupfile);
-            backupfile = (char *) malloc(
+            free(latticefile);
+            latticefile = (char *) malloc(
                     5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
-            backupfile = strdup(argv[i]);
+            latticefile = strdup(argv[i]);
 
-            cerr << "New value for backupfile: " << backupfile << endl;
+            cerr << "New value for latticefile: " << latticefile << endl;
         } else if (0 == strcmp(argv[i], "-popsize")) {
             i++;
             if (i == argc) {
@@ -477,9 +453,6 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             evolsim = false;
             cerr << "No evolution in this simulation (sim ends when [howmany_makeit_for_nextgen] cells pass [the_line])"
                  << endl;
-        } else if (0 == strcmp(argv[i], "-scatter")) {
-            scatter_cells = true;
-            cerr << "Cells will be scattered at the end of the season, before reproduction" << endl;
         } else if (0 == strcmp(argv[i], "-noscatter_start")) {
             scatter_start = false;
             cerr << "Cells will not be scattered at the start of the first season" << endl;
@@ -620,11 +593,9 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             }
             // I'm just going to work in c++ strings - a lot easier
             free(datafile);
-            free(peaksdatafile);
             free(moviedir);
-            free(backupdir);
+            free(latticedir);
             free(datadir);
-            free(networkdir);
 
             string maybepath_and_name(argv[i]);
             size_t botDirPos = maybepath_and_name.find_last_of("/");
@@ -649,9 +620,9 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             name_moviedir.append("movie_");
             name_moviedir.append(name);
 
-            string name_backupdir = dir;
-            name_backupdir.append("backup_");
-            name_backupdir.append(name);
+            string name_latticedir = dir;
+            name_latticedir.append("lattice_");
+            name_latticedir.append(name);
 
             string name_datadir = dir;
             name_datadir.append("data_");
@@ -663,23 +634,21 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
 
             std::cerr << "New value for output filename: " << name_outfile << '\n';
             std::cerr << "New value for name_moviedir: " << name_moviedir << '\n';
-            std::cerr << "New value for name_backupdir: " << name_backupdir << '\n';
+            std::cerr << "New value for name_latticedir: " << name_latticedir << '\n';
             std::cerr << "New value for name_datadir: " << name_datadir << '\n';
             std::cerr << "New value for name_networkdir: " << name_networkdir << '\n';
 
             datafile = (char *) malloc(
                     50 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
             moviedir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
-            peaksdatafile = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
-            backupdir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
+            (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
+            latticedir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             datadir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
-            networkdir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             datafile = strdup(name_outfile.c_str());
-            peaksdatafile = strdup(name_outfile.c_str());
+            strdup(name_outfile.c_str());
             moviedir = strdup(name_moviedir.c_str());
-            backupdir = strdup(name_backupdir.c_str());
+            latticedir = strdup(name_latticedir.c_str());
             datadir = strdup(name_datadir.c_str());
-            networkdir = strdup(name_networkdir.c_str());
             // this took a while to code :P
         } else {
             cerr << "Something went wrong reading the commandline arguments" << endl;
@@ -752,17 +721,15 @@ void Parameter::Read(const char *filename) {
     divtime = igetpar(fp, "divtime", 200, true);
     divdur = igetpar(fp, "divdur", 50, true);
     deathprob = fgetpar(fp, "deathprob", 0.0001, true);
-    scatter_cells = bgetpar(fp, "scatter_cells", false, true);
     scatter_start = bgetpar(fp, "scatter_start", true, true);
     motiledeath = fgetpar(fp, "motiledeath", 1.0, true);
     dividingdeath = fgetpar(fp, "dividingdeath", 0.0, true);
     moviedir = sgetpar(fp, "moviedir", "data_film", true);
     datafile = sgetpar(fp, "datafile", "data_cellcount.txt", true);
-    peaksdatafile = sgetpar(fp, "peaksdatafile", "peaks_data.csv", true);
-    save_text_file_period = igetpar(fp, "save_text_file_period", 100, true);
+    save_data_period = igetpar(fp, "save_data_file_period", 100, true);
     food_influx_location = sgetpar(fp, "food_influx_location", "nowhere", true);
     initial_food_amount = igetpar(fp, "initial_food_amount", 0, true);
-    metabperiod = fgetpar(fp, "metabperiod", 20, true);
+    metabperiod = igetpar(fp, "metabperiod", 20, true);
     ardecay = fgetpar(fp, "ardecay", 0., true);
     growth = fgetpar(fp, "growth", 0., true);
     gradnoise = fgetpar(fp, "gradnoise", 0.1, true);
@@ -787,10 +754,9 @@ void Parameter::Read(const char *filename) {
     init_chemmu = fgetpar(fp, "init_chemmu", 0.0, true);
     Jmed_rule_input = sgetpar(fp, "Jmed_rule_input", "0a0", true);
     scaling_cell_to_ca_time = igetpar(fp, "scaling_cell_to_ca_time", 1, true);
-    backupdir = sgetpar(fp, "backupdir", "backup", true);
+    latticedir = sgetpar(fp, "latticedir", "lattice", true);
     datadir = sgetpar(fp, "datadir", "data", true);
-    networkdir = sgetpar(fp, "networkdir", "networks", true);
-    save_backup_period = igetpar(fp, "save_backup_period", 0, true);
+    save_lattice_period = igetpar(fp, "save_lattice_period", 0, true);
     howmany_makeit_for_nextgen = igetpar(fp, "howmany_makeit_for_nextgen", 1, true);
     popsize = igetpar(fp, "popsize", 1, true);
     the_line = igetpar(fp, "the_line", 1, true);
@@ -1023,8 +989,7 @@ void Parameter::Write(ostream &os) const {
     os << " metabolic_conversion = " << metabolic_conversion << endl;
     os << " chancemediumcopied = " << chancemediumcopied << endl;
     os << " datafile = " << datafile << endl;
-    os << " peaksdatafile = " << peaksdatafile << endl;
-    os << " save_text_file_period = " << save_text_file_period << endl;
+    os << " save_data_file_period = " << save_data_period << endl;
     os << " readcolortable = " << readcolortable << endl;
     os << " colortable_filename = " << colortable_filename << endl;
     os << " mut_rate = " << mut_rate << endl;
@@ -1032,10 +997,9 @@ void Parameter::Write(ostream &os) const {
     os << " persduration = " << persduration << endl;
     os << " startmu = " << startmu << endl;
     os << " scaling_cell_to_ca_time = " << scaling_cell_to_ca_time << endl;
-    os << " backupdir = " << backupdir << endl;
+    os << " latticedir = " << latticedir << endl;
     os << " datadir = " << datadir << endl;
-    os << " networkdir = " << networkdir << endl;
-    os << " save_backup_period = " << save_backup_period << endl;
+    os << " save_lattice_period = " << save_lattice_period << endl;
     if (moviedir)
         os << " moviedir = " << moviedir << endl;
     os << " howmany_makeit_for_nextgen = " << howmany_makeit_for_nextgen << endl;

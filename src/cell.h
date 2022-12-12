@@ -55,10 +55,89 @@ public:
     Used to add a new Cell to the dish: new Cell(dish,
     celtype).
     */
-    Cell(const Dish &who, int settau = 1, int setrecycledsigma = -1) {
-
+    explicit Cell(const Dish &who, int settau = 1, int setrecycledsigma = -1) {
         owner = &who;
-        ConstructorBody(settau, setrecycledsigma);
+
+        alive = true;
+        colour = 1; // undifferentiated
+
+        meanx = 0.;
+        meany = 0.;
+        chemmu = 0.0;
+        dividecounter = 0;
+        grad_conc = 0;
+
+        colour_of_birth = 1;
+        date_of_birth = 0;
+        times_divided = 0;
+        mother = 0;
+        daughter = 0;
+
+        // add new elements to each of the dimensions of "J"
+
+
+        // maxsigma keeps track of the last cell identity number given out to a cell
+        if (setrecycledsigma == -1) {
+            // amount gives the total number of Cell instantiations (including copies)
+            amount++;
+
+            sigma = maxsigma++;
+            //cout<<"check: not recycling, new sigma is "<<sigma<<endl;
+        } else {
+            sigma = setrecycledsigma;
+            //cout<<"check: YES recycling, new sigma is "<<sigma<<endl;
+        }
+
+        ancestor = sigma;
+
+        //if (!J) {
+        //  ReadStaticJTable(par.Jtable);
+        //}
+
+        // This should not be here
+        //if(!vJ){
+        //  ReadKeyLockFromFile(par.keylock_list_filename)
+        //}
+
+        //create the genome: use parameters for size. This is a randomly generated genome.
+        //genome.InitGenome(par.innodes, par.regnodes, par.outnodes);
+        //let's do this separately.
+        gextiming = 0;
+        tau = settau;
+        area = 0;
+        target_area = 0;
+        half_div_area = 0;
+        length = 0;
+        target_length = par.target_length;
+        sum_x = 0;
+        sum_y = 0;
+        sum_xx = 0;
+        sum_yy = 0;
+        sum_xy = 0;
+        growth = par.growth;
+
+        v[0] = 0.;
+        v[1] = 0.;
+        n_copies = 0;
+        mu = 0.0;
+        tvecx = 0.;
+        tvecy = 0.;
+        prevx = 0.;
+        prevy = 0.;
+
+        chemvecx = 0.;
+        chemvecy = 0.;
+
+        food = par.foodstart;
+        last_meal = 0;
+
+        time_since_birth = 0;
+
+        persdur = 0;
+        perstime = 0;
+        if (par.n_chem) {
+            chem = new double[par.n_chem];
+        }
     }
 
     ~Cell();
@@ -1071,10 +1150,10 @@ protected:
     //food-conversion-to-growth rate
     double growth;
 
-    double v[2];
+    double v[2]{};
     int n_copies; // number of expansions of this cell
     // gradient of a chemical (to be extended to the total number chemicals)
-    double grad[2];
+    double grad[2]{};
 
     double *chem;
     // Raw moments of the cells

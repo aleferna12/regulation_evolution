@@ -34,11 +34,11 @@ public:
 
     ~Parameter();
 
-    void CleanUp(void);
+    void CleanUp(void) const;
 
     int ReadArguments(int argc, char *argv[]);
 
-    void PrintWelcomeStatement(void);
+    static void PrintWelcomeStatement(void);
 
     void Read(const char *filename);
 
@@ -96,10 +96,8 @@ public:
     double mustd;
     double deathprob;
     char *moviedir;
-    char *networkdir;
     char *datafile;
-    char *peaksdatafile;
-    int save_text_file_period;
+    int save_data_period;
     char *food_influx_location;
     int initial_food_amount;
     int metabperiod;
@@ -129,15 +127,14 @@ public:
     int scaling_cell_to_ca_time;
     int howmany_makeit_for_nextgen;
     bool scatter_start;
-    bool scatter_cells;
     double motiledeath;
     double dividingdeath;
     int popsize;
-    char *backupdir;
+    char *latticedir;
     char *datadir;
-    char *backupfile;
+    char *latticefile;
     int starttime;
-    int save_backup_period;
+    int save_lattice_period;
     int the_line;
     int evolsim;  //will the simulation end after the first time cells arrive at target?
     bool evolreg; //do regulation parameters evolve?

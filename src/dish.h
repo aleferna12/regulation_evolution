@@ -124,7 +124,6 @@ public:
 
     void MakeBackup(int Time);
 
-    // TODO: Test if it is working with multiple fpatches
     int ReadBackup(char *filename);
 
     int ReadCompetitionFile(char *filename);
@@ -201,6 +200,9 @@ protected:
 
     void FoodPlot(Graphics *g, int colori) const;
 
+    int ReadCellData();
+
+    void ReadLattice();
 };
 
 #define INIT void Dish::Init(void)

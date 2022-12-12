@@ -26,7 +26,9 @@ private:
     void checkEmpty();
 
 public:
-    FoodPatch(Dish *owner, int id, int x, int y, int length, int food_per_spot);
+    //! Default constructor. Parameter sigmas can be optionally provided to point to an iterator
+    //! that contains buffered sigma values.
+    FoodPatch(Dish *owner, int id, int x, int y, int length, int food_per_spot, int *sigmas = nullptr);
 
     FoodPatch(const FoodPatch &fp);
 
@@ -66,6 +68,12 @@ public:
         return food_left;
     }
 
+    void updateFoodLeft() {
+        food_left = 0;
+        for (int i = 0; i < length * length; ++i)
+            food_left += sigma[i];
+    }
+
     int getSigma(int i, int j) const {
         return sigma[i * length + j];
     }
@@ -102,7 +110,7 @@ public:
         throw logic_error("grad boxes are yet to be implemented");
     }
 
-    void initSigmas();
+    void initSigmas(int *sigmas = nullptr);
 
     int consumeFood(int gi, int gj);
 
