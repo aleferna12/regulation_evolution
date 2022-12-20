@@ -42,7 +42,6 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define EXTERNAL_OFF
 
 using namespace std;
-using json = nlohmann::json;
 
 
 Dish::Dish() {
@@ -623,7 +622,7 @@ void Dish::InitCellMigration() {
             icell->startTarVec();
             if (par.persduration < par.mcs) {
                 icell->setPersTime(
-                        int(par.persduration * RANDOM())); //so that cells don't all start turning at the same time...
+                    int(par.persduration * RANDOM())); //so that cells don't all start turning at the same time...
             } else {
                 icell->setPersTime(0); //special type of experiment
                 icell->tvecx = 1.;
@@ -690,7 +689,7 @@ void Dish::UpdateCellParameters(int Time) {
                 //calculate inputs
                 inputs[0] = (double) c->grad_conc;
                 double division_cost =
-                        par.scaling_cell_to_ca_time * (par.divtime + par.divdur) / (double) par.metabperiod;
+                    par.scaling_cell_to_ca_time * (par.divtime + par.divdur) / (double) par.metabperiod;
                 inputs[1] = c->food / division_cost;
                 c->UpdateGenes(inputs, true);
                 c->FinishGeneUpdate();
@@ -869,17 +868,67 @@ double Dish::FoodAtPosition(int x, int y) {
     return dfood;
 }
 
-void Dish::ReadLattice() {
+
+int Dish::readFoodData() {
+    int cur_time;
+    ifstream file(par.fooddatafile);
+    if (not file)
+        throw runtime_error("Failed to open file");
+
+    string line;
+    // Skip headers
+    getline(file, line);
+    int id = 0;
+    while (getline(file, line)) {
+        auto attrs = stringToVector<string>(line, ',');
+        auto sigmas = stringToVector<int>(attrs[3], ' ');
+        fpatches.emplace_back(
+            this,
+            id,
+            stoi(attrs[0]),
+            stoi(attrs[1]),
+            stoi(attrs[2]),
+            par.foodperspot,
+            &sigmas[0]
+        );
+        fpatches.back().updateFoodLeft();
+        cur_time = stoi(attrs[4]);
+    }
+    return cur_time;
+}
+
+
+void Dish::saveFoodData(int Time) {
+    char filename[300];
+    // TODO add parameter
+    sprintf(filename, "%s/t%09d.csv", par.fooddatadir, Time);
+    ofstream file(filename);
+    if (not file)
+        throw runtime_error("Failed to open file");
+
+    vector<string> col_names {"x", "y", "length", "sigma_list", "time"};
+    file << vectorToString(col_names, ',') << endl;
+
+    for (auto &fp : fpatches) {
+        if (fp.empty)
+            continue;
+
+        file << fp.getX() << ',' << fp.getY() << ',' << fp.getLength() << ',';
+        file << vectorToString(fp.getSigmasAsVector(), ' ') << ',';
+        file << Time << endl;
+    }
+}
+
+
+void Dish::readLattice() {
     if (cell.size() <= 1) {
-        cerr << "ReadLattice must be called after ReadCellData";
+        cerr << "readLattice must be called after readData";
         exit(1);
     }
 
     ifstream file(par.latticefile);
-    if (not file.is_open()) {
-        cerr << "Error opening file " << par.latticefile << endl;
-        exit(1);
-    }
+    if (not file)
+        throw runtime_error("Failed to open file");
     string line;
     while (getline(file, line)) {
         stringstream ss(line);
@@ -892,14 +941,13 @@ void Dish::ReadLattice() {
     updateChemPlane();
 }
 
-void Dish::SaveLattice(int Time) const {
+void Dish::saveLattice(int Time) const {
     char filename[300];
     sprintf(filename, "%s/t%09d.csv", par.latticedir, Time);
 
     ofstream file(filename);
-    if (not file){
-        cerr << "Could not open file: " << filename << endl;
-    }
+    if (not file)
+        throw runtime_error("Failed to open file");
 
     for (int x = 1; x < par.sizex - 1; x++) {
         for (int y = 1; y < par.sizey - 1; y++) {
@@ -916,48 +964,24 @@ void Dish::SaveLattice(int Time) const {
     }
 }
 
-int Dish::ReadCellData() {
-    ifstream file(par.datafile);
-    if (not file.is_open()) {
-        cerr << "Error opening file " << par.datafile << endl;
-        exit(1);
-    }
-    json input_json = json::parse(file);
 
-    // Read peak information
-    auto fp_attrs = input_json.at("foodpatches");
-    int n_fpatches = fp_attrs.at("number").get<int>();
-    // When fpi was called 'i' I got the weirdest bug ever (it wouldn't increment in the loop)
-    for (int i = 0; i < n_fpatches; i++) {
-        int length = fp_attrs.at("length").at(i).get<int>();
-        auto sigma_array = fp_attrs.at("sigma_array").at(i).get<vector<int>>();
-        FoodPatch fp{
-            this,
-            i,
-            fp_attrs.at("x").at(i).get<int>(),
-            fp_attrs.at("y").at(i).get<int>(),
-            length,
-            par.foodperspot,
-            &sigma_array[0]
-        };
-        fp.updateFoodLeft();
-        fpatches.push_back(fp);
-    }
+int Dish::readCellData() {
+    int cur_time;
+    ifstream file(par.celldatafile);
+    if (not file)
+        throw runtime_error("Failed to open file");
 
-    // Read cell information
-    auto c_attrs = input_json.at("cells");
-    int n_cells = c_attrs.at("number").get<int>();
-    int innr = c_attrs.at("innodes").at("number").get<int>();
-    int regnr = c_attrs.at("regnodes").at("number").get<int>();
-    int outnr = c_attrs.at("outnodes").at("number").get<int>();
-
+    string line;
+    // Skip headers
+    getline(file, line);
     int last_sigma = 0;
-    for (int i = 0; i < n_cells; ++i) {
-        int sigma = c_attrs.at("sigma").at(i).get<int>();
-        Cell *rc;
-        // We need to preserve relation cell[sigma] = rc->sigma so dead cells need to be recreated
+    while (getline(file, line)) {
+        auto attrs = stringToVector<string>(line, ',');
+        auto it = attrs.begin();
+
+        int sigma = stoi(*it); ++it;
         for (int j = 1; j < sigma - last_sigma; ++j) {
-            rc = new Cell(*this);
+            Cell *rc = new Cell(*this);
             rc->alive = false;
             rc->sigma = last_sigma + j;
             rc->jkey = vector<int>(par.key_lock_length, -1);
@@ -965,183 +989,159 @@ int Dish::ReadCellData() {
             cell.push_back(*rc);
         }
         last_sigma = sigma;
-        rc = new Cell(*this);
+
+        Cell *rc = new Cell(*this);
         rc->alive = true;
         rc->sigma = sigma;
-        rc->tau = c_attrs.at("tau").at(i).get<int>();
-        rc->time_since_birth = c_attrs.at("time_since_birth").at(i).get<int>();
-        rc->tvecx = c_attrs.at("tvecx").at(i).get<double>();
-        rc->tvecy = c_attrs.at("tvecy").at(i).get<double>();
-        rc->prevx = c_attrs.at("prevx").at(i).get<double>();
-        rc->prevy = c_attrs.at("prevy").at(i).get<double>();
-        rc->persdur = c_attrs.at("persdur").at(i).get<int>();
-        rc->perstime = c_attrs.at("perstime").at(i).get<int>();
-        rc->mu = c_attrs.at("mu").at(i).get<double>();
-        rc->half_div_area = c_attrs.at("half_div_area").at(i).get<int>();
-        rc->length = c_attrs.at("length").at(i).get<double>();
-        rc->last_meal = c_attrs.at("last_meal").at(i).get<int>();
-        rc->food = c_attrs.at("food").at(i).get<double>();
-        rc->growth = c_attrs.at("growth").at(i).get<double>();
-        rc->gextiming = c_attrs.at("gextiming").at(i).get<int>();
-        rc->dividecounter = c_attrs.at("dividecounter").at(i).get<int>();
-        rc->grad_conc = c_attrs.at("grad_conc").at(i).get<int>();
-        rc->meanx = c_attrs.at("meanx").at(i).get<double>();
-        rc->meany = c_attrs.at("meany").at(i).get<double>();
-        rc->chemvecx = c_attrs.at("chemvecx").at(i).get<double>();
-        rc->chemvecy = c_attrs.at("chemvecy").at(i).get<double>();
-        rc->target_area = c_attrs.at("target_area").at(i).get<int>();
-        rc->chemmu = c_attrs.at("chemmu").at(i).get<double>();
-        rc->times_divided = c_attrs.at("times_divided").at(i).get<int>();
-        rc->colour = c_attrs.at("colour").at(i).get<int>();
-        rc->ancestor = c_attrs.at("ancestor").at(i).get<int>();
+        rc->tau = stoi(*it); ++it;
+        rc->time_since_birth = stoi(*it); ++it;
+        rc->tvecx = stod(*it); ++it;
+        rc->tvecy = stod(*it); ++it;
+        rc->prevx = stod(*it); ++it;
+        rc->prevy = stod(*it); ++it;
+        rc->persdur = stoi(*it); ++it;
+        rc->perstime = stoi(*it); ++it;
+        rc->mu = stod(*it); ++it;
+        rc->half_div_area = stoi(*it); ++it;
+        rc->length = stod(*it); ++it;
+        rc->last_meal = stoi(*it); ++it;
+        rc->food = stod(*it); ++it;
+        rc->growth = stod(*it); ++it;
+        rc->gextiming = stoi(*it); ++it;
+        rc->dividecounter = stoi(*it); ++it;
+        rc->grad_conc = stoi(*it); ++it;
+        rc->meanx = stod(*it); ++it;
+        rc->meany = stod(*it); ++it;
+        rc->chemvecx = stod(*it); ++it;
+        rc->chemvecy = stod(*it); ++it;
+        rc->target_area = stoi(*it); ++it;
+        rc->chemmu = stod(*it); ++it;
+        rc->times_divided = stoi(*it); ++it;
+        rc->colour = stoi(*it); ++it;
+        rc->ancestor = stoi(*it); ++it;
+        // Skip medJ
+        ++it;
 
+        string jkey = *it; ++it;
+        for (char c : jkey)
+            rc->jkey.push_back(c - '0');
+        string jlock = *it; ++it;
+        for (char c : jlock)
+            rc->jlock.push_back(c - '0');
+
+        // Skip neighbour info
+        it += 2;
+
+        int innr = stoi(*it); ++it;
+        int regnr = stoi(*it); ++it;
+        int outnr = stoi(*it); ++it;
         rc->genome.innr = innr;
         rc->genome.regnr = regnr;
         rc->genome.outnr = outnr;
-        Gene *gene;
-        for (int gi = 0; gi < regnr; ++gi) {
-            gene = new Gene(1, gi + innr, innr, regnr);
-            gene->threshold = c_attrs.at("regnodes").at("threshold").at(i).at(gi).get<double>();
-            gene->w_innode = c_attrs.at("regnodes").at("w_innode").at(i).at(gi).get<vector<double>>();
-            gene->w_regnode = c_attrs.at("regnodes").at("w_regnode").at(i).at(gi).get<vector<double>>();
+        rc->genome.inputscale = stringToVector<double>(*it, ' '); ++it;
+
+        vector<double> reg_thres = stringToVector<double>(*it, ' '); ++it;
+        vector<double> reg_w_in = stringToVector<double>(*it, ' '); ++it;
+        vector<double> reg_w_reg = stringToVector<double>(*it, ' '); ++it;
+        for (int i = 0; i < regnr; ++i) {
+            Gene *gene = new Gene(1, i + innr, innr, regnr);
+            gene->threshold = reg_thres[i];
+            for (int j = 0; j < innr; ++j)
+                gene->w_innode[j] = reg_w_in[i * innr + j];
+            for (int j = 0; j < regnr; ++j)
+                gene->w_regnode[j] = reg_w_reg[i * regnr + j];
             rc->genome.regnodes.push_back(*gene);
         }
-        for (int gi = 0; gi < outnr; ++gi) {
-            gene = new Gene(2, gi + innr + regnr, innr, regnr);
-            gene->threshold = c_attrs.at("outnodes").at("threshold").at(i).at(gi).get<double>();
-            gene->w_regnode = c_attrs.at("outnodes").at("w_regnode").at(i).at(gi).get<vector<double>>();
+
+        vector<double> out_thres = stringToVector<double>(*it, ' '); ++it;
+        vector<double> out_w_reg = stringToVector<double>(*it, ' '); ++it;
+        for (int i = 0; i < outnr; ++i) {
+            Gene *gene = new Gene(2, i + innr + regnr, innr, regnr);
+            gene->threshold = out_thres[i];
+            for (int j = 0; j < regnr; ++j)
+                gene->w_regnode[j] = out_w_reg[i * regnr + j];
             rc->genome.outputnodes.push_back(*gene);
         }
-        rc->genome.inputscale = c_attrs.at("innodes").at("scale").at(i).get<vector<double>>();
 
-        string jkey = c_attrs.at("jkey").at(i).get<string>();
-        string jlock = c_attrs.at("jlock").at(i).get<string>();
-        for (char &c : jkey) {
-            rc->jkey.push_back(c - '0');
-        }
-        for (char &c : jlock) {
-            rc->jlock.push_back(c - '0');
-        }
-
+        cur_time = stoi(*it);
         cell.push_back(*rc);
     }
-    return input_json.at("time").get<int>();
+    return cur_time;
 }
 
-int Dish::SaveCellData(int Time) {
-    json output_json;
-    output_json["time"] = Time;
 
-    // The floting point precision is 10 digits, but nlohmann doesn't allow to reduce that
-    // If files become too big we will have to think about string manipulation or changing the json lib to rapidjson
-    int n_fpatches = 0;
-    for (auto &fp : fpatches) {
-        if (fp.empty)
-            continue;
-        output_json["foodpatches"]["x"].push_back(fp.getX());
-        output_json["foodpatches"]["y"].push_back(fp.getY());
-        output_json["foodpatches"]["length"].push_back(fp.getLength());
-        output_json["foodpatches"]["food_left"].push_back(fp.getFoodLeft());
-        // Saving each sigma might be overkill, if we ever run sims with many fpatches we can disable this and
-        // just reconstruct them from x and y positions (or even just randomly reinitialize n fpaches)
-        output_json["foodpatches"]["sigma_array"].push_back(fp.getSigmasAsVector());
-        ++n_fpatches;
-    }
-    output_json["foodpatches"]["number"] = n_fpatches;
-
-    // If this becomes dynamic we will have to make a few modifications
-    output_json["cells"]["innodes"]["number"] = 2;
-    output_json["cells"]["regnodes"]["number"] = 3;
-    output_json["cells"]["outnodes"]["number"] = 1;
+int Dish::saveCellData(int Time) {
     int n_cells = 0;
-    for (auto &c : cell) {
-        if (not c.AliveP() or c.Sigma() == 0)
-            continue;
-        ++n_cells;
-        output_json["cells"]["sigma"].push_back(c.sigma);
-        output_json["cells"]["tau"].push_back(c.tau);
-        output_json["cells"]["time_since_birth"].push_back(c.time_since_birth);
-        output_json["cells"]["tvecx"].push_back(c.tvecx);
-        output_json["cells"]["tvecy"].push_back(c.tvecy);
-        output_json["cells"]["prevx"].push_back(c.prevx);
-        output_json["cells"]["prevy"].push_back(c.prevy);
-        output_json["cells"]["persdur"].push_back(c.persdur);
-        output_json["cells"]["perstime"].push_back(c.perstime);
-        output_json["cells"]["mu"].push_back(c.mu);
-        output_json["cells"]["half_div_area"].push_back(c.half_div_area);
-        output_json["cells"]["length"].push_back(c.length);
-        output_json["cells"]["last_meal"].push_back(c.last_meal);
-        output_json["cells"]["food"].push_back(c.food);
-        output_json["cells"]["growth"].push_back(c.growth);
-        output_json["cells"]["gextiming"].push_back(c.gextiming);
-        output_json["cells"]["dividecounter"].push_back(c.dividecounter);
-        output_json["cells"]["grad_conc"].push_back(c.grad_conc);
-        output_json["cells"]["meanx"].push_back(c.meanx);
-        output_json["cells"]["meany"].push_back(c.meany);
-        output_json["cells"]["chemvecx"].push_back(c.chemvecx);
-        output_json["cells"]["chemvecy"].push_back(c.chemvecy);
-        output_json["cells"]["target_area"].push_back(c.target_area);
-        output_json["cells"]["chemmu"].push_back(c.chemmu);
-        output_json["cells"]["times_divided"].push_back(c.times_divided);
-        output_json["cells"]["colour"].push_back(c.colour);
-        output_json["cells"]["ancestor"].push_back(c.ancestor);
-        // You should reset the ancestor every time you save it
-        c.resetAncestor();
-        output_json["cells"]["medJ"].push_back(c.vJ[0]);
-
-        output_json["cells"]["innodes"]["scale"].push_back(c.genome.inputscale);
-        vector<double> reg_thres {};
-        vector<vector<double>> reg_w_in {};
-        vector<vector<double>> reg_w_reg {};
-        for (auto &g : c.genome.regnodes) {
-            reg_thres.push_back(g.threshold);
-            reg_w_in.push_back(g.w_innode);
-            reg_w_reg.push_back(g.w_regnode);
-        }
-        output_json["cells"]["regnodes"]["threshold"].push_back(reg_thres);
-        output_json["cells"]["regnodes"]["w_innode"].push_back(reg_w_in);
-        output_json["cells"]["regnodes"]["w_regnode"].push_back(reg_w_reg);
-        vector<double> out_thres {};
-        vector<vector<double>> out_w_reg {};
-        for (auto &g : c.genome.outputnodes) {
-            out_thres.push_back(g.threshold);
-            out_w_reg.push_back(g.w_regnode);
-        }
-        output_json["cells"]["outnodes"]["threshold"].push_back(out_thres);
-        output_json["cells"]["outnodes"]["w_regnode"].push_back(out_w_reg);
-
-        vector<int> neigh_sigmas {};
-        vector<int> neigh_Js {};
-        for (auto &n : c.neighbours) {
-            if (not cell[n.first].AliveP())
-                continue;
-            neigh_sigmas.push_back(n.first);
-            neigh_Js.push_back(c.getVJ()[n.first]);
-        }
-        output_json["cells"]["neighbours"].push_back(neigh_sigmas);
-        output_json["cells"]["neighbourJs"].push_back(neigh_Js);
-
-        stringstream jkey;
-        for (auto x : c.jkey)
-            jkey << x;
-        stringstream jlock;
-        for (auto x : c.jlock)
-            jlock << x;
-        output_json["cells"]["jkey"].push_back(jkey.str());
-        output_json["cells"]["jlock"].push_back(jlock.str());
-    }
-    output_json["cells"]["number"] = n_cells;
 
     char filename[300];
-    sprintf(filename, "%s/t%09d.json", par.datadir, Time);
-
+    sprintf(filename, "%s/t%09d.csv", par.celldatadir, Time);
     ofstream file(filename);
-    if (not file) {
-        cerr << "Could not open file: " << filename << endl;
-        return 1;
-    }
-    file << output_json.dump() << endl;
+    if (not file)
+        throw runtime_error("Failed to open file");
 
+    vector<string> col_names{"sigma", "tau", "time_since_birth", "tvecx", "tvecy", "prevx", "prevy", "persdur",
+                             "perstime", "mu", "half_div_area", "length", "last_meal", "food", "growth", "gextiming",
+                             "dividecounter", "grad_conc", "meanx", "meany", "chemvecx", "chemvecy", "target_area",
+                             "chemmu", "times_divided", "colour", "ancestor", "medJ", "jkey", "jlock", "neighbour_list",
+                             "neighbourJ_list", "innr", "regnr", "outnr", "in_scale_list", "reg_threshold_list",
+                             "reg_w_innode_list", "reg_w_regnode_list", "out_threshold_list", "out_w_regnode_list",
+                             "time"};
+    file << vectorToString(col_names, ',') << endl;
+
+    for (auto &c: cell) {
+        if (not c.AliveP() or c.sigma == 0)
+            continue;
+        ++n_cells;
+        // Cant use the helper function because the values are of different types
+        file << c.sigma << ',' << c.tau << ',' << c.time_since_birth << ',' << c.tvecx << ',' << c.tvecy << ','
+             << c.prevx << ',' << c.prevy << ',' << c.persdur << ',' << c.perstime << ',' << c.mu << ','
+             << c.half_div_area << ',' << c.length << ',' << c.last_meal << ',' << c.food << ',' << c.growth << ','
+             << c.gextiming << ',' << c.dividecounter << ',' << c.grad_conc << ',' << c.meanx << ',' << c.meany << ','
+             << c.chemvecx << ',' << c.chemvecy << ',' << c.target_area << ',' << c.chemmu << ','
+             << c.times_divided << ',' << c.colour << ',' << c.ancestor << ',' << c.vJ[0] << ',';
+
+        file << vectorToString(c.jkey, '\0') << ',';
+        file << vectorToString(c.jlock, '\0') << ',';
+
+        vector<int> neighs {};
+        vector<int> neigh_Js {};
+        for (auto &n : c.neighbours) {
+            if (cell[n.first].AliveP()) {
+                neighs.push_back(n.first);
+                neigh_Js.push_back(c.vJ[n.first]);
+            }
+        }
+        file << vectorToString(neighs, ' ') << ',';
+        file << vectorToString(neigh_Js, ' ') << ',';
+
+        file << c.genome.innr << ',' << c.genome.regnr << ',' << c.genome.outnr << ',';
+        file << vectorToString(c.genome.inputscale, ' ') << ',';
+
+        vector<double> reg_thres {};
+        vector<double> reg_w_in {};
+        vector<double> reg_w_reg {};
+        for (auto &g: c.genome.regnodes) {
+            reg_thres.push_back(g.threshold);
+            // Unpack the weight vectors
+            reg_w_in.insert(reg_w_in.end(), g.w_innode.begin(), g.w_innode.end());
+            reg_w_reg.insert(reg_w_reg.end(), g.w_regnode.begin(), g.w_regnode.end());
+        }
+        file << vectorToString(reg_thres, ' ') << ',';
+        file << vectorToString(reg_w_in, ' ') << ',';
+        file << vectorToString(reg_w_reg, ' ') << ',';
+
+        vector<double> out_thres {};
+        vector<double> out_w_reg {};
+        for (auto &g: c.genome.outputnodes) {
+            out_thres.push_back(g.threshold);
+            // Unpack the weight vectors
+            out_w_reg.insert(out_w_reg.end(), g.w_regnode.begin(), g.w_regnode.end());
+        }
+        file << vectorToString(out_thres, ' ') << ',';
+        file << vectorToString(out_w_reg, ' ') << ',';
+
+        file << Time << endl;
+    }
     return n_cells;
 }
 

@@ -209,9 +209,9 @@ graphics = false
 store = true
 divisioncolour = true
 moviedir = ../runs/data_film2
-save_data_period = 30000
-datafile = ../runs/data_cellcount.txt
-save_lattice_period = 30000
+save_data_period = 10000
+celldatafile = ../runs/data_cellcount.txt
+save_lattice_period = 10000
 latticedir = ../runs/backup
 
 #if readcolortable is true, it reads the color table from "colortable_filename", otherwise it generates a pretty one internally

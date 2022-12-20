@@ -143,8 +143,10 @@ INIT {
         } else {
             cout << "Reading backfile" << endl;
             cout << "backup file is " << par.latticefile << endl;
-            par.starttime = ReadCellData();
-            ReadLattice();
+            par.starttime = readCellData();
+            if (readFoodData() != par.starttime)
+                cerr << "Food data and cell data date from different times!" << endl;
+            readLattice();
             CPM->InitializeEdgeList(false);
             InitContactLength();
             InitVectorJ();
@@ -275,9 +277,9 @@ TIMESTEP {
                 Write(fname);
             }
         }
-        // TO FILE FOR TEXT
         if (!(i % par.save_data_period)) {
-            int popsize = dish->SaveCellData(i);
+            dish->saveFoodData(i);
+            int popsize = dish->saveCellData(i);
             if (not popsize) {
                 cerr << "Global extinction after " << i << " time steps, simulation terminates now" << endl;
                 exit(0);
@@ -285,7 +287,7 @@ TIMESTEP {
         }
         // TO FILE FOR BACKUP
         if (!(i % par.save_lattice_period)) {
-            dish->SaveLattice(i);
+            dish->saveLattice(i);
         }
 
         i++;
@@ -346,7 +348,8 @@ int main(int argc, char *argv[]) {
         //check if directory for movies exists, create it if not, exit otherwise
         DoesDirExistsIfNotMakeit(par.moviedir);  //see output.cpp
         DoesDirExistsIfNotMakeit(par.latticedir);  //see output.cpp
-        DoesDirExistsIfNotMakeit(par.datadir);  //see output.cpp
+        DoesDirExistsIfNotMakeit(par.celldatadir);  //see output.cpp
+        DoesDirExistsIfNotMakeit(par.fooddatadir);  //see output.cpp
 
         if (par.periodic_boundaries && par.lambda2 > 0.) {
             cerr << "main(): Error. Cannot have wrapped periodic boundaries and lambda2>0" << endl;

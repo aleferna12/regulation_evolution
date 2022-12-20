@@ -61,7 +61,7 @@ FoodPatch::~FoodPatch() {
 }
 
 // Initialize the FoodPatch on both the FoodPlane of dish and its internal plane
-void FoodPatch::initSigmas(int *sigmas) {
+void FoodPatch::initSigmas(const int *sigmas) {
     int minx = max(2, x);
     int miny = max(2, y);
     int maxx = min(owner->SizeX() - 2, x + length);

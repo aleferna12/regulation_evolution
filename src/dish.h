@@ -114,18 +114,6 @@ public:
     //! \brief Returns the summed of all cells target area in the dish
     int TargetArea() const;
 
-    int SaveData(int Time);
-
-    void SaveNetworks(int Time);
-
-    void SaveAdheringNeighbours(int Time);
-
-    void SaveAncestry(int Time);
-
-    void MakeBackup(int Time);
-
-    int ReadBackup(char *filename);
-
     int ReadCompetitionFile(char *filename);
 
     //! \brief Returns the horizontal size of the dish.
@@ -156,10 +144,6 @@ public:
     // Determines how much food is in a specific position
     double FoodAtPosition(int x, int y);
 
-    // Iterates lattice and finds max food
-    // Writes a few rows of the sigma lattice to par.peaksdatafile
-    int WritePeaksData() const;
-
     static double DetermineMinDist(int n);
 
     double distMostIsolatedPoint();
@@ -184,10 +168,15 @@ public:
     IntPlane *FoodPlane;
     CellularPotts *CPM;
 
-    //! Saves information about the cells as a JSON file in the directory specified by par.datadir
-    int SaveCellData(int Time);
+    void saveLattice(int Time) const;
+    void readLattice();
 
-    void SaveLattice(int Time) const;
+    //! Saves information about the cells as a CSV file in the directory specified by par.datadir
+    int saveCellData(int Time);
+    int readCellData();
+
+    void saveFoodData(int Time);
+    int readFoodData();
 
 protected:
     //! The cells in the Petri dish; accessible to derived classes
@@ -199,10 +188,6 @@ protected:
     vector<FoodPatch> fpatches;
 
     void FoodPlot(Graphics *g, int colori) const;
-
-    int ReadCellData();
-
-    void ReadLattice();
 };
 
 #define INIT void Dish::Init(void)

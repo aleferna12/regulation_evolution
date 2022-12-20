@@ -91,7 +91,8 @@ Parameter::Parameter() {
     motiledeath = 1.0;
     dividingdeath = 0.;
     moviedir = strdup("data_film");
-    datafile = strdup("data_cellcount.txt");
+    celldatafile = strdup("");
+    fooddatafile = strdup("");
     strdup("peaks_data.csv");
     save_data_period = 100;
     food_influx_location = strdup("nowhere");
@@ -118,7 +119,8 @@ Parameter::Parameter() {
     persduration = 0;
     scaling_cell_to_ca_time = 1;
     latticedir = strdup("lattice");
-    datadir = strdup("data");
+    celldatadir = strdup("celldata");
+    fooddatadir = strdup("fooddata");
     save_lattice_period = 0;
     init_chemmu = 0.;
     latticefile = strdup("");
@@ -161,8 +163,10 @@ void Parameter::CleanUp() const {
         free(genomefile);
     if (latticedir)
         free(latticedir);
-    if (datadir)
-        free(datadir);
+    if (celldatadir)
+        free(celldatadir);
+    if (fooddatadir)
+        free(fooddatadir);
     if (latticefile)
         free(latticefile);
 
@@ -174,12 +178,14 @@ void Parameter::PrintWelcomeStatement() {
     cerr << "./cell_evolution path/to/data [optional arguments]" << endl;
     cerr << "Arguments: " << endl;
     cerr
-            << " -name path/to/name_for_all_output # gives a name to all output, alternative to -datafile -moviedir -latticedir -datadir"
+            << " -name path/to/name_for_all_output # gives a name to all output, alternative to -celldatafile -fooddatafile -moviedir -latticedir -celldatadir -fooddatadir"
             << endl;
-    cerr << " -datafile path/to/datafile # output file" << endl;
+    cerr << " -celldatafile path/to/celldatafile # output file" << endl;
+    cerr << " -fooddatafile path/to/fooddatafile # output file" << endl;
     cerr << " -moviedir path/to/moviedir # output movie dir" << endl;
     cerr << " -latticedir path/to/latticedir # output backup lattice dir" << endl;
-    cerr << " -datadir path/to/datadir # output data dir" << endl;
+    cerr << " -celldatadir path/to/celldatadir # output cell data dir" << endl;
+    cerr << " -fooddatadir path/to/fooddatadir # output food data dir" << endl;
     cerr << " -networkdir path/to/networkdir # output network dir" << endl;
     cerr << " -store # store pictures" << endl;
     cerr << " -keylockfilename path/to/keylockfilename" << endl;
@@ -223,7 +229,7 @@ void Parameter::PrintWelcomeStatement() {
     cerr << " -target_area [INT_NUMBER] that (initial) target area of cells" << endl;
     cerr << " -init_cell_config [0-3] initial configuration of cells when placed in center, see ca.cpp" << endl;
     cerr << " -cell_placement [1-4] field position of cells, (0=center) see ca.cpp" << endl;
-    cerr << endl << "Will not execute if datafile and moviedir already exist" << endl;
+    cerr << endl << "Will not execute if celldatafile and moviedir already exist" << endl;
     cerr << "Also, parameter file and Jtable should be in the same directory (unless you used option -keylockfilename)"
          << endl;
     cerr << "Have fun!" << endl;
@@ -233,19 +239,31 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
     cerr << endl << "Reading arguments from command line" << endl;
     //starts from 2 because 0 is filename, 1 is parameter file path
     for (int i = 2; i < argc; i++) {
-        if (0 == strcmp(argv[i], "-datafile")) {
+        if (0 == strcmp(argv[i], "-celldatafile")) {
             i++;
             if (i == argc) {
-                cerr << "Something odd in datafile?" << endl;
+                cerr << "Something odd in celldatafile?" << endl;
                 return 1;  //check if end of arguments, exit with error in case
             }
-            //strcpy(datafile, argv[i]); //this can be buggy because it copies over a dynamically allocated char* (datafile) that can be a lot shorter
-            free(datafile);
-            datafile = (char *) malloc(
+            //strcpy(celldatafile, argv[i]); //this can be buggy because it copies over a dynamically allocated char* (celldatafile) that can be a lot shorter
+            free(celldatafile);
+            celldatafile = (char *) malloc(
                     5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
-            datafile = strdup(argv[i]);
-            cerr << "New value for datafile: " << datafile << endl;
+            celldatafile = strdup(argv[i]);
+            cerr << "New value for celldatafile: " << celldatafile << endl;
 //       exit(1);
+        } else if (0 == strcmp(argv[i], "-fooddatafile")) {
+            i++;
+            if (i == argc) {
+                cerr << "Something odd in fooddatafile?" << endl;
+                return 1;  //check if end of arguments, exit with error in case
+            }
+            //strcpy(fooddatafile, argv[i]); //this can be buggy because it copies over a dynamically allocated char* (celldatafile) that can be a lot shorter
+            free(fooddatafile);
+            fooddatafile = (char *) malloc(
+                5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
+            fooddatafile = strdup(argv[i]);
+            cerr << "New value for fooddatafile: " << fooddatafile << endl;
         } else if (0 == strcmp(argv[i], "-moviedir")) {
             i++;
             if (i == argc) {
@@ -274,20 +292,33 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
 
             cerr << "New value for latticedir: " << latticedir << endl;
 
-        } else if (0 == strcmp(argv[i], "-datadir")) {
+        } else if (0 == strcmp(argv[i], "-celldatadir")) {
             i++;
             if (i == argc) {
-                cerr << "Something odd in datadir?" << endl;
+                cerr << "Something odd in celldatadir?" << endl;
                 return 1;  //check if end of arguments, exit with error in case
             }
             //strcpy(moviedir, argv[i]);
-            free(datadir);
-            datadir = (char *) malloc(
+            free(celldatadir);
+            celldatadir = (char *) malloc(
                 5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
-            datadir = strdup(argv[i]);
+            celldatadir = strdup(argv[i]);
 
-            cerr << "New value for datadir: " << datadir << endl;
+            cerr << "New value for celldatadir: " << celldatadir << endl;
 
+        } else if (0 == strcmp(argv[i], "-fooddatadir")) {
+            i++;
+            if (i == argc) {
+                cerr << "Something odd in fooddatadir?" << endl;
+                return 1;  //check if end of arguments, exit with error in case
+            }
+            //strcpy(moviedir, argv[i]);
+            free(fooddatadir);
+            fooddatadir = (char *) malloc(
+                5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
+            fooddatadir = strdup(argv[i]);
+
+            cerr << "New value for fooddatadir: " << fooddatadir << endl;
         } else if (0 == strcmp(argv[i], "-networkdir")) {
             i++;
             if (i == argc) {
@@ -592,10 +623,12 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
                 return 1;  //check if end of arguments, exit with error in case
             }
             // I'm just going to work in c++ strings - a lot easier
-            free(datafile);
+            free(celldatafile);
+            free(fooddatafile);
             free(moviedir);
             free(latticedir);
-            free(datadir);
+            free(celldatadir);
+            free(fooddatadir);
 
             string maybepath_and_name(argv[i]);
             size_t botDirPos = maybepath_and_name.find_last_of("/");
@@ -624,9 +657,13 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             name_latticedir.append("lattice_");
             name_latticedir.append(name);
 
-            string name_datadir = dir;
-            name_datadir.append("data_");
-            name_datadir.append(name);
+            string name_celldatadir = dir;
+            name_celldatadir.append("celldata_");
+            name_celldatadir.append(name);
+
+            string name_fooddatadir = dir;
+            name_fooddatadir.append("fooddata_");
+            name_fooddatadir.append(name);
 
             string name_networkdir = dir;
             name_networkdir.append("networkdir_");
@@ -635,20 +672,25 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             std::cerr << "New value for output filename: " << name_outfile << '\n';
             std::cerr << "New value for name_moviedir: " << name_moviedir << '\n';
             std::cerr << "New value for name_latticedir: " << name_latticedir << '\n';
-            std::cerr << "New value for name_datadir: " << name_datadir << '\n';
+            std::cerr << "New value for name_celldatadir: " << name_celldatadir << '\n';
+            std::cerr << "New value for name_fooddatadir: " << name_fooddatadir << '\n';
             std::cerr << "New value for name_networkdir: " << name_networkdir << '\n';
 
-            datafile = (char *) malloc(
+            celldatafile = (char *) malloc(
                     50 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
+            fooddatafile = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             moviedir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             latticedir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
-            datadir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
-            datafile = strdup(name_outfile.c_str());
+            celldatadir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
+            fooddatadir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
+            celldatafile = strdup(name_outfile.c_str());
+            fooddatafile = strdup(name_outfile.c_str());
             strdup(name_outfile.c_str());
             moviedir = strdup(name_moviedir.c_str());
             latticedir = strdup(name_latticedir.c_str());
-            datadir = strdup(name_datadir.c_str());
+            celldatadir = strdup(name_celldatadir.c_str());
+            fooddatadir = strdup(name_fooddatadir.c_str());
             // this took a while to code :P
         } else {
             cerr << "Something went wrong reading the commandline arguments" << endl;
@@ -725,8 +767,9 @@ void Parameter::Read(const char *filename) {
     motiledeath = fgetpar(fp, "motiledeath", 1.0, true);
     dividingdeath = fgetpar(fp, "dividingdeath", 0.0, true);
     moviedir = sgetpar(fp, "moviedir", "data_film", true);
-    datafile = sgetpar(fp, "datafile", "data_cellcount.txt", true);
-    save_data_period = igetpar(fp, "save_data_file_period", 100, true);
+    celldatafile = sgetpar(fp, "celldatafile", "", true);
+    fooddatafile = sgetpar(fp, "celldatafile", "", true);
+    save_data_period = igetpar(fp, "save_data_period", 100, true);
     food_influx_location = sgetpar(fp, "food_influx_location", "nowhere", true);
     initial_food_amount = igetpar(fp, "initial_food_amount", 0, true);
     metabperiod = igetpar(fp, "metabperiod", 20, true);
@@ -755,7 +798,8 @@ void Parameter::Read(const char *filename) {
     Jmed_rule_input = sgetpar(fp, "Jmed_rule_input", "0a0", true);
     scaling_cell_to_ca_time = igetpar(fp, "scaling_cell_to_ca_time", 1, true);
     latticedir = sgetpar(fp, "latticedir", "lattice", true);
-    datadir = sgetpar(fp, "datadir", "data", true);
+    celldatadir = sgetpar(fp, "celldatadir", "data", true);
+    fooddatadir = sgetpar(fp, "fooddatadir", "data", true);
     save_lattice_period = igetpar(fp, "save_lattice_period", 0, true);
     howmany_makeit_for_nextgen = igetpar(fp, "howmany_makeit_for_nextgen", 1, true);
     popsize = igetpar(fp, "popsize", 1, true);
@@ -988,8 +1032,9 @@ void Parameter::Write(ostream &os) const {
     os << " frac_contlen_eaten = " << frac_contlen_eaten << endl;
     os << " metabolic_conversion = " << metabolic_conversion << endl;
     os << " chancemediumcopied = " << chancemediumcopied << endl;
-    os << " datafile = " << datafile << endl;
-    os << " save_data_file_period = " << save_data_period << endl;
+    os << " celldatafile = " << celldatafile << endl;
+    os << " fooddatafile = " << fooddatafile << endl;
+    os << " save_data_period = " << save_data_period << endl;
     os << " readcolortable = " << readcolortable << endl;
     os << " colortable_filename = " << colortable_filename << endl;
     os << " mut_rate = " << mut_rate << endl;
@@ -998,7 +1043,8 @@ void Parameter::Write(ostream &os) const {
     os << " startmu = " << startmu << endl;
     os << " scaling_cell_to_ca_time = " << scaling_cell_to_ca_time << endl;
     os << " latticedir = " << latticedir << endl;
-    os << " datadir = " << datadir << endl;
+    os << " celldatadir = " << celldatadir << endl;
+    os << " fooddatadir = " << fooddatadir << endl;
     os << " save_lattice_period = " << save_lattice_period << endl;
     if (moviedir)
         os << " moviedir = " << moviedir << endl;

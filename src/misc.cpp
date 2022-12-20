@@ -20,12 +20,15 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 02110-1301 USA
 
 */
-#include <stdio.h>
-#include <locale.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <clocale>
+#include <cstdlib>
 #include <cstring>
-#include <math.h>
+#include <cmath>
+#include <sstream>
+#include <vector>
 #include "sticky.h"
+#include "misc.h"
 
 /** PRIVATE **/
 
@@ -178,4 +181,15 @@ char *GetFileName(const char *message, const char *ftype) {
 double SolveQuadradic(double a, double b, double c) {
     double root = sqrt(pow(b, 2) - 4 * a * c);
     return (-b + root) / (2 * a);
+}
+
+
+template<> std::vector<std::string> stringToVector(const std::string &values, char delim) {
+    std::vector<std::string> value_vec;
+    std::stringstream values_ss(values);
+    std::string value_str;
+    while (getline(values_ss, value_str, delim)) {
+        value_vec.push_back(value_str);
+    }
+    return value_vec;
 }

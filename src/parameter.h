@@ -96,7 +96,8 @@ public:
     double mustd;
     double deathprob;
     char *moviedir;
-    char *datafile;
+    char *celldatafile;
+    char *fooddatafile;
     int save_data_period;
     char *food_influx_location;
     int initial_food_amount;
@@ -131,7 +132,8 @@ public:
     double dividingdeath;
     int popsize;
     char *latticedir;
-    char *datadir;
+    char *celldatadir;
+    char *fooddatadir;
     char *latticefile;
     int starttime;
     int save_lattice_period;

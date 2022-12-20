@@ -1,3 +1,4 @@
+# Dont forget to set CMAKE_PREFIX_PATH to CONDA_PREFIX if dependencies live in conda environment
 cmake_minimum_required(VERSION 3.16)
 project(regulation_evolution)
 
@@ -30,20 +31,19 @@ add_executable(cell_evolution
         src/boundingbox.cpp src/boundingbox.h
         src/foodpatch.cpp src/foodpatch.h)
 
+find_library(PNG png16 REQUIRED)
 find_package(X11 REQUIRED)
-find_package(nlohmann_json REQUIRED)
 find_package(Qt4 COMPONENTS QtCore)
 if (Qt4-NOTFOUND)
     find_package(Qt5 REQUIRED COMPONENTS Core)
     message("WARNING: Qt4 was not found, compiling with Qt5 instead")
 endif()
 
-
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-target_link_libraries(cell_evolution X11 png nlohmann_json::nlohmann_json ${QT_LIBRARIES})
+target_link_libraries(cell_evolution ${PNG} X11::X11 ${QT_LIBRARIES})
 target_compile_options(cell_evolution PRIVATE
         -Wno-unused-parameter
         -Wno-unused-variable

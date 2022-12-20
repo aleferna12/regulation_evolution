@@ -110,7 +110,7 @@ public:
         throw logic_error("grad boxes are yet to be implemented");
     }
 
-    void initSigmas(int *sigmas = nullptr);
+    void initSigmas(const int *sigmas = nullptr);
 
     int consumeFood(int gi, int gj);
 

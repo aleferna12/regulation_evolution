@@ -1836,8 +1836,7 @@ int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
     if (pixel_count != expected_area) {
         cerr << "Something went wrong when dividing cell " << motherp->Sigma() << endl;
         cerr << "Expected cell area is " << expected_area << " but only " << pixel_count
-             << " pixels were found inside bounding box";
-        cerr << "Terminating the program";
+             << " pixels were found inside bounding box" << endl;
         exit(1);
     }
 
