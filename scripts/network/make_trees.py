@@ -1,22 +1,23 @@
-"""Parse ancestry files into newick trees.
+"""Makes newick trees from cell ancestry data.
 
 Be mindful of the fact that not all generations are captured, since data is only saved every X
 MCSs. This means that some branches will be collapsed into multifurcations, resulting in some loss
 of phylogenetic information.
 """
-import re
 import logging
 import sys
-import os
+import pandas as pd
 from pathlib import Path
 from ete3 import Tree
+from parse import parse_cell_data
 
 
 def main():
     logging.basicConfig(level=logging.INFO)
-    netpath = Path(sys.argv[1]).resolve()
-    outdir = Path(sys.argv[2]).resolve()
-    if not os.path.isdir(outdir):
+
+    datadir = sys.argv[1]
+    outdir = Path(sys.argv[2])
+    if not outdir.is_dir():
         raise ValueError("second argument is not a valid existing directory")
     dead_ends = False if len(sys.argv) > 3 and sys.argv[3] in ["0", "false"] else True
     names = False if len(sys.argv) > 4 and sys.argv[4] in ["0", "false"] else True
@@ -24,14 +25,22 @@ def main():
     nhx = False if len(sys.argv) > 6 and sys.argv[6] in ["0", "false"] else True
     fmt = int(sys.argv[7]) if len(sys.argv) > 7 else 5
 
-    parse_ancestry(netpath, outdir, dead_ends, names, single_leaf, nhx, fmt)
+    celldf = parse_cell_data(datadir)
+    trees = make_trees(celldf, dead_ends, names, single_leaf)
+    longest_time, longest = write_trees(trees, outdir, nhx, fmt)
+
+    logging.info("Longest lineages are: " + ", ".join(longest))
+    logging.info(f"These lineages survived for {longest_time} MCSs)")
+    logging.info("Finished")
 
 
-def parse_ancestry(netpath, outdir, dead_ends, names, single_leaf, nhx, fmt):
+def write_trees(trees, outdir, nhx=True, fmt=5):
     logging.info(f"Writing trees to '{outdir}'")
+    outdir = Path(outdir)
+
     longest = []
     longest_time = 0
-    for i, tree in enumerate(read_ancestry(netpath, dead_ends, names, single_leaf)):
+    for i, tree in enumerate(trees):
         tree_name = "tree" + str(i)
         time = tree.get_farthest_leaf()[0].time
         if time > longest_time:
@@ -44,53 +53,29 @@ def parse_ancestry(netpath, outdir, dead_ends, names, single_leaf, nhx, fmt):
             format=fmt,
             features=["time"] if nhx else None
         )
-    logging.info("Longest lineages are: " + ", ".join(longest))
-    logging.info(f"These lineages survived for {longest_time} MCSs)")
-    logging.info("Finished")
 
-    return longest
-
-
-def read_ancestry(path, dead_ends=True, names=True, single_leaf=True, up_to=-1):
-    path = Path(path)
-    timepoints = {}
-    for filepath in path.glob("anc_*.txt"):
-        time = int(re.search(r"(?<=t)\d+", filepath.name).group())
-        if up_to != -1 and time > up_to:
-            continue
-            
-        cells = []
-        with open(filepath) as file:
-            lines = file.read().split("\n")
-        for line in lines:
-            if not line:
-                continue
-            cell_sigma, anc_sigma = line.split(" ")
-            if cell_sigma == "0":
-                continue
-            cells.append((int(cell_sigma), int(anc_sigma)))
-        timepoints[time] = cells
-    return make_trees(timepoints, dead_ends, names, single_leaf)
+    return longest_time, longest
 
 
 # Remember that although the sigmas are added as names, the same id can refer to DIFFERENT cells
-def make_trees(timepoints, dead_ends=True, names=True, single_leaf=True):
-    # Order by time backwards
-    # This is needed to deal with dead-ends
-    timepoints = {k: timepoints[k] for k in sorted(timepoints, reverse=True)}
+def make_trees(celldf: pd.DataFrame, dead_ends=True, names=True, single_leaf=True):
+    logging.info("Building trees from cell ancestry data")
     # This dict holds the descendents of the current cells
     prev_anc_child = {}
-    for time, cell_batch in timepoints.items():
+    # Order by time backwards
+    # This is needed to deal with dead-ends in a nice way
+    for time in celldf["time"].sort_values(ascending=False).unique():
         # This dict holds the ancestors of the current cells
         next_anc_child = {}
-        for cell_sigma, anc_sigma in cell_batch:
+        tdf = celldf.loc[time]
+        for sigma, anc_sigma in zip(tdf["sigma"], tdf["ancestor"]):
             # Keep dead ends from being added to the trees
-            if not dead_ends and prev_anc_child and cell_sigma not in prev_anc_child:
+            if not dead_ends and prev_anc_child and sigma not in prev_anc_child:
                 continue
-            node = Tree(name=str(cell_sigma) if names else "")
+            node = Tree(name=str(sigma) if names else "")
             node.add_feature("time", time)
-            if cell_sigma in prev_anc_child:
-                for child in prev_anc_child[cell_sigma]:
+            if sigma in prev_anc_child:
+                for child in prev_anc_child[sigma]:
                     node.add_child(child)
             if anc_sigma not in next_anc_child:
                 next_anc_child[anc_sigma] = []
@@ -100,10 +85,10 @@ def make_trees(timepoints, dead_ends=True, names=True, single_leaf=True):
     # Construct root trees
     trees = []
     for anc_sigma, children in prev_anc_child.items():
-        root = Tree(name=anc_sigma if names else "")
         # The roots date from the start of the simulation
         # Unfortunately, root attributes can't be saved in NHX, so adding it as a feature is
         # futile
+        root = Tree(name=anc_sigma if names else "")
         for child in children:
             root.add_child(child)
         # Exclude trees that only have a single leaf due to being part of an exclusively

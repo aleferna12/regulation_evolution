@@ -16,27 +16,28 @@ def parse_food_data(datapath, time_filter: list = None) -> pd.DataFrame:
 
 
 def parse_cell_data(datapath,
-                    index=True,
                     time_filter: list = None) -> pd.DataFrame:
-    cell_df = _parse_dfs(datapath, time_filter)
+    """Parses a CSV file into a dataframe containing cell information.
+
+    The format of this dataframe is essential to API stability, please be mindful of changes to it.
+    """
+    celldf = _parse_dfs(datapath, time_filter)
     list_attrs = ["neighbour_list", "neighbourJ_list", "in_scale_list", "reg_threshold_list",
                   "reg_w_innode_list", "reg_w_regnode_list", "out_threshold_list",
                   "out_w_regnode_list"]
     for key in list_attrs:
         # If the string only contains one object it will be already parsed as a literal type
         # so no need to split it
-        if cell_df[key].dtype == object:
-            cell_df[key] = cell_df[key].apply(
+        if celldf[key].dtype == object:
+            celldf[key] = celldf[key].apply(
                 lambda string: [ast.literal_eval(x) for x in string.split(' ')]
             )
-    cell_df.sort_values(["time", "sigma"], inplace=True)
+    celldf = celldf.sort_values(["time", "sigma"])
 
-    if not index:
-        return cell_df
     if Path(datapath).is_file():
-        return cell_df.set_index("sigma", drop=False)
+        return celldf.set_index("sigma", drop=False)
     # Multi-index
-    return cell_df.set_index(["time", "sigma"], drop=False)
+    return celldf.set_index(["time", "sigma"], drop=False)
 
 
 def get_time_points(datapath):

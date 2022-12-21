@@ -1099,6 +1099,8 @@ int Dish::saveCellData(int Time) {
              << c.gextiming << ',' << c.dividecounter << ',' << c.grad_conc << ',' << c.meanx << ',' << c.meany << ','
              << c.chemvecx << ',' << c.chemvecy << ',' << c.target_area << ',' << c.chemmu << ','
              << c.times_divided << ',' << c.colour << ',' << c.ancestor << ',' << c.vJ[0] << ',';
+        // Need to reset everytime we save data
+        c.resetAncestor();
 
         file << vectorToString(c.jkey, '\0') << ',';
         file << vectorToString(c.jlock, '\0') << ',';

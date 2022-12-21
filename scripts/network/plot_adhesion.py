@@ -1,23 +1,28 @@
 import logging
 import sys
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
+from typing import List, Set
 from plotly.subplots import make_subplots
 from parse import parse_cell_data, build_time_filter, get_time_points
+
+# Type alias
+CellCluster = List[Set[int]]
 
 
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    datapath = sys.argv[1]
+    datadir = sys.argv[1]
     outfile = sys.argv[2]
     start_season = int(sys.argv[3]) if len(sys.argv) > 3 else 0
     n_seasons = int(sys.argv[4]) if len(sys.argv) > 4 else None
     n_samples = int(sys.argv[5]) if len(sys.argv) > 5 else None
 
-    t_filter = build_time_filter(get_time_points(datapath), start=start_season, n=n_seasons)
-    cell_df = parse_cell_data(datapath, time_filter=t_filter)
-    fig = make_plots(cell_df, n_samples)
+    t_filter = build_time_filter(get_time_points(datadir), start=start_season, n=n_seasons)
+    celldf = parse_cell_data(datadir, time_filter=t_filter)
+    fig = make_plots(celldf, n_samples)
 
     if outfile[-5:] == ".html":
         fig.write_html(outfile)
@@ -25,7 +30,7 @@ def main():
         fig.write_image(outfile)
 
 
-def make_plots(cell_df, n_samples):
+def make_plots(celldf: pd.DataFrame, n_samples):
     fig = make_subplots(3, 1, subplot_titles=["Prevalence of multicellularity",
                                               "Medium gamma of neighbouring cells",
                                               "Medium gamma of all x all cells"])
@@ -35,21 +40,14 @@ def make_plots(cell_df, n_samples):
     neigh_gammas = []
     all_gammas = []
     for key in ["jkey", "jlock"]:
-        cell_df[key] = cell_df[key].apply(lambda string: np.array(list(string), dtype=int))
-    cell_df["jkey_jlock"] = list(np.stack([cell_df["jkey"], cell_df["jlock"]], axis=1))
+        celldf[key] = celldf[key].apply(lambda string: np.array(list(string), dtype=int))
+    celldf["jkey_jlock"] = list(np.stack([celldf["jkey"], celldf["jlock"]], axis=1))
 
-    for season in set(cell_df["time"]):
+    for season in set(celldf["time"]):
         x.append(int(season))
-        sdf = cell_df[cell_df["time"] == season]
+        sdf = celldf[celldf["time"] == season]
 
-        clusters = get_adhering_clusters(
-            sdf["sigma"],
-            get_adhering_neighbours(
-                sdf["neighbour_list"],
-                sdf["neighbourJ_list"],
-                sdf["medJ"]
-            )
-        )
+        clusters = get_adhering_clusters(sdf)
         unicells = 0
         total_pop = 0
         for c in clusters:
@@ -95,10 +93,12 @@ def make_plots(cell_df, n_samples):
     return fig.update_layout(showlegend=False)
 
 
-def get_adhering_neighbours(neigh_lists, neighJ_lists, medJs):
+def get_adhering_neighbours(celldf: pd.DataFrame):
     """Return a list of lists with the neighbours that each cell is adhering to."""
     adh_neigh_lists = []
-    for neigh_list, neighJ_list, medJ in zip(neigh_lists, neighJ_lists, medJs):
+    for neigh_list, neighJ_list, medJ in zip(celldf["neighbour_list"],
+                                             celldf["neighbourJ_list"],
+                                             celldf["medJ"]):
         ad_neigh_list = []
         for neigh, neighJ in zip(neigh_list, neighJ_list):
             if neigh != 0 and medJ - neighJ / 2 > 0:
@@ -107,14 +107,17 @@ def get_adhering_neighbours(neigh_lists, neighJ_lists, medJs):
     return adh_neigh_lists
 
 
-def get_adhering_clusters(sigmas, adh_neigh_lists):
+def get_adhering_clusters(celldf: pd.DataFrame) -> CellCluster:
     """Returns a list of list representing the different clusters of adhering cells in the
     system."""
-    neigh_set = set(sigmas)
-    if len(neigh_set) != len(sigmas):
+    if not celldf["sigma"].is_unique:
         raise ValueError("make sure this function is called for a single time point")
+
+    logging.info("Computing adhering clusters of neighbouring cells from cell data")
+    adh_neigh_lists = get_adhering_neighbours(celldf)
     clusters = []
-    neigh_dict = dict(zip(sigmas, adh_neigh_lists))
+    neigh_set = set(celldf["sigma"])
+    neigh_dict = dict(zip(celldf["sigma"], adh_neigh_lists))
     while neigh_set:
         cluster = set()
         qneighs = {neigh_set.pop()}
@@ -126,7 +129,7 @@ def get_adhering_clusters(sigmas, adh_neigh_lists):
                 qneighs.update(neigh_dict[neigh])
 
         neigh_set -= cluster
-        clusters.append(list(cluster))
+        clusters.append(set(cluster))
 
     return clusters
 

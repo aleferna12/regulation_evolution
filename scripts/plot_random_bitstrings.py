@@ -30,8 +30,9 @@ def make_bitstrings(n, length):
 
 def cell_cell_J(k1, l1, k2, l2):
     # Similar to prev. Jmed (results in a normal distr.):
-    # mult = np.arange(1, len(k1) + 1) * 2
-    mult = np.full(len(k1), 2)**np.arange(0, len(k1))
+    mult = np.arange(1, len(k1) + 1) * 2
+    # Proposed in the meeting:
+    # mult = np.full(len(k1), 2)**np.arange(0, len(k1))
     j1 = np.sum((k1 != l2) * mult)
     j2 = np.sum((k2 != l1) * mult)
     return (j1 + j2) / 2
