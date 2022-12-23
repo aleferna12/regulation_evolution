@@ -245,7 +245,7 @@ protected:
 
     // Protected member functions
 
-    /*! \brief Used in Plot. Takes a color and turns it into a grey value.
+    /*! \brief Used in makePlots. Takes a color and turns it into a grey value.
 
     \param val: Value from PDE plane.
 

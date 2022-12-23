@@ -180,42 +180,6 @@ public:
 
     void InitializeEdgeList(bool init_single_cell_center); //Set the initial edgelist which are eligible to change
 
-    /*! \brief Plots the dish to the screen or to a movie and searches the
-     neighbours.
-
-     These distinct tasks have been lumped together in the
-     same method because both for drawing the black lines between the
-     cells and for searching the neighbours, the cell borders have to be
-     determined. */
-    int **SearchNandPlot(Graphics *g = nullptr, bool get_neighbours = true);
-
-    void CellAngleColour(Graphics *g = nullptr);
-
-    void CellOrderColour(Graphics *g = nullptr);
-
-    //! Plot the dish to Graphics window g
-    inline void Plot(Graphics *g, int colour) {
-        switch (colour) {
-            case 0:
-                SearchNandPlot(g, false);
-                break;
-            case 1:
-                CellAngleColour(g);
-                break;
-            case 2:
-                CellOrderColour(g);
-                break;
-            default:
-                cerr << "CPM Plot: invalid option. exiting..." << endl;
-                exit(1);
-        }
-    }
-
-    //! Searches the cells' neighbors without plotting
-    inline int **SearchNeighbours(void) {
-        return SearchNandPlot(0, true);
-    }
-
     //! Return the total area occupied by the cells
     inline int Mass() {
         int mass = 0;
@@ -224,12 +188,6 @@ public:
         }
         return mass;
     }
-
-    /*! Plot the cells according to their cell identity, not their type.
-
-    The black lines are omitted.
-    */
-    void PlotSigma(Graphics *g, int mag = 2);
 
     // Tells the cell cell_sigma to divide, given its boundingbox
     // TODO: Put in cell.h
@@ -373,6 +331,8 @@ private:
     std::vector<Cell> *cell;
     int zygote_area;
     int thetime;
+
+    void drawCellBorderIfNeeded(Graphics *g, int i, int j);
 
 };
 

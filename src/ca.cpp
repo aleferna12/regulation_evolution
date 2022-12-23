@@ -763,8 +763,9 @@ void CellularPotts::ConvertSpinToMedium(int x, int y) {
                 check += (*cell)[point].updateNeighbourBoundary(idNeigh, 1);
         }
         if (check) {
-            printf("error in ConvertSpinToMedium(): wrongly updating neighbours of copy event idSelf %d and idNeigh %d\n",
-                   idSelf, idNeigh);
+            printf(
+                "error in ConvertSpinToMedium(): wrongly updating neighbours of copy event idSelf %d and idNeigh %d\n",
+                idSelf, idNeigh);
             //printf("agent nr %d\n", agentid);
             exit(1);
         }
@@ -1020,268 +1021,6 @@ int CellularPotts::AmoebaeMove2(PDE *PDEfield) {
     }//end for loop
 
     return SumDH;
-
-}
-
-
-/** A simple method to plot all sigma's in window
-    without the black lines */
-void CellularPotts::PlotSigma(Graphics *g, int mag) {
-
-    for (int x = 0; x < sizex; x++)
-        for (int y = 0; y < sizey; y++) {
-            for (int xm = 0; xm < mag; xm++)
-                for (int ym = 0; ym < mag; ym++)
-                    g->Point(sigma[x][y], mag * x + xm, mag * y + ym);
-        }
-
-}
-
-//function to plot the direction of the target vector as a cell colour
-void CellularPotts::CellAngleColour(Graphics *g) {
-
-    for (int i = 0; i < sizex; i++)
-        for (int j = 0; j < sizey; j++) {
-            int colour;
-
-            if (i == 0 || i == sizex - 1 || j == 0 || j == sizey) {
-                colour = 0;
-                g->Point(colour, 2 * i, 2 * j);
-                g->Point(colour, 2 * i + 1, 2 * j);
-                g->Point(colour, 2 * i, 2 * j + 1);
-                g->Point(colour, 2 * i + 1, 2 * j + 1);
-                continue;
-            }
-
-            if (sigma[i][j] <= 0) {
-                colour = 0;
-            } else {
-                colour = (*cell)[sigma[i][j]].AngleColour();
-                //colour = sigma[i][j];
-            }
-
-            //colour point if this is a cell
-            if (sigma[i][j] > 0) {
-
-                g->Point(colour, 2 * i, 2 * j); //draws 2i,2j
-                //check if the other 3 pixels in the image should be coloured as boundary
-                //if this cell different from what is on i+1,j
-                //south
-                if (sigma[i][j] != sigma[i + 1][j] && i + 1 < sizex - 1) {
-                    g->Point(1, 2 * i + 1, 2 * j);
-                } else {
-                    g->Point(colour, 2 * i + 1, 2 * j);
-                }
-                //east
-                if (sigma[i][j] != sigma[i][j + 1] && j + 1 < sizey - 1) {
-                    g->Point(1, 2 * i, 2 * j + 1);
-                } else {
-                    g->Point(colour, 2 * i, 2 * j + 1);
-                }
-                //southeast
-                if (i + 1 < sizex - 1 && j + 1 < sizey - 1 &&
-                    (sigma[i][j] != sigma[i + 1][j + 1] || sigma[i + 1][j] != sigma[i][j + 1])) {
-                    g->Point(1, 2 * i + 1, 2 * j + 1);
-                } else {
-                    g->Point(colour, 2 * i + 1, 2 * j + 1);
-                }
-            }//if this is a cell
-
-        } //end of for loop
-
-
-
-
-}
-
-void CellularPotts::CellOrderColour(Graphics *g) {
-    vector<double> cellorder;
-    double temp;
-
-//determine order value for each cell (mapped to value between 0 and 1, 0 being fully aligned and 1 being
-//fully counteraligned)
-    for (auto c: (*cell)) {
-        temp = 0.;
-        for (auto n: c.neighbours) {
-            temp += (c.tvecx * (*cell)[n.first].tvecx + c.tvecy * (*cell)[n.first].tvecy) + 1.;
-        }
-        cellorder.push_back(temp / (2 * c.neighbours.size()));
-    }
-
-    for (int i = 0; i < sizex; i++)
-        for (int j = 0; j < sizey; j++) {
-            int colour;
-
-            if (i == 0 || i == sizex - 1 || j == 0 || j == sizey) {
-                colour = 0;
-                g->Point(colour, 2 * i, 2 * j);
-                g->Point(colour, 2 * i + 1, 2 * j);
-                g->Point(colour, 2 * i, 2 * j + 1);
-                g->Point(colour, 2 * i + 1, 2 * j + 1);
-                continue;
-            }
-
-            if (sigma[i][j] <= 0) {
-                colour = 0;
-            } else {
-                colour = (int) (cellorder[sigma[i][j]] * 127 + 2);
-                //colour = sigma[i][j];
-            }
-
-            //colour point if this is a cell
-            if (sigma[i][j] > 0) {
-
-                g->Point(colour, 2 * i, 2 * j); //draws 2i,2j
-                //check if the other 3 pixels in the image should be coloured as boundary
-                //if this cell different from what is on i+1,j
-                //south
-                if (sigma[i][j] != sigma[i + 1][j] && i + 1 < sizex - 1) {
-                    g->Point(1, 2 * i + 1, 2 * j);
-                } else {
-                    g->Point(colour, 2 * i + 1, 2 * j);
-                }
-                //east
-                if (sigma[i][j] != sigma[i][j + 1] && j + 1 < sizey - 1) {
-                    g->Point(1, 2 * i, 2 * j + 1);
-                } else {
-                    g->Point(colour, 2 * i, 2 * j + 1);
-                }
-                //southeast
-                if (i + 1 < sizex - 1 && j + 1 < sizey - 1 &&
-                    (sigma[i][j] != sigma[i + 1][j + 1] || sigma[i + 1][j] != sigma[i][j + 1])) {
-                    g->Point(1, 2 * i + 1, 2 * j + 1);
-                } else {
-                    g->Point(colour, 2 * i + 1, 2 * j + 1);
-                }
-            }//if this is a cell
-
-        } //end of for loop
-
-
-
-
-}
-
-int **CellularPotts::SearchNandPlot(Graphics *g, bool get_neighbours) {
-    int i, j, q;
-    int **neighbours = nullptr;
-
-
-    // Allocate neighbour 2D matrix - of size ncells x ncells
-    // Notice that this does not seem to be done because the function is called with
-    // get_neighbours=false
-    if (get_neighbours) {
-        neighbours = (int **) malloc((cell->size() + 1) * sizeof(int *));
-        if (neighbours == nullptr)
-            MemoryWarning();
-
-        neighbours[0] = (int *) malloc((cell->size() + 1) * (cell->size() + 1) * sizeof(int));
-        if (neighbours[0] == nullptr)
-            MemoryWarning();
-
-        for (i = 1; i < (int) cell->size() + 1; i++)
-            neighbours[i] = neighbours[i - 1] + (cell->size() + 1);
-
-        /* Clear this matrix */
-        for (i = 0; i < ((int) cell->size() + 1) * ((int) cell->size() + 1); i++)
-            neighbours[0][i] = EMPTY;
-    }
-
-    //for ( i = 0; i < sizex-1; i++ )
-    //  for ( j = 0; j < sizey-1; j++ ) {
-    for (i = 0; i < sizex; i++)
-        for (j = 0; j < sizey; j++) {
-            int colour;
-
-            if (i == 0 || i == sizex - 1 || j == 0 || j == sizey) {
-                colour = 0;
-                g->Point(colour, 2 * i, 2 * j);
-                g->Point(colour, 2 * i + 1, 2 * j);
-                g->Point(colour, 2 * i, 2 * j + 1);
-                g->Point(colour, 2 * i + 1, 2 * j + 1);
-                continue;
-            }
-
-            if (sigma[i][j] <= 0) {
-                colour = 0;
-            } else {
-                if (!par.divisioncolour) {
-                    colour = (*cell)[sigma[i][j]].Colour() + 7 * ((*cell)[sigma[i][j]].getTau() - 1);
-                    // if (colour !=2 && colour !=3) cerr<<" Wrong colour! "<< colour<<endl;
-                } else {
-                    colour = (*cell)[sigma[i][j]].getTau() + 1 + ((*cell)[sigma[i][j]].getTau() - 1) * 4;
-                }
-
-                //colour = sigma[i][j];
-            }
-
-            if (g && sigma[i][j] > 0)  /* if draw */
-                g->Point(colour, 2 * i, 2 * j); //draws 2i,2j
-
-            // WAS -> if ( sigma[i][j] != sigma[i+1][j] )  /* if cellborder */ /* etc. etc. */
-            if (sigma[i][j] != sigma[i + 1][j] && i + 1 < sizex - 1) //if this cell different from what is on i+1,j
-            {
-                if (g) g->Point(1, 2 * i + 1, 2 * j); //draws 2i+1,2j black because cells neighbours
-                if (get_neighbours) {
-                    if (sigma[i][j] > 0) {
-                        for (q = 0; q < (int) cell->size(); q++)
-                            if (neighbours[sigma[i][j]][q] == EMPTY) {
-                                neighbours[sigma[i][j]][q] = sigma[i + 1][j];
-                                break;
-                            } else if (neighbours[sigma[i][j]][q] == sigma[i + 1][j])
-                                break;
-                    }
-                    if (sigma[i + 1][j] > 0) {
-                        for (q = 0; q < (int) cell->size(); q++)
-                            if (neighbours[sigma[i + 1][j]][q] == EMPTY) {
-                                neighbours[sigma[i + 1][j]][q] = sigma[i][j];
-                                break;
-                            } else if (neighbours[sigma[i + 1][j]][q] == sigma[i][j])
-                                break;
-                    }
-                } //endif get_neighbours
-                // else same sigma
-            } else if (g && sigma[i][j] > 0)
-                g->Point(colour, 2 * i + 1, 2 * j); //we colour the point i+1,j
-            //we check sigma at point i,j+1
-            if (sigma[i][j] != sigma[i][j + 1] && j + 1 < sizey - 1) {
-                if (g) g->Point(1, 2 * i, 2 * j + 1);
-                //check neighbours
-                if (get_neighbours) {
-                    if (sigma[i][j] > 0) {
-                        for (q = 0; q < (int) cell->size(); q++)
-                            if (neighbours[sigma[i][j]][q] == EMPTY) {
-                                neighbours[sigma[i][j]][q] = sigma[i][j + 1];
-                                break;
-                            } else if (neighbours[sigma[i][j]][q] == sigma[i][j + 1])
-                                break;
-                    }
-
-                    if (sigma[i][j + 1] > 0) {
-
-                        for (q = 0; q < (int) cell->size(); q++)
-                            if (neighbours[sigma[i][j + 1]][q] == EMPTY) {
-                                neighbours[sigma[i][j + 1]][q] = sigma[i][j];
-                                break;
-                            } else if (neighbours[sigma[i][j + 1]][q] == sigma[i][j])
-                                break;
-                    }
-                }//end get_neighbours
-            } else if (g && sigma[i][j] > 0)
-                g->Point(colour, 2 * i, 2 * j + 1);
-
-            /* Cells that touch eachother's corners are NO neighbours */
-            if (i + 1 < sizex - 1 && j + 1 < sizey - 1 &&
-                (sigma[i][j] != sigma[i + 1][j + 1] || sigma[i + 1][j] != sigma[i][j + 1])) {
-                if (g) g->Point(1, 2 * i + 1, 2 * j + 1);
-            } else if (g && sigma[i][j] > 0)
-                g->Point(colour, 2 * i + 1, 2 * j + 1);
-        } //end of for loop
-
-    if (get_neighbours)
-        return neighbours;
-    else
-        return nullptr;
 
 }
 
@@ -1623,7 +1362,7 @@ Dir *CellularPotts::FindCellDirections3() const {
         if (sxy != 0.0) {
 //       cerr<<"sxy!=0, lb1: "<<lb1<<", syy: "<<syy<<", sxx: "<<sxx<<", sxy: "<<sxy<<endl;
             celldir[i].bb1 =
-                    sxy / (lb1 - syy); // APPARENTLY THIS IS FINE- This is y/x - shoudn't it be = syy/(sxy-lb1)?
+                sxy / (lb1 - syy); // APPARENTLY THIS IS FINE- This is y/x - shoudn't it be = syy/(sxy-lb1)?
             // I think this is correct : celldir[i].bb1=syy/(lb1-sxy);
             // and NOT WHAT IS THERE.. UNLESS I am wrong :P
             if (fabs(celldir[i].bb1) < small_number) {
@@ -1634,15 +1373,15 @@ Dir *CellularPotts::FindCellDirections3() const {
             }
 
             celldir[i].aa1 =
-                    ymean -
-                    xmean * celldir[i].bb1; //this is the intercept to the y axis of the line with slope first eigenv.
+                ymean -
+                xmean * celldir[i].bb1; //this is the intercept to the y axis of the line with slope first eigenv.
             // which passes through xmean and ymean
             celldir[i].bb2 = (-1.) / celldir[i].bb1; // bb2 is the direction perpendicular to the first eigenvector
             // (because the perpend. to a line y=mx+q has slope -1/m)
 
             celldir[i].aa2 =
-                    ymean -
-                    celldir[i].bb2 * xmean; // this is the intercept to y axis of the line of the second eigenvector
+                ymean -
+                celldir[i].bb2 * xmean; // this is the intercept to y axis of the line of the second eigenvector
             // along this line we cut the cell !!!
         } else {
 //       cerr<<"sxy=0, ";
@@ -1800,7 +1539,7 @@ int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
                             //take duration from mother iff sigmaneigh is not mother
                             if (sigmaneigh != motherp->Sigma() && sigmaneigh != MEDIUM)
                                 (*cell)[sigma[i][j]].SetNeighbourDurationFromMother(sigmaneigh, motherp->returnDuration(
-                                        sigmaneigh));
+                                    sigmaneigh));
 
                             //also cell to which sigmaneigh belongs must be updated, if it is not medium
                             if (sigmaneigh) {
@@ -1808,7 +1547,7 @@ int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
                                 if (sigmaneigh != motherp->Sigma()) {
                                     (*cell)[sigmaneigh].SetNeighbourDurationFromMother(sigma[i][j],
                                                                                        motherp->returnDuration(
-                                                                                               sigmaneigh));
+                                                                                           sigmaneigh));
                                 }
                             }
 

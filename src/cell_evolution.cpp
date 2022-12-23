@@ -34,7 +34,6 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "dish.h"
 #include "random.h"
 #include "cell.h"
-#include "info.h"
 #include "output.h"
 
 #ifdef QTGRAPHICS
@@ -161,10 +160,8 @@ INIT {
 static int last_added_fp = 0;
 
 TIMESTEP {
-
     try {
         static Dish *dish = new Dish(); //here ca planes and cells are constructed
-        static Info *info = new Info(*dish, *this);
         static int i = par.starttime; //starttime is set in Dish. Not the prettiest solution, but let's hope it works.
 
         if (!(i % 100000)) cerr << "TIME: " << i << endl;
@@ -239,43 +236,19 @@ TIMESTEP {
             ClearImage();
             if (par.readcolortable) {
                 //  dish->Plot(this,1);
-                dish->Plot(this, 2);
+                dish->makePlots(2, this);
             } else {
-                dish->Plot(this, 0);
+                dish->makePlots(0, this);
             }
             //dish->ChemPlane->Plot(this, dish->CPM);
             //char title[400];
             //snprintf(title,399,"CellularPotts: %d MCS",i);
             //ChangeTitle(title);
             EndScene();
-            info->Menu();
         }
         // TO FILE FOR MOVIE
         if (par.store && !(i % par.storage_stride)) {
-            if (par.readcolortable) {
-                char fname[300];
-                sprintf(fname, "%s/angle%09d.png", par.moviedir, i);
-                BeginScene(); //this is an empty function for X11
-                ClearImage(); //
-                dish->Plot(this, 1); //everything contained here
-                EndScene();
-                Write(fname);
-                sprintf(fname, "%s/order%09d.png", par.moviedir, i);
-                BeginScene(); //this is an empty function for X11
-                ClearImage(); //
-                dish->Plot(this, 2); //everything contained here
-                //dish->ChemPlane->Plot(this,dish->CPM); //will this work?  YES !!!
-                EndScene();
-                Write(fname); //FIXED SO THAT CODE AND IMAGE MATCH!
-            } else {
-                char fname[300];
-                sprintf(fname, "%s/tau%09d.png", par.moviedir, i);
-                // BeginScene(); //this is an empty function for X11
-                ClearImage();
-                dish->Plot(this, 0); // this is g //everything contained here
-                EndScene();
-                Write(fname);
-            }
+            dish->makePlots(i, this);
         }
         if (!(i % par.save_data_period)) {
             dish->saveFoodData(i);

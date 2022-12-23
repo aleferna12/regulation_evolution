@@ -173,7 +173,7 @@ private:
 
     void GenerateColorTable(XColor *colors);
 
-    void ReadColorTable(XColor *colors, const char *colortable_filename);
+    static void ReadColorTable(XColor *colors, const char *colortable_filename);
 
     void MakeColorMap();
 

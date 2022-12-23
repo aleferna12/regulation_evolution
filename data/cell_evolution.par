@@ -8,8 +8,8 @@ mcs = 20000000
 season_duration = 30000
 
 ### grid size ###
-sizex = 100
-sizey = 100
+sizex = 200
+sizey = 200
 
 
 
@@ -99,7 +99,7 @@ scaling_cell_to_ca_time = 20  # scaling factor for: freq update food plane, pred
 howmany_makeit_for_nextgen = 100
 popsize = 100
 
-n_init_cells = 15
+n_init_cells = 30
 size_init_cells = 25
 
 #Initial configuration of cells, see ca.cpp placecellsorderly()
@@ -166,9 +166,9 @@ foodpatchperiod = 2000
 # Side of each food patch (total amount of spots per patch will be this squared)
 foodpatchlength = 10
 # How much food each spot contains
-foodperspot = 10
+foodperspot = 20
 # Max food allowed in the system (regulates foodpatchperiod)
-maxfood = 5000
+maxfood = 16000
 # How much food does each cell start with?
 foodstart = 2000
 # How often in MCS we deduct 1 food from each cell
@@ -215,6 +215,8 @@ save_lattice_period = 10000
 latticedir = ../runs/backup
 
 #if readcolortable is true, it reads the color table from "colortable_filename", otherwise it generates a pretty one internally
-readcolortable = false
-colortable_filename = ../data/circular.ctb
-#derived from circular colormap "twilight" on github
+readcolortable = true
+colortable_filename = ../data/colortable.ctb
+# Which plots to make, specified as a space-delimited string
+# Possible values for the list are: tau food
+plots = food tau

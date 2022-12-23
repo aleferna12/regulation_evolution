@@ -67,14 +67,25 @@ public:
 
     virtual ~Dish();
 
-    /*! \brief Plot the Dish to graphics window g.
+    //! Master function that should be modified whenever we add new subplots or change the colortable format.
+    void makePlots(int Time, Graphics *g);
 
-    Simply calls CPM->Plot.
-    And also colors depnd on food.
-    */
-    void ChemPlot(Graphics *g) const;
+    void plotChemPlane(Graphics *g, int start_index, int n_colors) const;
 
-    void Plot(Graphics *g, int colour);
+    void plotFoodPLane(Graphics *g, int color_index) const;
+
+    //! makePlots the food for each cell (but differently for each cell type).
+    //! \param start_index: First color of the two color gradients in the colortable (they must be in tandem).
+    //! \param n_colors: Size of both gradients summed.
+    void plotCellFood(Graphics *g, int start_index, int n_colors);
+
+    //! makePlots migrating and dividing cells.
+    void plotCellTau(Graphics *g, int div_index, int mig_index);
+
+    void plotCellVectors(Graphics *g);
+
+    //! Used to decide whether a cell border should be drawn at this position.
+    void drawCellBorderIfNeeded(Graphics *g, int i, int j) const;
 
     void InitKeyLock();
 
@@ -186,8 +197,6 @@ protected:
     // Number of resource sources
     int grad_sources;
     vector<FoodPatch> fpatches;
-
-    void FoodPlot(Graphics *g, int colori) const;
 };
 
 #define INIT void Dish::Init(void)

@@ -120,6 +120,7 @@ public:
     double chancemediumcopied;
     bool readcolortable;
     char *colortable_filename;
+    char *plots;
     int maxtau;
     double mut_rate;
     double startmu;

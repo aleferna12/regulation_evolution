@@ -4,9 +4,9 @@ import re
 from pathlib import Path
 from ete3 import Tree, TreeStyle, AttrFace
 from random import shuffle, seed
-from colorir import *
 from parse import parse_cell_data
 from plot_adhesion import get_adhering_clusters, CellCluster
+from colorir import *
 
 _cs = Palette.load()
 

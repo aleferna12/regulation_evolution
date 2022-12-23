@@ -14,7 +14,6 @@ add_executable(cell_evolution
         src/cell.cpp src/cell.h
         src/conrec.cpp src/conrec.h
         src/dish.cpp src/dish.h
-        src/info.cpp src/info.h
         src/misc.cpp src/misc.h
         src/output.cpp src/output.h
         src/parameter.cpp src/parameter.h

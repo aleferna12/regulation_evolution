@@ -114,6 +114,7 @@ Parameter::Parameter() {
     metabolic_conversion = 0.5;
     readcolortable = false;
     colortable_filename = "default.ctb";
+    plots = "tau";
     mut_rate = 0.01;
     startmu = 0.0;
     persduration = 0;
@@ -790,6 +791,7 @@ void Parameter::Read(const char *filename) {
     chancemediumcopied = fgetpar(fp, "chancemediumcopied", 0.0001, true);
     readcolortable = bgetpar(fp, "readcolortable", false, true);
     colortable_filename = sgetpar(fp, "colortable_filename", "default.ctb", true);
+    plots = sgetpar(fp, "plots", "tau", true);
     evolsim = igetpar(fp, "evolsim", 0, true);
     mut_rate = fgetpar(fp, "mut_rate", 0.01, true);
     persduration = igetpar(fp, "persduration", 0, true);
@@ -1037,6 +1039,7 @@ void Parameter::Write(ostream &os) const {
     os << " save_data_period = " << save_data_period << endl;
     os << " readcolortable = " << readcolortable << endl;
     os << " colortable_filename = " << colortable_filename << endl;
+    os << " plots = " << plots << endl;
     os << " mut_rate = " << mut_rate << endl;
     os << " evolsim = " << evolsim << endl;
     os << " persduration = " << persduration << endl;

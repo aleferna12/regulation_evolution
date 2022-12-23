@@ -48,12 +48,22 @@ public:
     virtual void EndScene(void) {
     };
 
-    /*! \brief Plot a point in the Graphics window.
+    /*! \brief makePlots a point in the Graphics window.
 
     \param color: Color index, as defined in colormap file "default.ctb", which should be in the same directory as the executable.
     \param x,y: Coordinate of point, in Graphics coordinates (typically twice as large as the cellular automata coordinates).
     */
     virtual void Point(int color, int x, int y) = 0;
+    //! Draw four points instead of one, used instead of Point when we want the picture to have twice the size
+    void QuadPoint(int color, int x, int y) {
+        Point(color, 2 * x, 2 * y);
+        Point(color, 2 * x + 1, 2 * y);
+        Point(color, 2 * x, 2 * y + 1);
+        Point(color, 2 * x + 1, 2 * y + 1);//draws 2i,2j
+    }
+
+    //! Draws white over the whole image.
+    virtual void ClearImage() = 0;
 
     /*! \brief Draws a line (obviously... :-)
 

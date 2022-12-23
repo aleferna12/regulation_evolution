@@ -33,7 +33,6 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <nlohmann/json.hpp>
 #include "dish.h"
 #include "sticky.h"
-#include "info.h"
 #include "crash.h"
 #include "pde.h"
 #include "intplane.h"
@@ -430,12 +429,32 @@ void Dish::UpdateNeighDuration() {
     //cerr<<"Hello UpdateNeighDuration end"<<endl;
 }
 
-// Colors for food are indicised from 10 to 60, with some simple calculations it should be easy
-// to make them pretty
-void Dish::ChemPlot(Graphics *g) const {
-    // cpm->sigma[x][y] returns sigma, which I can use to indicise the vector of cells... can I? yes_
-    int startcolorindex = 16;
-    int ncolors = 29;
+
+void Dish::makePlots(int Time, Graphics *g) {
+    g->BeginScene();
+    g->ClearImage();
+    plotChemPlane(g, 8, 64);
+    plotFoodPLane(g, 2);
+
+    for (auto &plot : stringToVector<string>(par.plots, ' ')) {
+        // The idea is to change these indexes if we ever need to update the colortable format
+        if (plot == string("tau"))
+            plotCellTau(g, 72, 72 + 8);
+        else if (plot == string("food"))
+            plotCellFood(g, 72, 16);
+        else
+            throw runtime_error("Unrecognized plot name in parameter 'plots'");
+        plotCellVectors(g);
+
+        char fname[300];
+        sprintf(fname, "%s/%s%09d.png", par.moviedir, plot.c_str(), Time);
+        g->Write(fname);
+    }
+    g->EndScene();
+}
+
+
+void Dish::plotChemPlane(Graphics *g, int start_index, int n_colors) const {
     auto minmaxfood = ChemPlane->getMinMax();
 
     // suspend=true suspends calling of DrawScene
@@ -443,48 +462,71 @@ void Dish::ChemPlot(Graphics *g) const {
         for (int y = 1; y < par.sizey - 1; y++)
 
             if (ChemPlane->Sigma(x, y) != 0) {
-                if (CPM->Sigma(x, y) == 0) {
-                    if (ChemPlane->Sigma(x, y) < 0) {
-                        cerr << "chemplane below zero!!" << endl;
-                    }
-                    int colori;
-                    if (minmaxfood.first == minmaxfood.second) {
-                        colori = startcolorindex;
-                    } else {
-                        colori = startcolorindex +
-                                 ncolors * (ChemPlane->Sigma(x, y) - minmaxfood.first) /
-                                 (minmaxfood.second - minmaxfood.first);
-                    }
-                    // Make the pixel four times as large
-                    // to fit with the CPM plane
-                    g->Point(colori, 2 * x, 2 * y);
-                    g->Point(colori, 2 * x + 1, 2 * y);
-                    g->Point(colori, 2 * x, 2 * y + 1);
-                    g->Point(colori, 2 * x + 1, 2 * y + 1);
+                if (ChemPlane->Sigma(x, y) < 0) {
+                    cerr << "chemplane below zero!!" << endl;
                 }
+                int colori;
+                if (minmaxfood.first == minmaxfood.second) {
+                    colori = start_index;
+                } else {
+                    double perc = (ChemPlane->Sigma(x, y) - minmaxfood.first)
+                                  / double(minmaxfood.second - minmaxfood.first);
+                    colori = start_index + int((n_colors - 1) * perc);
+                }
+                // Make the pixel four times as large
+                // to fit with the CPM plane
+                g->QuadPoint(colori, x, y);
             }
 }
 
-void Dish::FoodPlot(Graphics *g, int colori) const {
+
+void Dish::plotFoodPLane(Graphics *g, int color_index) const {
     for (int x = 1; x < par.sizex - 1; x++)
         for (int y = 1; y < par.sizey - 1; y++)
-            if (FoodPlane->Sigma(x, y) != -1 and CPM->Sigma(x, y) == 0) {
-                g->Point(colori, 2 * x, 2 * y);
-                g->Point(colori, 2 * x + 1, 2 * y);
-                g->Point(colori, 2 * x, 2 * y + 1);
-                g->Point(colori, 2 * x + 1, 2 * y + 1);
+            if (FoodPlane->Sigma(x, y) != -1) {
+                g->QuadPoint(color_index, x, y);
             }
 }
 
-void Dish::Plot(Graphics *g, int colour) {
-    if (CPM) {
-        CPM->Plot(g, colour);
+
+void Dish::plotCellTau(Graphics *g, int div_index, int mig_index) {
+    for (auto &c : cell) {
+        int color_i;
+        if (c.getTau() == PREDATOR)
+            color_i = div_index;
+        else
+            color_i = mig_index;
+        auto bb = c.getBoundingBox();
+        for (int i = bb.getMinX(); i < bb.getMaxX(); ++i) for (int j = bb.getMinY(); j < bb.getMaxY(); ++j) {
+            if (CPM->Sigma(i, j) == c.Sigma()) {
+                g->QuadPoint(color_i, i, j);
+                drawCellBorderIfNeeded(g, i, j);
+            }
+        }
     }
+}
 
-    //here chem grad plotting, with info from cpm and cell
-    ChemPlot(g);
-    FoodPlot(g, 100);
 
+void Dish::plotCellFood(Graphics *g, int start_index, int n_colors) {
+    for (auto &c : cell) {
+        int tau_index = start_index;
+        if (c.getTau() == PREY)
+            tau_index += n_colors / 2;
+        double perc = min(1., c.food / par.foodstart);
+        int color_i = tau_index + int((n_colors - 1) * (1 - perc) / 2);
+
+        auto bb = c.getBoundingBox();
+        for (int i = bb.getMinX(); i < bb.getMaxX(); ++i) for (int j = bb.getMinY(); j < bb.getMaxY(); ++j) {
+            if (CPM->Sigma(i, j) == c.sigma) {
+                g->QuadPoint(color_i, i, j);
+                drawCellBorderIfNeeded(g, i, j);
+            }
+        }
+    }
+}
+
+
+void Dish::plotCellVectors(Graphics *g) {
     //Plot direction arrows, with line function from X11?
     if (par.startmu > 0) {
         for (auto &c: cell) {
@@ -505,67 +547,93 @@ void Dish::Plot(Graphics *g, int colour) {
     }
 }
 
+
+void Dish::drawCellBorderIfNeeded(Graphics *g, int i, int j) const {
+    // WAS -> if ( sigma(i, j] != sigma(i+1, j) )  /* if cellborder */ /* etc. etc. */
+    if (CPM->Sigma(i, j) != CPM->Sigma(i + 1, j) && i + 1 < sizex - 1) //if this cell different from what is on i+1,j
+    {
+        if (g) g->Point(1, 2 * i + 1, 2 * j); //draws 2i+1,2j black because cells neighbours
+        // else same CPM->Sigma
+    }
+    //we check sigma at point i,j+1
+    if (CPM->Sigma(i, j) != CPM->Sigma(i, j + 1) && j + 1 < sizey - 1) {
+        if (g) g->Point(1, 2 * i, 2 * j + 1);
+    }
+
+    /* Cells that touch eachother's corners are NO neighbours */
+    if (i + 1 < sizex - 1 && j + 1 < sizey - 1 &&
+        (CPM->Sigma(i, j) != CPM->Sigma(i + 1, j + 1) || CPM->Sigma(i + 1, j) != CPM->Sigma(i, j + 1))) {
+        if (g) g->Point(1, 2 * i + 1, 2 * j + 1);
+    }
+}
+
+
 void Dish::CellsEat(int time) {
     for (auto &c: cell) {
-        if (c.AliveP()) {
-            if (time % par.metabperiod == 0)
-                --c.food;
-            // TODO: Make dividing cells able to eat again
-            if (c.getTau() == PREY) {
-                int chemsumx = 0, chemsumy = 0, chemtotal = 0;
-                BoundingBox bb = c.getBoundingBox();
-                int pixel_count = 0;
-                for (int x = bb.getMinX(); x < bb.getMaxX(); ++x) {
-                    for (int y = bb.getMinY(); y < bb.getMaxY(); ++y) {
-                        if (CPM->Sigma(x, y) == c.Sigma()) {
-                            ++pixel_count;
-                            if (time - c.last_meal > par.eatperiod) {
-                                int fp_id = FoodPlane->Sigma(x, y);
-                                if (fp_id != -1) {
-                                    c.food += fpatches[fp_id].consumeFood(x, y);
-                                    c.last_meal = time;
-                                }
-                            }
-                            int chem_xy = ChemPlane->Sigma(x, y);
-                            chemsumx += x * chem_xy;
-                            chemsumy += y * chem_xy;
-                            chemtotal += chem_xy;
-                        }
+        if (not c.AliveP())
+            continue;
+
+        if (time % par.metabperiod == 0)
+            --c.food;
+
+        int chemtotal = 0, chemsumx = 0, chemsumy = 0;
+        auto bb = c.getBoundingBox();
+        int pixel_count = 0;
+        for (int x = bb.getMinX(); x < bb.getMaxX(); ++x) {
+            for (int y = bb.getMinY(); y < bb.getMaxY(); ++y) {
+                if (c.Sigma() != CPM->Sigma(x, y))
+                    continue;
+
+                if (time - c.last_meal > par.eatperiod) {
+                    int fp_id = FoodPlane->Sigma(x, y);
+                    if (fp_id != -1) {
+                        c.food += fpatches[fp_id].consumeFood(x, y);
+                        c.last_meal = time;
                     }
                 }
-                if (pixel_count != c.Area()) {
-                    cerr << "Cell area is " << c.Area() << " but only " << pixel_count
-                         << " pixels were found inside bounding box";
-                    cerr << "Terminating the program";
-                    exit(1);
+
+                if (c.getTau() == PREY) {
+                    int chem_xy = ChemPlane->Sigma(x, y);
+                    chemsumx += x * chem_xy;
+                    chemsumy += y * chem_xy;
+                    chemtotal += chem_xy;
                 }
 
-                if (chemtotal) {
-                    double xvector = chemsumx / (double) chemtotal - c.meanx;
-                    double yvector = chemsumy / (double) chemtotal - c.meany;
-                    c.grad_conc = chemtotal / c.Area();
-                    double hyphyp = hypot(xvector, yvector);
-
-                    // in a homogeneous medium, gradient is zero
-                    // we then pick a random direction
-                    if (hyphyp > 0.0001) {
-                        xvector /= hyphyp;
-                        yvector /= hyphyp;
-                        c.setChemVec(xvector, yvector);
-                    } else {
-                        double theta = 2. * M_PI * RANDOM();
-                        c.setChemVec(cos(theta), sin(theta));
-                    }
-                } else {
-                    double theta = 2. * M_PI * RANDOM();
-                    c.setChemVec(cos(theta), sin(theta));
-                }
-
-                if (c.chemvecx > 1 || c.chemvecy > 1) {
-                    std::cerr << ", vector: " << c.chemvecx << " " << c.chemvecy << '\n';
-                    exit(1);
-                }
+                ++pixel_count;
             }
+        }
+
+        if (pixel_count != c.Area()) {
+            cerr << "Cell area is " << c.Area() << " but only " << pixel_count
+                 << " pixels were found inside bounding box";
+            cerr << "Terminating the program";
+            exit(1);
+        }
+
+        if (chemtotal) {
+            double xvector = chemsumx / (double) chemtotal - c.meanx;
+            double yvector = chemsumy / (double) chemtotal - c.meany;
+            c.grad_conc = chemtotal / c.Area();
+            double hyphyp = hypot(xvector, yvector);
+
+            // in a homogeneous medium, gradient is zero
+            // we then pick a random direction
+            if (hyphyp > 0.0001) {
+                xvector /= hyphyp;
+                yvector /= hyphyp;
+                c.setChemVec(xvector, yvector);
+            } else {
+                double theta = 2. * M_PI * RANDOM();
+                c.setChemVec(cos(theta), sin(theta));
+            }
+        } else {
+            double theta = 2. * M_PI * RANDOM();
+            c.setChemVec(cos(theta), sin(theta));
+        }
+
+        if (c.chemvecx > 1 || c.chemvecy > 1) {
+            std::cerr << ", vector: " << c.chemvecx << " " << c.chemvecy << '\n';
+            exit(1);
         }
     }
 
