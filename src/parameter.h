@@ -94,7 +94,8 @@ public:
     int divdur; //duration once a cell starts division program
     double mu;
     double mustd;
-    double deathprob;
+    double gompertz_alpha;
+    double gompertz_beta;
     char *moviedir;
     char *celldatafile;
     char *fooddatafile;

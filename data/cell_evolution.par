@@ -8,8 +8,8 @@ mcs = 20000000
 season_duration = 30000
 
 ### grid size ###
-sizex = 2000
-sizey = 2000
+sizex = 1000
+sizey = 1000
 
 
 
@@ -141,8 +141,11 @@ scatter_start = true
 motiledeath = 0.5
 dividingdeath = 0.5
 
-# death rate for random killing of cells every 25 MCS
-deathprob = 0.0001
+# Gompertz law parameters for random killing of cells (asynchronous)
+gompertz_alpha = 0.0000075
+# You can set the beta parameter to 0 to have a uniform probability of
+# death (independent of age) defined by gompertz_alpha
+gompertz_beta = 0.0004
 
 # PDE parameters (irrelevant for this simulation)
 n_chem = 0
@@ -161,11 +164,12 @@ gradnoise = 1.0
 gradscale = 5
 # Initial number of food patches resources placed in the field
 foodpatches = 5
-# New food patch timer (a new patch will be created every X MCS)
+# New food patch timer (a new patch will be created at least every X MCS)
 foodpatchperiod = 2000
 # Side of each food patch (total amount of spots per patch will be this squared)
 foodpatchlength = 10
 # How much food each spot contains
+# A normal range for the total food of the patch is 100_000 - 1_000_000, so calculate from that
 foodperspot = 20
 # Max food allowed in the system (regulates foodpatchperiod)
 maxfood = 16000

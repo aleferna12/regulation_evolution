@@ -741,10 +741,9 @@ void Dish::UpdateCellParameters(int Time) {
         if (c->AliveP()) {
             // Mark cell to die
             // Only calculate prob every 25 mcs
-            // TODO: Make parameters
-            // TODO: Maybe synchronizing death like that is not a good idea and we should use c.time_since_birth to circumvent that
+            // TODO: Test if its still working after making asynchronous (maybe plot average lifespan or something)
             int death_period = 25;
-            if (c->food <= 0 or (Time % death_period == 0 and RANDOM() < par.deathprob)) {
+            if (c->food <= 0 or (c->time_since_birth % death_period == 0 and RANDOM() < par.gompertz_alpha * pow(M_E, par.gompertz_beta * c->time_since_birth / death_period))) {
                 to_kill.push_back(c->Sigma());
                 continue;
             }

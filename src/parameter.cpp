@@ -86,7 +86,8 @@ Parameter::Parameter() {
     mustd = 0.1;
     divtime = 50;
     divdur = 10;
-    deathprob = 0.0001;
+    gompertz_alpha = 0.0000075;
+    gompertz_beta = 0.0004;
     scatter_start = true;
     motiledeath = 1.0;
     dividingdeath = 0.;
@@ -230,6 +231,8 @@ void Parameter::PrintWelcomeStatement() {
     cerr << " -target_area [INT_NUMBER] that (initial) target area of cells" << endl;
     cerr << " -init_cell_config [0-3] initial configuration of cells when placed in center, see ca.cpp" << endl;
     cerr << " -cell_placement [1-4] field position of cells, (0=center) see ca.cpp" << endl;
+    cerr << " -gompertz_alpha [FLOAT_NUMBER] alpha parameter for the hazard function a*e^(b*x)" << endl;
+    cerr << " -gompertz_beta [FLOAT_NUMBER] beta parameter for the hazard function a*e^(b*x)" << endl;
     cerr << endl << "Will not execute if celldatafile and moviedir already exist" << endl;
     cerr << "Also, parameter file and Jtable should be in the same directory (unless you used option -keylockfilename)"
          << endl;
@@ -763,7 +766,8 @@ void Parameter::Read(const char *filename) {
     mustd = fgetpar(fp, "mustd", 0., true);
     divtime = igetpar(fp, "divtime", 200, true);
     divdur = igetpar(fp, "divdur", 50, true);
-    deathprob = fgetpar(fp, "deathprob", 0.0001, true);
+    gompertz_alpha = fgetpar(fp, "gompertz_alpha", 0.0000075, true);
+    gompertz_beta = fgetpar(fp, "gompertz_beta", 0.0004, true);
     scatter_start = bgetpar(fp, "scatter_start", true, true);
     motiledeath = fgetpar(fp, "motiledeath", 1.0, true);
     dividingdeath = fgetpar(fp, "dividingdeath", 0.0, true);
@@ -1011,7 +1015,8 @@ void Parameter::Write(ostream &os) const {
     os << " mustd = " << mustd << endl;
     os << " divtime= " << divtime << endl;
     os << " divdur = " << divdur << endl;
-    os << " deathprob = " << deathprob << endl;
+    os << " gompertz_alpha = " << gompertz_alpha << endl;
+    os << " gompertz_beta = " << gompertz_beta << endl;
     os << " initial_food_amount = " << initial_food_amount << endl;
     os << " food_influx_location = " << food_influx_location << endl;
     os << " metabperiod = " << metabperiod << endl;
