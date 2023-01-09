@@ -470,7 +470,7 @@ void Dish::plotChemPlane(Graphics *g, int start_index, int n_colors) const {
                 } else {
                     double perc = (ChemPlane->Sigma(x, y) - minmaxfood.first)
                                   / double(minmaxfood.second - minmaxfood.first);
-                    colori = start_index + int((n_colors - 1) * perc);
+                    colori = start_index + int(round((n_colors - 1) * perc));
                 }
                 // Make the pixel four times as large
                 // to fit with the CPM plane
@@ -512,7 +512,7 @@ void Dish::plotCellFood(Graphics *g, int start_index, int n_colors) {
         if (c.getTau() == PREY)
             tau_index += n_colors / 2;
         double perc = min(1., c.food / par.foodstart);
-        int color_i = tau_index + int((n_colors - 1) * (1 - perc) / 2);
+        int color_i = tau_index + int(round((n_colors/2. - 1) * (1 - perc)));
 
         auto bb = c.getBoundingBox();
         for (int i = bb.getMinX(); i < bb.getMaxX(); ++i) for (int j = bb.getMinY(); j < bb.getMaxY(); ++j) {
