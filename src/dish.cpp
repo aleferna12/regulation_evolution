@@ -30,7 +30,6 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <cstring>
 #include <iostream>
 #include <cmath>
-#include <nlohmann/json.hpp>
 #include "dish.h"
 #include "sticky.h"
 #include "crash.h"
