@@ -8,8 +8,8 @@ mcs = 20000000
 season_duration = 30000
 
 ### grid size ###
-sizex = 200
-sizey = 200
+sizex = 2000
+sizey = 2000
 
 
 
@@ -178,7 +178,7 @@ eatperiod = 10
 
 # only used in specified_experiment, if true it puts 1 food randomly, with probability foodinflux = 0.05
 is_there_food = 0
-
+team
 # The params bellow might be out of use?
 # default growth = 10.
 growth = 0.
