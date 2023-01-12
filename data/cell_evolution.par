@@ -203,7 +203,7 @@ metabolic_conversion = 0.5
 ## output ##
 ############
 
-storage_stride = 1
+storage_stride = 1000
 graphics = false
 store = true
 divisioncolour = true
