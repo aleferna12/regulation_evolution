@@ -27,7 +27,6 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <list>
 #include <set>
 #include <fstream>
-#include <cstring>
 #include <iostream>
 #include <cmath>
 #include "dish.h"
@@ -136,195 +135,6 @@ double Dish::DetermineMinDist(int n) {
     return sqrt(mindistx * mindistx + mindisty * mindisty);
 }
 
-void Dish::InitKeyLock() {
-    auto key_lock_length = (size_t) par.key_lock_length; //take size of key and lock
-    for (const auto &kl_pair: par.keylock_list) {
-        if (kl_pair.tau == 0) continue;
-        if (kl_pair.key.size() != key_lock_length || kl_pair.lock.size() != key_lock_length) {
-            cerr << "Dish::InitKeyLock(): error. Initial key and lock vectors are not of size par.key_lock_length = "
-                 << par.key_lock_length << endl;
-            exit(1);
-        }
-    }
-
-    vector<Cell>::iterator c;
-    for (c = cell.begin(), ++c; c != cell.end(); ++c) {
-        int current_tau = c->getTau();
-        if (current_tau == PREY) {
-            //cerr<<"Hello, got prey"<<endl;
-            //cerr<<"Now: "<<PREY<<endl;
-
-            c->setJkey(par.keylock_list[PREY].key);
-            c->setJlock(par.keylock_list[PREY].lock);
-
-            //cerr<<"Check "<< par.keylock_list[ PREY ].key[0] <<endl;
-
-
-        } else if (current_tau == PREDATOR) {
-            //cerr<<"Hello, got predator"<<endl;
-            //cerr<<"Now: "<<PREDATOR<<endl;
-
-            c->setJkey(par.keylock_list[PREDATOR].key);
-            c->setJlock(par.keylock_list[PREDATOR].lock);
-            //cerr<<"Check "<< par.keylock_list[ PREDATOR ].key[0] <<endl;
-
-        } else {
-            cerr << "Dish::InitKeyLock(): error. Are there more than two types? got tau = " << c->getTau() << endl;
-            exit(1);
-        }
-
-    }
-
-    //exit(1);
-}
-
-// In this version we can let user define the lookup table for J with medium
-//notice we use Paulien's method of summing powers
-// Also, is this half J value? think so... - YES
-int Dish::CalculateJwithMedium(vector<int> key) {
-    int keypos_formedium = par.Jmedr.keypos_formedium;
-    vector<int> lookup_table = par.Jmedr.lookup_table;
-    int offset = par.Jmedr.offset;
-    int Jval = 0;
-
-
-    // Per renske suggestion, I will try a different range, more contained
-    // if I just add 10 to the range (0->15)
-    //I get range (10->25)
-    for (int i = 0; i < keypos_formedium; i++)
-        //Jval += key[i]*pow(2.0,keypos_formedium-i-1); //so that zeroth bit is most significant
-        Jval += key[i] * lookup_table[i];
-    Jval += offset;//so that interaction with medium can't be 0
-
-    return (int) Jval;
-}
-
-int Dish::CalculateJfromKeyLock(vector<int> key1, vector<int> lock1, vector<int> key2, vector<int> lock2) {
-    int score = 0;
-
-    for (int i = 0; i < par.key_lock_length; i++) {
-        score += (key1[i] != lock2[i]) ? 1 : 0;
-        score += (key2[i] != lock1[i]) ? 1 : 0;
-    }
-    //now perfect score is 20, make... a sigmoid response?
-    // with 20 you should get very low J val (high adhesion)
-    // with 0 you should get high J val (low adh)
-    //This is a arbitrary function 3+40*exp(-0.01*x^2)
-    //add 0.5 before truncation to int makes it apprx to closest integer
-
-    int Jfromkeylock = (int) (52. - 48. * ((double) score) / (2. * par.key_lock_length));
-    // int Jfromkeylock = 3 + (int)(0.5+ 40.*exp( -pow( (score/double(par.key_lock_length)) , 2.) ));
-
-
-    /*
-    cout<<"CalculateJfromKeyLock: I got:"<<endl<< "key1: ";
-    for (auto i: key1)
-      cout << i << " ";
-    cout<<"lok1: ";
-    for (auto i: lock1)
-      cout << i << " ";
-    cout<<endl<<"lok2: ";
-    for (auto i: lock2)
-      cout << i << " ";
-    cout<<"key2: ";
-    for (auto i: key2)
-      cout << i << " ";
-    cout<<endl<<"score = "<<score<<" Jval = "<<Jfromkeylock<<endl;
-    */
-
-    return Jfromkeylock;
-}
-
-void Dish::InitVectorJ() //Initialise vector of J values for each cell
-{
-    std::vector<Cell>::iterator ci;
-    std::vector<Cell>::iterator cj;
-
-
-    int thisval;
-    for (ci = cell.begin(); ci != cell.end(); ++ci) {
-        for (cj = ci, ++cj; cj != cell.end(); ++cj) {
-
-            if (ci->Sigma() == MEDIUM) {
-                if (cj->Sigma() == MEDIUM) thisval = 0;
-                else thisval = CalculateJwithMedium(cj->getJkey());  //J with medium is calculated from part of cell's
-                ci->setVJ_singleval(cj->Sigma(), thisval);
-                cj->setVJ_singleval(MEDIUM, thisval); //this cj.sigma=0, we update its J values as well
-
-            } else {
-                thisval = CalculateJfromKeyLock(ci->getJkey(), ci->getJlock(), cj->getJkey(), cj->getJlock());
-                ci->setVJ_singleval(cj->Sigma(), thisval);
-                cj->setVJ_singleval(ci->Sigma(), thisval);
-
-//         if(thisval<=1){
-//           cerr<<"ci="<<ci->Sigma()<<", cj->sigma="<<cj->Sigma()<<", J=" <<thisval<<endl;
-//           cerr<<"keylock"<<endl;
-//           for (auto i = ci->getJkey().begin(); i != ci->getJkey().end(); ++i)
-//             std::cout << *i ;
-//           std::cout << ' ';
-//           for (auto i = ci->getJlock().begin(); i != ci->getJlock().end(); ++i)
-//             std::cout << *i ;
-//           std::cout<<endl;
-//           for (auto i = cj->getJkey().begin(); i != cj->getJkey().end(); ++i)
-//             std::cout << *i ;
-//           std::cout << ' ';
-//           for (auto i = cj->getJlock().begin(); i != cj->getJlock().end(); ++i)
-//             std::cout << *i ;
-//           std::cout<<endl;
-//
-//           exit(1);
-//         }
-
-            }
-        }
-    }
-
-    cerr << "InitVectorJ done" << endl;
-//   for(auto c: cell){
-//     cerr<<"Cell "<<c.Sigma()<<", tau: "<<c.getTau()<<": " ;
-//     for(auto jval: c.getVJ())
-//       cerr<<jval<<" ";
-//     cerr<<endl;
-//   }
-
-}
-
-//This function and the one above could be merged
-// sigma_to_update is a vector of int, there are a lot of zeros,
-// but the numbers are the new sigmas (see DivideCells in ca.cpp)
-// Note: some optimisation is possible here because we are updating twice the new cells (all the upd_sigma)
-void Dish::UpdateVectorJ(const vector<int> &sigma_to_update) {
-    //cerr<<"UpdateVectorJ begin, cell vector size: "<<cell.size()<<endl;
-
-    vector<Cell>::iterator c;
-
-    for (auto upd_sigma: sigma_to_update) {
-        if (upd_sigma != 0) {
-            for (c = cell.begin(); c != cell.end(); ++c) {
-                if (0 == c->Area() && 0 == c->AliveP())
-                    continue; //used to be if !c->AliveP(), but some cells are dead but not disappeared yet.
-                if (c->Sigma() != MEDIUM) {
-                    if (c->Sigma() == upd_sigma) continue;
-                    //update for each cell, their interactions with cell at position sigma to update,
-                    int jval = CalculateJfromKeyLock(c->getJkey(), c->getJlock(), cell[upd_sigma].getJkey(),
-                                                     cell[upd_sigma].getJlock());  //k1,l1,k2,l2
-
-                    c->setVJ_singleval(upd_sigma, jval);
-                    //the same number can be used by cell at which sigma is being updated
-                    cell[upd_sigma].setVJ_singleval(c->Sigma(), jval);
-                } else {
-                    int jval = CalculateJwithMedium(cell[upd_sigma].getJkey()); // needs only key
-
-                    c->setVJ_singleval(upd_sigma, jval);
-                    cell[upd_sigma].setVJ_singleval(c->Sigma(), jval); //update nrg of medium with cell c
-
-                }
-            }
-        }
-    }
-
-}
-
 
 // sigma_newcells is an int vector as lognas there are cells,
 // it is zero everywhere, except at the positions of a mother cell's sigma,
@@ -332,7 +142,6 @@ void Dish::UpdateVectorJ(const vector<int> &sigma_to_update) {
 void Dish::MutateCells(const vector<int> &sigma_to_update) {
     for (auto upd_sigma: sigma_to_update) {
         if (upd_sigma != 0) {
-            cell[upd_sigma].MutateKeyAndLock();
             //assign new gextiming
             cell[upd_sigma].setGTiming((int) (RANDOM() * par.scaling_cell_to_ca_time));
             if (par.evolreg) {
@@ -491,7 +300,7 @@ void Dish::plotFoodPLane(Graphics *g, int color_index) const {
 void Dish::plotCellTau(Graphics *g, int div_index, int mig_index) {
     for (auto &c : cell) {
         int color_i;
-        if (c.getTau() == PREDATOR)
+        if (c.getTau() == DIVIDE)
             color_i = div_index;
         else
             color_i = mig_index;
@@ -509,7 +318,7 @@ void Dish::plotCellTau(Graphics *g, int div_index, int mig_index) {
 void Dish::plotCellFood(Graphics *g, int start_index, int n_colors) {
     for (auto &c : cell) {
         int tau_index = start_index;
-        if (c.getTau() == PREY)
+        if (c.getTau() == MIGRATE)
             tau_index += n_colors / 2;
         double perc = min(1., c.food / par.foodstart);
         int color_i = tau_index + int(round((n_colors/2. - 1) * (1 - perc)));
@@ -591,7 +400,7 @@ void Dish::CellsEat(int time) {
                     }
                 }
 
-                if (c.getTau() == PREY) {
+                if (c.getTau() == MIGRATE) {
                     int chem_xy = ChemPlane->Sigma(x, y);
                     chemsumx += x * chem_xy;
                     chemsumy += y * chem_xy;
@@ -732,11 +541,9 @@ void Dish::UpdateCellParameters(int Time) {
     vector<int> to_divide;
     vector<int> to_kill;
     array<double, 2> inputs = {0., 0.}; //was inputs(2,0.);
-    array<int, 2> output = {0, 0};
     int interval;
 
     //cout<<"Update Cell parameters "<<Time<<endl;
-    //update networks asynchronously f
     for (c = cell.begin(), ++c; c != cell.end(); ++c) {
         if (c->AliveP()) {
             // Mark cell to die
@@ -758,12 +565,10 @@ void Dish::UpdateCellParameters(int Time) {
                     par.scaling_cell_to_ca_time * (par.divtime + par.divdur) / (double) par.metabperiod;
                 inputs[1] = c->food / division_cost;
                 c->UpdateGenes(inputs, true);
-                c->FinishGeneUpdate();
-                //what is the state of the output node of the cell?
-                c->GetGeneOutput(output);
+                c->FinishGeneAndJDecsUpdate();
 
                 //cell decides to divide
-                if (output[0] == 1) {
+                if (c->genome.outputnodes[0].Boolstate == 1) {
                     //cout<<"cell "<<c->Sigma()<<" wants to divide"<<endl;
                     c->dividecounter++;
 
@@ -792,6 +597,7 @@ void Dish::UpdateCellParameters(int Time) {
                             c->SetTargetArea(c->TargetArea() + 1);
                         c->setMu(0.);
                         c->setChemMu(0.0);
+                        // TODO: Shouldn't this be out of this condition?
                         c->setTau(2); //basically only for color right now...
                     }
                 }
@@ -824,7 +630,6 @@ void Dish::UpdateCellParameters(int Time) {
         sigma_newcells.push_back(new_sigma);
     }
     MutateCells(sigma_newcells);
-    UpdateVectorJ(sigma_newcells);
 }
 
 void Dish::removeFPatch(int id) {
@@ -1050,8 +855,6 @@ int Dish::readCellData() {
             Cell *rc = new Cell(*this);
             rc->alive = false;
             rc->sigma = last_sigma + j;
-            rc->jkey = vector<int>(par.key_lock_length, -1);
-            rc->jlock = vector<int>(par.key_lock_length, -1);
             cell.push_back(*rc);
         }
         last_sigma = sigma;
@@ -1087,14 +890,8 @@ int Dish::readCellData() {
         rc->ancestor = stoi(*it); ++it;
         // Skip medJ
         ++it;
-
-        string jkey = *it; ++it;
-        for (char c : jkey)
-            rc->jkey.push_back(c - '0');
-        string jlock = *it; ++it;
-        for (char c : jlock)
-            rc->jlock.push_back(c - '0');
-
+        rc->jkey_dec = stoi(*it); ++it;
+        rc->jlock_dec = stoi(*it); ++it;
         // Skip neighbour info
         it += 2;
 
@@ -1148,10 +945,10 @@ int Dish::saveCellData(int Time) {
     vector<string> col_names{"sigma", "tau", "time_since_birth", "tvecx", "tvecy", "prevx", "prevy", "persdur",
                              "perstime", "mu", "half_div_area", "length", "last_meal", "food", "growth", "gextiming",
                              "dividecounter", "grad_conc", "meanx", "meany", "chemvecx", "chemvecy", "target_area",
-                             "chemmu", "times_divided", "colour", "ancestor", "medJ", "jkey", "jlock", "neighbour_list",
-                             "neighbourJ_list", "innr", "regnr", "outnr", "in_scale_list", "reg_threshold_list",
-                             "reg_w_innode_list", "reg_w_regnode_list", "out_threshold_list", "out_w_regnode_list",
-                             "time"};
+                             "chemmu", "times_divided", "colour", "ancestor", "medJ", "jkey_dec", "jlock_dec",
+                             "neighbour_list", "neighbourJ_list", "innr", "regnr", "outnr", "in_scale_list",
+                             "reg_threshold_list", "reg_w_innode_list", "reg_w_regnode_list", "out_threshold_list",
+                             "out_w_regnode_list", "time"};
     file << vectorToString(col_names, ',') << endl;
 
     for (auto &c: cell) {
@@ -1164,19 +961,17 @@ int Dish::saveCellData(int Time) {
              << c.half_div_area << ',' << c.length << ',' << c.last_meal << ',' << c.food << ',' << c.growth << ','
              << c.gextiming << ',' << c.dividecounter << ',' << c.grad_conc << ',' << c.meanx << ',' << c.meany << ','
              << c.chemvecx << ',' << c.chemvecy << ',' << c.target_area << ',' << c.chemmu << ','
-             << c.times_divided << ',' << c.colour << ',' << c.ancestor << ',' << c.vJ[0] << ',';
+             << c.times_divided << ',' << c.colour << ',' << c.ancestor << ',' << par.Jmed << ',' << c.jkey_dec << ','
+             << c.jlock_dec <<  ',';
         // Need to reset everytime we save data
         c.resetAncestor();
 
-        file << vectorToString(c.jkey, '\0') << ',';
-        file << vectorToString(c.jlock, '\0') << ',';
-
         vector<int> neighs {};
-        vector<int> neigh_Js {};
+        vector<double> neigh_Js {};
         for (auto &n : c.neighbours) {
             if (cell[n.first].AliveP()) {
                 neighs.push_back(n.first);
-                neigh_Js.push_back(c.vJ[n.first]);
+                neigh_Js.push_back(CPM->energyDifference(c.sigma, n.first));
             }
         }
         file << vectorToString(neighs, ' ') << ',';
@@ -1270,25 +1065,9 @@ int Dish::ReadCompetitionFile(char *filename) {
             if (c.getXpos() <= par.sizex / 2.) {
                 c.ReadGenomeFromFile(grnfile1);
                 //read the key and lock into the cell
-                for (char &k: key1) {
-                    c.jkey.push_back(k - '0');
-                    //cout<<"key1 "<<k<<endl;
-                }
-                for (char &l: lock1) {
-                    c.jlock.push_back(l - '0');
-                    //cout<<"lock1 "<<l<<endl;
-                }
                 c.SetColour(2);
             } else {
                 c.ReadGenomeFromFile(grnfile2);
-                for (char &k: key2) {
-                    c.jkey.push_back(k - '0');
-                    //cout<<"key2 "<<k<<endl;
-                }
-                for (char &l: lock2) {
-                    c.jlock.push_back(l - '0');
-                    //cout<<"lock2 "<<l<<endl;
-                }
                 c.SetColour(3);
             }
             c.ClearGenomeState();

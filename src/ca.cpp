@@ -27,9 +27,11 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 // This code derives from a Cellular Potts implementation written around 1995
 // by Nick Savill
 
-#include <stdio.h>
-#include <math.h>
+#include <cstdio>
+#include <cmath>
 #include <cstdlib>
+#include <bitset>
+#include "misc.h"
 #include "sticky.h"
 #include "random.h"
 #include "ca.h"
@@ -38,9 +40,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "crash.h"
 #include "hull.h"
 
-#define ZYGFILE(Z) <Z.xpm>
 #define XPM(Z) Z ## _xpm
-#define ZYGXPM(Z) XPM(Z)
 
 //Leonie's sign function
 template<typename T>
@@ -65,8 +65,6 @@ const int CellularPotts::ny[25] = {0, -1, 0, 1, 0, -1, 1, 1, -1, -2, 0, 2, 0, -2
 
 const int CellularPotts::nbh_level[5] = {0, 4, 8, 20, 24}; //0:self; 1:van Neumann; 2:Moore; etc...
 
-extern Parameter par;
-
 
 /** PRIVATE **/
 
@@ -78,18 +76,27 @@ void CellularPotts::BaseInitialisation(vector<Cell> *cells) {
     if (par.neighbours >= 1 && par.neighbours <= 4)
         n_nb = nbh_level[par.neighbours];
     else
-        throw "Panic in CellularPotts: parameter neighbours invalid (choose [1-4]).";
+        throw runtime_error("Panic in CellularPotts: parameter neighbours invalid (choose [1-4]).");
 
 }
 
 CellularPotts::CellularPotts(vector<Cell> *cells,
                              const int sx, const int sy) {
 
-    sigma = 0;
+    sigma = nullptr;
     frozen = false;
     thetime = 0;
     zygote_area = 0;
 
+    auto rule = stringToVector<int>(par.key_lock_weights, ' ');
+    if (par.key_lock_len != rule.size())
+        throw runtime_error("'key_lock_len' parameter and length of 'key_lock_rule' parameter dont match");
+
+    max_key_lock_dec = int(pow(2, par.key_lock_len));
+    cellJs = new int[max_key_lock_dec * max_key_lock_dec];
+    for (int i = 0; i < max_key_lock_dec; ++i)
+        for (int j = 0; j < max_key_lock_dec; ++j)
+            cellJs[i * max_key_lock_dec + j] = calculateCellJ(i, j, rule);
 
     BaseInitialisation(cells);
     sizex = sx;
@@ -111,7 +118,7 @@ CellularPotts::CellularPotts(vector<Cell> *cells,
     if (par.neighbours >= 1 && par.neighbours <= 4)
         n_nb = nbh_level[par.neighbours];
     else
-        throw "Panic in CellularPotts: parameter neighbours invalid (choose [1-4])";
+        throw runtime_error("Panic in CellularPotts: parameter neighbours invalid (choose [1-4])");
 }
 
 CellularPotts::CellularPotts() {
@@ -122,6 +129,8 @@ CellularPotts::CellularPotts() {
     frozen = false;
     thetime = 0;
     zygote_area = 0;
+    cellJs = nullptr;
+    max_key_lock_dec = 0;
 
     CopyProb(par.T);
 
@@ -137,7 +146,7 @@ CellularPotts::CellularPotts() {
     if (par.neighbours >= 1 && par.neighbours <= 4)
         n_nb = nbh_level[par.neighbours];
     else
-        throw "Panic in CellularPotts: parameter neighbours invalid (choose [1-4])";
+        throw runtime_error("Panic in CellularPotts: parameter neighbours invalid (choose [1-4])");
 }
 
 // destructor (virtual)
@@ -147,7 +156,26 @@ CellularPotts::~CellularPotts() {
         free(sigma);
         sigma = nullptr;
     }
+    if (cellJs) {
+        delete[] cellJs;
+        cellJs = nullptr;
+    }
 }
+
+
+int CellularPotts::calculateCellJ(unsigned long key_dec, unsigned long  lock_dec, const vector<int> &rule) {
+    auto key = bitset<32>{key_dec};
+    auto lock = bitset<32>{lock_dec};
+    auto matches = ~(key ^ lock);  // XNOR operation
+    int res = 0;
+    // Technically bitstrings are being iterated in reverse here but that shouldn't be a problem (just means that the
+    // rule weights are applied in reverse)
+    for (int i = 0; i < rule.size(); ++i)
+        if (matches[i] == 1)
+            res += rule[i];
+    return res;
+}
+
 
 void CellularPotts::AllocateSigma(int sx, int sy) {
 
@@ -311,7 +339,7 @@ int CellularPotts::DeltaHWithMedium(int x, int y, PDE *PDEfield) {
         } else {
             //DH += (*cell)[sxyp].EnergyDifference((*cell)[neighsite]) - (*cell)[sxy].EnergyDifference((*cell)[neighsite]);
             // notice that sxyp is medium, so there is no need of calling the function.
-            DH += (*cell)[sxyp].EnergyDifference((*cell)[neighsite]) - Adhesion_Energy(sxy, neighsite);
+            DH += energyDifference(sxyp, neighsite) - Adhesion_Energy(sxy, neighsite);
         }
     }
 
@@ -353,11 +381,9 @@ int CellularPotts::DeltaHWithMedium(int x, int y, PDE *PDEfield) {
         ax = x - smeanx;
         ay = y - smeany;
         DH += (*cell)[sxy].getMu() * (ax * (*cell)[sxy].getXvec() + ay * (*cell)[sxy].getYvec()) / hypot(ax, ay);
-
-
     }
 
-//Similarly to Joost's method, a bias due to chemokine gradient
+    //Similarly to Joost's method, a bias due to chemokine gradient
     if ((*cell)[sxy].getChemMu() > 0.0001 || (*cell)[sxyp].getChemMu() > 0.0001) {
         double smeanx = (*cell)[sxy].getXpos(); //getXpos() returns meanx - which I have to wrap if pixel's on the other length
         double smeany = (*cell)[sxy].getYpos();
@@ -454,7 +480,6 @@ int CellularPotts::DeltaH(int x, int y, int xp, int yp, PDE *PDEfield) {
             // NOTICE THAT DH is an integer... dammit! This can create problems when multiplying with a factor
             //DH += (*cell)[sxyp].EnergyDifference((*cell)[neighsite])
             //      - (*cell)[sxy].EnergyDifference((*cell)[neighsite]);
-
         }
     }
 
@@ -473,69 +498,8 @@ int CellularPotts::DeltaH(int x, int y, int xp, int yp, PDE *PDEfield) {
                                                    (*cell)[sxy].Area() +
                                                    (*cell)[sxy].TargetArea()))));
 
-
-    // DH is determined at this point in cell_evolution, and the following does not apply - at least for now.
-
-    //NO chemotaxis in cell_evolution... or at least not yet
-    /* Chemotaxis */
-//   if (PDEfield && (par.vecadherinknockout || (sxyp==0 || sxy==0))) {
-//
-//     // copying from (xp, yp) into (x,y)
-//     // If par.extensiononly == true, apply CompuCell's method, i.e.
-//     // only chemotactic extensions contribute to energy change
-//     if (!( par.extensiononly && sxyp==0)) {
-//       int DDH=(int)(par.chemotaxis*(sat(PDEfield->Sigma(0,x,y))-sat(PDEfield->Sigma(0,xp,yp))));
-//       DH-=DDH;
-//     }
-//   }
-
-
-    // WHENEVER YOU'LL NEED THIS, UNCOMMENT - BUT DO NOT USE IT TOGETHER WITH periodic_boundaries
-
-    //const double lambda2=par.lambda2; // par.lambda2=0 in cell_evolution, so the following doesn't apply
-    /* Length constraint */
-    // sp is expanding cell, s is retracting cell
-
-    /*
-    if ( sxyp == MEDIUM ) {
-      DH -= (int)(lambda2*( DSQR((*cell)[sxy].Length()-(*cell)[sxy].TargetLength())
-                 - DSQR((*cell)[sxy].GetNewLengthIfXYWereRemoved(x,y) -
-                    (*cell)[sxy].TargetLength()) ));
-
-    }
-    else if ( sxy == MEDIUM ) {
-      DH -= (int)(lambda2*(DSQR((*cell)[sxyp].Length()-(*cell)[sxyp].TargetLength())
-               -DSQR((*cell)[sxyp].GetNewLengthIfXYWereAdded(x,y)-(*cell)[sxyp].TargetLength())));
-
-
-    }
-    else {
-      DH -= (int)(lambda2*( (DSQR((*cell)[sxyp].Length()-(*cell)[sxyp].TargetLength())
-               -DSQR((*cell)[sxyp].GetNewLengthIfXYWereAdded(x,y)-(*cell)[sxyp].TargetLength())) +
-              ( DSQR((*cell)[sxy].Length()-(*cell)[sxy].TargetLength())
-                - DSQR((*cell)[sxy].GetNewLengthIfXYWereRemoved(x,y) -
-                   (*cell)[sxy].TargetLength()) ) ));
-    }*/
-
-    // WAS LIKE THIS BEFORE, BUGGY WITH WRAPPED BOUNDARIES
-//   if((*cell)[sxy].getMu()>0.0001 || (*cell)[sxyp].getMu()>0.0001){
-//     //cout << "Migrating!"<<endl;
-//     //cerr<<"sigma focal="<< sxy<<" "<<(*cell)[sxy].getXvec()<<" "<<(*cell)[sxy].getYvec()<<" ";
-//     //cerr<<"sigma copy="<< sxyp<<" "<<(*cell)[sxyp].getXvec()<<" "<<(*cell)[sxyp].getYvec()<<endl;
-//
-//     if(sxy!=MEDIUM){
-//       ax=x-(*cell)[sxy].getXpos(); //getXpos() returns meanx WHICH i HAVE
-//       ay=y-(*cell)[sxy].getYpos(); //getYpos() returns meany
-//       DH+=(*cell)[sxy].getMu()*(ax*(*cell)[sxy].getXvec() + ay*(*cell)[sxy].getYvec())/hypot(ax,ay);
-//     }
-//     if(sxyp!=MEDIUM){
-//       ax=x-(*cell)[sxyp].getXpos(); //returns meanx
-//       ay=y-(*cell)[sxyp].getYpos(); //returns meany
-//       DH-=(*cell)[sxyp].getMu()*(ax*(*cell)[sxyp].getXvec() + ay*(*cell)[sxyp].getYvec())/hypot(ax,ay);
-//     }
-//   }
-/*cell migration */
-//Joost's method
+    //cell migration
+    //Joost's method
     double ax, ay;
     if ((*cell)[sxy].getMu() > 0.0001 || (*cell)[sxyp].getMu() > 0.0001) {
         if (sxy != MEDIUM) {
@@ -667,26 +631,23 @@ int CellularPotts::DeltaH(int x, int y, int xp, int yp, PDE *PDEfield) {
     return int(DH);
 }
 
+
+double CellularPotts::energyDifference(int sigma1, int sigma2) {
+    if (sigma1 and sigma2) {
+        Cell &c1 = (*cell)[sigma1];
+        Cell &c2 = (*cell)[sigma2];
+        return par.Jalpha
+               + getCellJ(c1.jkey_dec, c2.jlock_dec)
+               + getCellJ(c2.jkey_dec, c1.jlock_dec);
+    }
+    return par.Jmed;
+}
+
+
+//TODO: Check if this function is necessary or can be implemented as part of energyDifference
 double CellularPotts::Adhesion_Energy(int sigma1, int sigma2) {
-    double Jval = (*cell)[sigma1].EnergyDifference((*cell)[sigma2]);
     if (sigma1 == sigma2) return 0;
-    if (!(sigma1 && sigma2))
-        return Jval;
-
-    //double fr1 = (*cell)[sigma1].GetExtProtExpress_Fraction();
-    //double fr2 = (*cell)[sigma2].GetExtProtExpress_Fraction();
-    //double minfr = (fr1<fr2)?fr1:fr2;
-    // minfr is in [0,1],
-    // I want to map it so that if minfr=0, I return 43, and if minfr=1 I return Jval
-    // very simple function would be linear:
-    // a line between (0,43) and (1,Jval) looks like:
-    // y - 43 = (Jval-43)/(1-0) * (minfr1 - 0) ; i.e.
-    // y = 43 + minfr*(Jval-43)
-
-//  double  Jtoreturn = 43. - minfr*(43. - Jval);
-    double Jtoreturn = Jval;
-
-    return Jtoreturn;
+    return energyDifference(sigma1, sigma2);
 }
 
 
@@ -1000,15 +961,15 @@ int CellularPotts::AmoebaeMove2(PDE *PDEfield) {
                                     0) { //if we should add the edge to the edgelist, add it
                                     inout1 = edgeSetVector.insert({x, y, xn, yn});
                                     inout2 = edgeSetVector.insert({xn, yn, x, y});
-                                    if (inout1) loop += 1. / (double) n_nb; // (double)2/n_nb IS A DOUBLE
-                                    if (inout2) loop += 1. / (double) n_nb; // (double)2/n_nb IS A DOUBLE
+                                    if (inout1) loop += 1 / (double) n_nb; // (double)2/n_nb IS A DOUBLE
+                                    if (inout2) loop += 1 / (double) n_nb; // (double)2/n_nb IS A DOUBLE
                                 }
                                 // if the sites have the same celltype and they have an edge, remove it. not sure what the sgn does
                                 if ((sigma[xn][yn] == sigma[x][y] || sgn(sigma[xn][yn]) + sgn(sigma[x][y]) < 0)) {
                                     inout1 = edgeSetVector.erase({x, y, xn, yn});
                                     inout2 = edgeSetVector.erase({xn, yn, x, y});
-                                    if (inout1) loop -= 1. / (double) n_nb; // (double)2/n_nb IS A DOUBLE
-                                    if (inout2) loop -= 1. / (double) n_nb;
+                                    if (inout1) loop -= 1 / (double) n_nb; // (double)2/n_nb IS A DOUBLE
+                                    if (inout2) loop -= 1 / (double) n_nb;
 
                                 }
                             } //end if neighbour in lattice
@@ -2125,7 +2086,6 @@ int CellularPotts::FancyloopY(int loopdepth, int meanx, int meany, int thissig, 
 //Hopefully a little less expensive function than the one above
 void CellularPotts::RemoveCell(Cell *thiscell, int min_area, int meanx, int meany) {
     int sigmaneigh, thissig, thisarea;
-    int nx, ny;
     int countpix = 0; //to check if we removed all pixels
     bool loop = true;
     int loopdepth = 1;

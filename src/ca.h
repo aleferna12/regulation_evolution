@@ -30,12 +30,11 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define _CA_HH_
 
 #include <vector>
-#include <stdio.h>
+#include <cstdio>
 #include <unordered_map>
 #include <array>
 #include "graph.h"
 #include "pde.h"
-//#include "dish.h"
 #include "cell.h"
 #include "boundingbox.h"
 
@@ -87,7 +86,7 @@ public:
     //~Edges(){};
 
     bool insert(std::array<int, 4> edge) {
-        int n = edgevector.size();
+        int n = int(edgevector.size());
         auto insertion = edgemap.insert({edge, n});
         //unordered_map.insert()returns a pair object. first el is iterator to new element and second is bool indicating success of insert
         if (insertion.second) {
@@ -154,12 +153,8 @@ public:
     double lb1, lb2;
 };
 
+
 class CellularPotts {
-
-    friend class Info;
-
-    friend class Morphometry;
-
 public:
     //! \brief Constructs a CA field. This should be done in "Dish".
     explicit CellularPotts(std::vector<Cell> *cells, int sizex = 200,
@@ -288,12 +283,18 @@ public:
 
     void killCell(int c_sigma);
 
+    int getCellJ(int key_dec, int lock_dec) {
+        return cellJs[key_dec * max_key_lock_dec + lock_dec];
+    }
+
+    double energyDifference(int sigma1, int sigma2);
+
+    double Adhesion_Energy(int sigma1, int sigma2);
+
 private:
     int DeltaH(int x, int y, int xp, int yp, PDE *PDEfield = nullptr);
 
     int DeltaHWithMedium(int x, int y, PDE *PDEfield = nullptr);
-
-    double Adhesion_Energy(int sigma1, int sigma2);
 
     void ConvertSpin(int x, int y, int xp, int yp);
 
@@ -319,7 +320,6 @@ private:
 protected:
     void BaseInitialisation(std::vector<Cell> *cell);
 
-protected:
     int **sigma;
     int sizex;
     int sizey;
@@ -328,12 +328,14 @@ protected:
 private:
     Edges edgeSetVector;
     bool frozen;
-    std::vector<Cell> *cell;
+    std::vector<Cell> *cell{};
     int zygote_area;
     int thetime;
+    int *cellJs;
 
-    void drawCellBorderIfNeeded(Graphics *g, int i, int j);
+    int max_key_lock_dec;
 
+    static int calculateCellJ(unsigned long key_dec, unsigned long lock_dec, const vector<int> &rule) ;
 };
 
 

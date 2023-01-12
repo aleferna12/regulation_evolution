@@ -47,7 +47,6 @@ Parameter::Parameter() {
     lambda = 50;
     lambda2 = 5.0;
     //Jtable = strdup("J.dat");
-    keylock_list_filename = strdup("KLcellevol.dat");
     conn_diss = 2000;
     vecadherinknockout = false;
     extensiononly = false;
@@ -55,7 +54,9 @@ Parameter::Parameter() {
     border_energy = 100;
     neighbours = 2;
     min_area_for_life = 5;
-    key_lock_length = 10;
+    Jmed = 14;
+    Jalpha = 7;
+    key_lock_len = 5;
     n_chem = 1;
     diff_coeff = new double[1];
     diff_coeff[0] = 1e-13;
@@ -116,6 +117,7 @@ Parameter::Parameter() {
     readcolortable = false;
     colortable_filename = "default.ctb";
     plots = "tau";
+    key_lock_weights = "2 4 6 8 10";
     mut_rate = 0.01;
     startmu = 0.0;
     persduration = 0;
@@ -151,8 +153,6 @@ Parameter::~Parameter() {
 }
 
 void Parameter::CleanUp() const {
-    if (Jtable)
-        free(Jtable);
     if (diff_coeff)
         free(diff_coeff);
     if (decay_rate)
@@ -331,20 +331,6 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             }
             //strcpy(moviedir, argv[i]);
 
-
-        } else if (0 == strcmp(argv[i], "-keylockfilename")) {
-            i++;
-            if (i == argc) {
-                cerr << "Something odd in keylockfilename?" << endl;
-                return 1;  //check if end of arguments, exit with error in case
-            }
-            //strcpy(keylock_list_filename, argv[i]);
-            free(keylock_list_filename);
-            keylock_list_filename = (char *) malloc(
-                    5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
-            keylock_list_filename = strdup(argv[i]);
-
-            cerr << "New value for keylock_list_filename: " << keylock_list_filename << endl;
 
         } else if (0 == strcmp(argv[i], "-genomefile")) {
             i++;
@@ -727,7 +713,6 @@ void Parameter::Read(const char *filename) {
     lambda = fgetpar(fp, "lambda", 50, true);
     lambda2 = fgetpar(fp, "lambda2", 5.0, true);
     //Jtable = sgetpar(fp, "Jtable", "J.dat", true);
-    keylock_list_filename = sgetpar(fp, "keylock_list_filename", "KLcellevol.dat", true);
     conn_diss = igetpar(fp, "conn_diss", 2000, true);
     vecadherinknockout = bgetpar(fp, "vecadherinknockout", false, true);
     extensiononly = bgetpar(fp, "extensiononly", false, true);
@@ -735,7 +720,9 @@ void Parameter::Read(const char *filename) {
     border_energy = igetpar(fp, "border_energy", 100, true);
     neighbours = igetpar(fp, "neighbours", 2, true);
     min_area_for_life = igetpar(fp, "min_area_for_life", 5, true);
-    key_lock_length = igetpar(fp, "key_lock_length", 10, true);
+    Jmed = fgetpar(fp, "Jmed", 14, true);
+    Jalpha = fgetpar(fp, "Jalpha", 7, true);
+    key_lock_len = igetpar(fp, "key_lock_len", 5, true);
     n_chem = igetpar(fp, "n_chem", 0, true);
     if (n_chem) {
         diff_coeff = dgetparlist(fp, "diff_coeff", n_chem, true);
@@ -796,12 +783,12 @@ void Parameter::Read(const char *filename) {
     readcolortable = bgetpar(fp, "readcolortable", false, true);
     colortable_filename = sgetpar(fp, "colortable_filename", "default.ctb", true);
     plots = sgetpar(fp, "plots", "tau", true);
+    key_lock_weights = sgetpar(fp, "key_lock_weights", "2 4 6 8 10", true);
     evolsim = igetpar(fp, "evolsim", 0, true);
     mut_rate = fgetpar(fp, "mut_rate", 0.01, true);
     persduration = igetpar(fp, "persduration", 0, true);
     startmu = fgetpar(fp, "startmu", 0.0, true);
     init_chemmu = fgetpar(fp, "init_chemmu", 0.0, true);
-    Jmed_rule_input = sgetpar(fp, "Jmed_rule_input", "0a0", true);
     scaling_cell_to_ca_time = igetpar(fp, "scaling_cell_to_ca_time", 1, true);
     latticedir = sgetpar(fp, "latticedir", "lattice", true);
     celldatadir = sgetpar(fp, "celldatadir", "data", true);
@@ -819,50 +806,6 @@ void Parameter::Read(const char *filename) {
     cell_placement = igetpar(fp, "cell_placement", 0, true);
 }
 
-//creates a rule for lookup table, by setting values,
-// and setting a pointer to a function that sums values or multiplies them 8O
-// typical input looks like 10o5_4_3_2_1
-// 10 is the offset, rest is lookup_table, of which we also need to get the length
-void Parameter::CreateRule(const char *Jmed_rule_input) {
-    int i = 0;
-    //char crule='n'; //means not set yet
-    char coffset[10] = {0};
-    char cvalue[10] = {0};
-    int cvalcounter = 0;
-
-    while (Jmed_rule_input[i] != 'o') {
-        coffset[i] = Jmed_rule_input[i];
-        i++;
-    }
-    Jmedr.offset = atoi(coffset);
-    i++;
-    while (Jmed_rule_input[i] != '\0') {
-        if (Jmed_rule_input[i] == '_') {
-            int value = atoi(cvalue);
-            Jmedr.lookup_table.push_back(value);
-            for (int j = 0; j < 10; j++) cvalue[j] = '\0';
-            i++;
-            cvalcounter = 0;
-        }
-        cvalue[cvalcounter] = Jmed_rule_input[i];
-        i++;
-        cvalcounter++;
-    }
-    if (cvalue[0] != '\0') {
-        int value = atoi(cvalue);
-        Jmedr.lookup_table.push_back(value);
-    }
-
-    Jmedr.keypos_formedium = static_cast<int>(Jmedr.lookup_table.size()); // this forces conversion from size to INT
-    // I can't imagine a way for this to overflow, but you know...
-    cerr << "Offset : " << Jmedr.offset << ", Table:";
-    for (auto x: Jmedr.lookup_table) cerr << " " << x;
-    cerr << endl;
-    cerr << "Length = " << Jmedr.keypos_formedium << endl;
-    //exit(1);
-
-}
-
 // In the future the parser for the rules for key to J val tau,medium
 // will be more developed, maybe even evolvable 8O
 // int Parameter::SumLookupTableValue(int *lookup_table){
@@ -872,86 +815,6 @@ void Parameter::CreateRule(const char *Jmed_rule_input) {
 //   return -1;
 // }
 
-// key lock pair files start with the initial number of taus (incl medium)
-// then there is key, then lock, then key then lock etc...
-void Parameter::Read_KeyLock_list_fromfile(const char *filename) {
-    string line;
-    int current_tau = 0;
-    ifstream file(filename);
-
-    cerr << "Reading Key Lock list file" << endl;
-
-    //getline gets next line in file
-    while (getline(file, line)) {
-        istringstream iss(line);   // turn this into array of int and put it into an array of arrays...
-        int a;
-
-        key_lock_pair this_kl;
-        vector<int> key;
-        vector<int> lock;
-
-        if (current_tau == 0) {
-            if (!(iss >> a)) {
-                cerr << "Read_KeyLock_list_fromfile(): Error, the file for initial keys and locks seems empty." << endl;
-                exit(1);
-            } else {
-                //since keylock_list is indicised with tau and tau=0 is medium
-                // we let the first element of keylock_list be a "mock" entry
-                this_kl.tau = 0;
-                this_kl.key = vector<int>(1, -1);
-                this_kl.lock = vector<int>(1, -1);
-                keylock_list.push_back(this_kl);
-                // end of mockery :P
-
-                maxtau = a - 1;
-                cerr << "Got maxtau = " << maxtau << endl;
-                //increase tau
-                current_tau++;
-            }
-        } else {
-            //cerr<<"Into reading key-lock pairs"<<endl;
-            //get key for this tau
-            while (iss >> a) key.push_back(a);
-
-            //we read key, next line is lock
-            if (!getline(file, line)) {
-                cerr << "Read_KeyLock_list_fromfile(): Error, odd number of lines?" << endl;
-                exit(1);
-            }
-            //iss.str("");
-            //iss.clear();
-
-            istringstream iss((line));
-            //get lock for this tau
-            while (iss >> a) lock.push_back(a);
-
-            //assign these values to key lock pair
-            this_kl.tau = current_tau;
-            this_kl.key = key;
-            this_kl.lock = lock;
-
-            keylock_list.push_back(this_kl);
-
-            cerr << "New key-lock pairs for tau = " << this_kl.tau << endl;
-            for (auto i: this_kl.key)
-                cerr << i << " ";
-            cerr << endl;
-            for (auto i: this_kl.lock)
-                cerr << i << " ";
-            cerr << endl;
-
-            key.clear();
-            lock.clear();
-            //increase tau
-            current_tau++;
-
-        }
-
-
-        // process pair (a,b)
-    }
-
-}
 
 const char *sbool(const bool &p) {
 
@@ -973,8 +836,6 @@ void Parameter::Write(ostream &os) const {
     os << " target_length = " << target_length << endl;
     os << " lambda = " << lambda << endl;
     os << " lambda2 = " << lambda2 << endl;
-    if (keylock_list_filename)
-        os << " keylock_list_filename = " << keylock_list_filename << endl;
     //if (Jtable)
     //  os << " Jtable = " << Jtable << endl;
     os << " conn_diss = " << conn_diss << endl;
@@ -984,7 +845,9 @@ void Parameter::Write(ostream &os) const {
     os << " border_energy = " << border_energy << endl;
     os << " neighbours = " << neighbours << endl;
     os << " min_area_for_life = " << min_area_for_life << endl;
-    os << " key_lock_length = " << key_lock_length << endl;
+    os << " Jmed = " << Jmed << endl;
+    os << " Jalpha = " << Jalpha << endl;
+    os << " key_lock_len = " << key_lock_len << endl;
     os << " n_chem = " << n_chem << endl;
     os << " diff_coeff = " << diff_coeff[0] << endl;
     os << " decay_rate = " << decay_rate[0] << endl;
@@ -1045,6 +908,7 @@ void Parameter::Write(ostream &os) const {
     os << " readcolortable = " << readcolortable << endl;
     os << " colortable_filename = " << colortable_filename << endl;
     os << " plots = " << plots << endl;
+    os << " key_lock_weights = " << key_lock_weights << endl;
     os << " mut_rate = " << mut_rate << endl;
     os << " evolsim = " << evolsim << endl;
     os << " persduration = " << persduration << endl;

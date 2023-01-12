@@ -39,11 +39,17 @@ def make_plots(celldf: pd.DataFrame, n_samples):
     prev_y = []
     neigh_gammas = []
     all_gammas = []
-    for key in ["jkey", "jlock"]:
-        celldf[key] = celldf[key].apply(lambda string: np.array(list(string), dtype=int))
+
+    weights = np.array([1, 2, 3, 4, 5, 6])
+
+    def array_from_dec(j_dec):
+        return np.array(list(np.binary_repr(j_dec, width=len(weights))), dtype=int)
+
+    celldf["jkey"] = celldf["jkey_dec"].apply(array_from_dec)
+    celldf["jlock"] = celldf["jlock_dec"].apply(array_from_dec)
     celldf["jkey_jlock"] = list(np.stack([celldf["jkey"], celldf["jlock"]], axis=1))
 
-    for season in set(celldf["time"]):
+    for season in celldf["time"].unique():
         x.append(int(season))
         sdf = celldf[celldf["time"] == season]
 
@@ -65,10 +71,10 @@ def make_plots(celldf: pd.DataFrame, n_samples):
                     neigh_gammas.append(medJ - neighJ / 2)
 
         all_gammas.append(get_medium_gamma(
-            sdf["jkey_jlock"],
-            4,
-            8,
-            np.array([4, 3, 2, 1, 1, 1]),
+            sdf["jkey_jlock"].to_numpy(),
+            14,
+            7,
+            weights,
             n_samples
         ))
 
@@ -113,7 +119,6 @@ def get_adhering_clusters(celldf: pd.DataFrame) -> CellCluster:
     if not celldf["sigma"].is_unique:
         raise ValueError("make sure this function is called for a single time point")
 
-    logging.info("Computing adhering clusters of neighbouring cells from cell data")
     adh_neigh_lists = get_adhering_neighbours(celldf)
     clusters = []
     neigh_set = set(celldf["sigma"])
@@ -134,40 +139,34 @@ def get_adhering_clusters(celldf: pd.DataFrame) -> CellCluster:
     return clusters
 
 
-def get_medium_gamma(key_locks, ja, jam, f_arr, n=None):
+def get_medium_gamma(key_locks, jmed, ja, weights, n=None):
     """Calculates the medium gamma from all x all cells.
 
     :param key_locks: Numpy matrix of (key, lock) pairs or each cell
-    :param ja:
-    :param jam:
-    :param f_arr:
     :param n: Samples n key-lock pairs from total population to speed up calculations
-    :return:
+    :param ja:
+    :param jmed:
+    :param weights:
     """
     if n is not None:
         rng = np.random.default_rng(0)
-        indexes = rng.choice(len(key_locks), n, replace=False)
+        indexes = rng.choice(len(key_locks), min(n, len(key_locks)), replace=False)
         key_locks = key_locks[indexes]
 
     gammas = []
     for k1, l1 in key_locks:
         for k2, l2 in key_locks:
-            gammas.append(get_gamma(ja, jam, f_arr, l1, k1, l2, k2))
+            gammas.append(get_gamma(k1, l1, k2, l2, jmed, ja, weights))
 
     return np.mean(gammas)
 
 
-def get_cell_cell_j(ja, l1, k1, l2, k2):
-    v = len(k1)
-    return ja + 2 * v - np.count_nonzero(l1 != k2) - np.count_nonzero(l2 != k1)
+def get_cell_cell_j(k1, l1, k2, l2, ja, weights):
+    return ja + np.sum((k1 == l2) * weights) + np.sum((k2 == l1) * weights)
 
 
-def get_cell_med_j(jam, f_arr, key):
-    return jam + np.sum(f_arr * key[:len(f_arr)])
-
-
-def get_gamma(ja, jam, f_seq, l1, k1, l2, k2):
-    return get_cell_med_j(jam, f_seq, k1) - get_cell_cell_j(ja, l1, k1, l2, k2) / 2
+def get_gamma(k1, l1, k2, l2, jmed, ja, weights):
+    return jmed - get_cell_cell_j(k1, l1, k2, l2, ja, weights) / 2
 
 
 if __name__ == "__main__":

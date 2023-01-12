@@ -42,10 +42,6 @@ public:
 
     void Read(const char *filename);
 
-    void CreateRule(const char *Jmed_rule_input);
-
-    void Read_KeyLock_list_fromfile(const char *filename);
-
     void Write(ostream &os) const;
 
     double T;
@@ -55,9 +51,6 @@ public:
     int target_length;
     double lambda;
     double lambda2;
-    char *keylock_list_filename;
-    char *Jtable;
-    char *Jmed_rule_input;//see below for rule for J with med
     int conn_diss;
     bool vecadherinknockout;
     bool extensiononly;
@@ -65,7 +58,10 @@ public:
     int border_energy;
     int neighbours;
     int min_area_for_life;
-    int key_lock_length;
+    int key_lock_len;
+    char *key_lock_weights;
+    double Jmed;
+    double Jalpha;
     bool periodic_boundaries;
     int n_chem;
     double *diff_coeff;
@@ -149,20 +145,6 @@ public:
     int season_duration;
     int init_cell_config;
     int cell_placement;
-
-    struct key_lock_pair {
-        int tau;
-        vector<int> key;
-        vector<int> lock;
-    };
-    vector<key_lock_pair> keylock_list;
-
-    struct Jmed_rule {
-        int offset;
-        //char rule; //for now only o //'s' or 'p'
-        int keypos_formedium;
-        vector<int> lookup_table;
-    } Jmedr;
 
 private:
 };

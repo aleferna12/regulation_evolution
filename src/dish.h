@@ -40,19 +40,11 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "ca.h"
 #include "foodpatch.h"
 
-#define PREY 1
-#define PREDATOR 2
+#define MIGRATE 1
+#define DIVIDE 2
 
-namespace ColourMode {
-    enum {
-        State, CellType, Sigma, Auxilliary
-    };
-}
 
 class Dish {
-
-    friend class Info;
-
 public:
     Dish();
 
@@ -87,14 +79,9 @@ public:
     //! Used to decide whether a cell border should be drawn at this position.
     void drawCellBorderIfNeeded(Graphics *g, int i, int j) const;
 
-    void InitKeyLock();
-
     static int CalculateJwithMedium(vector<int> key);
 
     static int CalculateJfromKeyLock(vector<int> key1, vector<int> lock1, vector<int> key2, vector<int> lock2);
-
-    void InitVectorJ(); //Initialise vector of J values for each cell
-    void UpdateVectorJ(const vector<int> &sigma_to_update);
 
     void MutateCells(const vector<int> &sigma_to_update);
 

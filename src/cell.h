@@ -23,29 +23,25 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #ifndef _CELL_HH_
 #define _CELL_HH_
 
-#include "parameter.h"
 //#define EMPTY -1
-#include <math.h>
+#include <cmath>
 #include <map>
 #include <utility>
 #include "random.h"
 #include "genome.h"
 #include "boundingbox.h"
+#include "parameter.h"
 
-#define PREY 1
-#define PREDATOR 2
+#define MIGRATE 1
+#define DIVIDE 2
 
 extern Parameter par;
 
 class Dish;
 
 class Cell {
-
     friend class Dish;
-
     friend class CellularPotts;
-
-    friend class Info;
 
 public:
 
@@ -200,9 +196,6 @@ public:
 
         owner = src.owner;
         growth = src.growth;
-        jlock = src.jlock;
-        jkey = src.jkey;
-        vJ = src.vJ;
 
         neighbours = src.neighbours;
 
@@ -286,10 +279,6 @@ public:
         growth = src.growth;
         neighbours = src.neighbours;
 
-        jlock = src.jlock;
-        jkey = src.jkey;
-        vJ = src.vJ;
-
         ancestor = src.ancestor;
 
         chem = new double[par.n_chem];
@@ -329,11 +318,11 @@ public:
 
     //predator is 1? No, prey is 1, predator is 2
     inline void SetCellTypeProperties() {
-        if (tau == PREY) {
+        if (tau == MIGRATE) {
             //growth = par.growth/2.;
             ;
             half_div_area = par.half_div_area;
-        } else if (tau == PREDATOR) {
+        } else if (tau == DIVIDE) {
             //growth = 2.*par.growth;
 
             if (par.half_div_area_2 > 0) {
@@ -348,31 +337,6 @@ public:
 
         }
         //;
-    }
-
-    //Nonsensical object oriented stuff:
-    inline vector<int> getJkey() {
-        return jkey;
-    }
-
-    inline vector<int> getJlock() {
-        return jlock;
-    }
-
-    inline void setJkey(vector<int> setjkey) {
-        jkey = std::move(setjkey);
-    }
-
-    inline void setJlock(vector<int> setjlock) {
-        jlock = std::move(setjlock);
-    }
-
-    inline vector<int> getVJ() const {
-        return vJ;
-    }
-
-    inline void setVJ(vector<int> setvj) {
-        vJ = std::move(setvj);
     }
 
     inline void InitMeanX(double xpos) {
@@ -491,19 +455,6 @@ public:
         }
     }
 
-//   // it uses size_t instead of int to shut up warnings
-    inline void setVJ_singleval(int pos, int val) {
-        auto unsigned_pos = (size_t) pos;
-        if (unsigned_pos >= vJ.size()) {
-            //cerr<<"pos larger than vJ size: pos = "<<unsigned_pos<<" size = "<< vJ.size() <<endl;
-            for (size_t i = vJ.size(); i < unsigned_pos + 1; i++)
-                vJ.push_back(-1);
-        }
-        vJ[unsigned_pos] = val;
-    }
-
-    int MutateKeyAndLock();
-
     double MAXmu = 30;
 
     inline void MutateMu() {
@@ -531,12 +482,6 @@ public:
     inline int SetColour(const int new_colour) {
         return colour = new_colour;
     }
-
-    /* \brief Returns the energy between this cell and cell2.
-
-    Called from CellularPotts::DeltaH.
-    **/
-    int EnergyDifference(const Cell &cell2) const;
 
     //! Return Cell's actual area.
     inline int Area() const {
@@ -682,8 +627,9 @@ public:
         genome.UpdateGeneExpression(input, sync);
     }
 
-    inline void FinishGeneUpdate() {
+    inline void FinishGeneAndJDecsUpdate() {
         genome.FinishUpdate();
+        updateJDecs();
     }
 
     inline void GetGeneOutput(array<int, 2> &out) {
@@ -724,15 +670,11 @@ public:
     // Is that faster?
     BoundingBox getBoundingBox();
 
-private:
-    /*! \brief Read a table of static Js.
-      First line: number of types (including medium)
-      Next lines: diagonal matrix, starting with 1 element (0 0)
-      ending with n elements */
-    static void ReadStaticJTable(const char *fname);
+    void updateJDecs();
 
+private:
     // used internally by class CellularPotts
-    inline void CleanMoments(void) {
+    inline void CleanMoments() {
         sum_x = sum_y = sum_xx = sum_xy = sum_yy = area = target_area = 0;
     }
 
@@ -1012,7 +954,7 @@ private:
     // return the new length that the cell would have
     // if site (x,y) were added.
     // used internally by CellularPotts
-    inline double GetNewLengthIfXYWereAdded(int x, int y) {
+    inline double GetNewLengthIfXYWereAdded(int x, int y) const {
         double lengthifxywereadded = 0.;
         if (!par.periodic_boundaries)
             lengthifxywereadded = Length(sum_x + x, sum_y + y, sum_xx + x * x, sum_yy + y * y, sum_xy + x * y,
@@ -1023,7 +965,7 @@ private:
     // return the new length that the cell would have
     // if site (x,y) were removed
     // used internally by CellularPotts
-    inline double GetNewLengthIfXYWereRemoved(int x, int y) {
+    inline double GetNewLengthIfXYWereRemoved(int x, int y) const {
         double lengthifxywereremoved = 0.;
         if (!par.periodic_boundaries)
             lengthifxywereremoved = Length(sum_x - x, sum_y - y, sum_xx - x * x, sum_yy - y * y, sum_xy - x * y,
@@ -1100,14 +1042,7 @@ protected:
     double length; // length of the cell;
     double target_length;
 
-    // key and lock pair for j values:
-    vector<int> jkey; //= vector<int>(par.key_lock_length, -1);  // notice that part (half) of the key is used also for medium
-    vector<int> jlock; //= vector<int>(par.key_lock_length, -1); //c++11 in-class declaration of vectors...
     // so things have to be scaled a bit...
-
-    //array of J values with every other possible sigma,
-    // update it everytime a new cell is born
-    vector<int> vJ;
 
     //variables for dealing with genome and its output
     //mostly controlling when to divide right now
@@ -1142,6 +1077,10 @@ protected:
     int times_divided;
     int date_of_birth;
     int colour_of_birth;
+
+    // These hold the decimal representation of the cell's jkey and jlock and is updated with the genome
+    int jkey_dec = 0;
+    int jlock_dec = 0;
 
     int area;
     int target_area;

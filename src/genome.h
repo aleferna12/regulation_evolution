@@ -43,7 +43,6 @@ public:
     void WriteToFile(char *filename);
 
     void PrintGenome(char *filename); //makes a dot plot
-    void OutputGeneState(void);
 
     void GetOutput(array<int, 2> &out);
 

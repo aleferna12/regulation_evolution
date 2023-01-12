@@ -202,7 +202,7 @@ char *sgetpar(FILE *fp, const char *parameter, const char *default_val, bool wra
     /* Get token representing the value */
     token = ParsePar(fp, parameter, wrapflag);
 
-    if (token == 0) {
+    if (token == nullptr) {
         /* default value */
         warning("No token %s found. Using default value '%s'.\n", parameter, default_val);
         value = strdup(default_val);

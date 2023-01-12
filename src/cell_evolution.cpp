@@ -35,6 +35,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "random.h"
 #include "cell.h"
 #include "output.h"
+#include "misc.h"
 
 #ifdef QTGRAPHICS
 #include "qtgraph.h"
@@ -78,12 +79,6 @@ INIT {
             // Assign a random type to each of the cells, i.e. PREYS and PREDATORS
             CPM->SetRandomTypes();
             cout << "done setting types" << endl;
-            //Initialise key-lock pairs - we do it after types, because we need the information
-            InitKeyLock();
-            cout << "done setting keylock" << endl;
-            //Initialise vector of J values for each cell
-            InitVectorJ();
-            cout << "done setting J values" << endl;
             //Initialise the contactlength bookkeeping now that the cells are placed
             // at this stage, cells are only surrounded by medium
             InitContactLength();  // see dish.cpp - you don't need dish->InitContactLength because this part IS in dish
@@ -103,8 +98,7 @@ INIT {
                     if (strlen(par.genomefile)) {
                         c.ReadGenomeFromFile(par.genomefile);
                     } else {
-                        c.CreateRandomGenome(2, par.nr_regnodes,
-                                             1); //important! we only have one output node, but used to make 2 (one unused)
+                        c.CreateRandomGenome(2, par.nr_regnodes, 1 + par.key_lock_len * 2);
                     }
                     c.ClearGenomeState();
                 }
@@ -129,8 +123,6 @@ INIT {
             cout << "done initialising edge list for competition" << endl;
             InitContactLength();
             cout << "done initialising contacts for competition" << endl;
-            InitVectorJ();
-            cout << "done initialising Jvalues for competition" << endl;
             // Initialises food plane (now the gradient plane)
             for (int init_time = 0; init_time < 10; init_time++) {
                 CPM->AmoebaeMove2(PDEfield);  //this changes neighs
@@ -148,7 +140,6 @@ INIT {
             readLattice();
             CPM->InitializeEdgeList(false);
             InitContactLength();
-            InitVectorJ();
         }
     } catch (const char *error) {
         cerr << "Caught exception\n";
@@ -304,11 +295,6 @@ int main(int argc, char *argv[]) {
                 exit(1);
             }
         }
-
-        //Creates a rule for J val with medium that is going to be used in following function
-        par.CreateRule(par.Jmed_rule_input);
-        // Open file where initial key locks are specified, and assigns them to cells
-        par.Read_KeyLock_list_fromfile(par.keylock_list_filename);
 
         cerr << endl << "Warning, this version is ***NOT*** suitable for pde field!!!" << endl;
         //Depends on this: AddSiteToMoments (and Remove), FindCellDirections2, etc...

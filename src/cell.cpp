@@ -147,88 +147,8 @@ void Cell::CellBirth(Cell &mother_cell) {
 
     clearNeighbours(); //neighbours will be reassigned during the division function
 
-    jlock = mother_cell.jlock;
-    jkey = mother_cell.jkey;
-    vJ = mother_cell.vJ;
-
     time_since_birth = 0;
     mother_cell.SetTimeSinceBirth(0);
-}
-
-/*! \brief Read a table of static Js.
- First line: number of types (including medium)
- Next lines: diagonal matrix, starting with 1 element (0 0)
- ending with n elements */
-void Cell::ReadStaticJTable(const char *fname) {
-
-    cerr << "Reading J's...\n";
-    ifstream jtab(fname);
-    if (!jtab)
-        perror(fname);
-
-    int n; // number of taus
-    jtab >> n;
-    cerr << "Number of celltypes:" << n << endl;
-    maxtau = n - 1;
-
-    // Allocate
-    if (J) {
-        free(J[0]);
-        free(J);
-    }
-    J = (int **) malloc(n * sizeof(int *));
-    J[0] = (int *) malloc(n * n * sizeof(int));
-    for (int i = 1; i < n; i++) {
-        J[i] = J[i - 1] + n;
-    }
-
-    capacity = n;
-    {
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j <= i; j++) {
-                jtab >> J[i][j];
-                // symmetric...
-                J[j][i] = J[i][j];
-            }
-
-        }
-    }
-}
-
-
-int Cell::EnergyDifference(const Cell &cell2) const {
-
-    if (sigma == cell2.sigma) {
-        //cerr<<"EnergyDifference(): Warning. sigma and sigma2 are the same"<<endl;
-        return 0;
-    }
-    //return J[tau][cell2.tau]; //old version
-    //cerr<<"Hello EnergyDifference 0.1: this is vJ of cell with sigma = "<<sigma<<endl;
-    //for (auto i: vJ)
-    //  cerr << i << " ";
-    //cerr<<endl;
-
-    //cerr<<"In contrast, this is what J[tau][cell2.tau] would give: "<<J[tau][cell2.tau]<<endl;
-    /*if(vJ[cell2.sigma]<=1){
-      cerr<<"tau="<<tau<<" sigma="<<sigma<<", tau2="<<cell2.tau<<" sigma2="<<cell2.sigma<<", J=" <<vJ[cell2.sigma]<<"=?"<<cell2.vJ[sigma]<<endl;
-    */
-//     for (auto i = jkey.begin(); i != jkey.end(); ++i)
-//       std::cout << *i ;
-//     std::cout << ' ';
-//     for (auto i = jlock.begin(); i != jlock.end(); ++i)
-//       std::cout << *i ;
-//     std::cout<<endl;
-//     for (auto i = cell2.jlock.begin(); i != cell2.jlock.end(); ++i)
-//       std::cout << *i ;
-//     std::cout << ' ';
-//     for (auto i = cell2.jkey.begin(); i != cell2.jkey.end(); ++i)
-//       std::cout << *i ;
-//     std::cout<<endl;
-//
-//
-//     exit(1);
-//   }
-    return vJ[cell2.sigma]; //new version
 }
 
 
@@ -304,6 +224,7 @@ int Cell::SetNeighbourDurationFromMother(int cell, int motherduration) {
     return 0;
 }
 
+
 int Cell::updateNeighbourDuration(int cell, int durationmodification) {
     if (!neighbours.count(cell)) {
         printf("Cell.updateNeighbourDuration: error: Nonexisting neighbour %d\n", cell);
@@ -316,11 +237,13 @@ int Cell::updateNeighbourDuration(int cell, int durationmodification) {
     return 0;
 }
 
+
 // This could also be implemented as an attribute that can be updated each ConvertSpin iteration
 // That could be faster since the boxes would be tight around the cells
 BoundingBox Cell::getBoundingBox() {
     int maxx = owner->CPM->SizeX();
     int maxy = owner->CPM->SizeY();
+    // Veryyy arbitrary scaling to make sure all positions are in
     double scale = 3;
     return BoundingBox{
             (int) max(meanx - scale * Length(), 1.),
@@ -330,63 +253,16 @@ BoundingBox Cell::getBoundingBox() {
     };
 }
 
-int Cell::MutateKeyAndLock() {
-//   cerr<<"key: ";
-//   for(auto x: jkey) cerr<<x<<" ";
-//   cerr<<"lock: ";
-//   for(auto x: jlock) cerr<<x<<" ";
-//   cerr<<endl;
 
-
-    //double mutrate=0.2; // probability per bit to be flipped
-    int nmut;
-    //calculate how many mutations from binomial distribution for both key and lock
-    int keysize = jkey.size();
-    int locksize = jlock.size();
-    int keylocksize = keysize + locksize;
-
-//   cerr<<"mut rate is: "<<par.mut_rate<<endl;
-
-    nmut = BinomialDeviate(keylocksize, par.mut_rate);
-    //if zero, return 0
-    if (0 == nmut) return 0;
-
-    //else randomize positions, and flip bits
-    //return number of mutations
-    int positions[keylocksize];
-    for (int i = 0; i < keylocksize; i++) positions[i] = i; //initialise array of positions
-    int where = keylocksize;
-    for (int i = 0; i < nmut; i++) {
-        int mutpos = (int) (where * RANDOM());
-        int tmp = positions[mutpos];
-        positions[mutpos] = positions[where - 1];
-        positions[where - 1] = tmp;
-        where--;
-
-        //key or lock
-        if (positions[keylocksize - i - 1] < keysize) {
-            int pos = positions[keylocksize - i - 1];
-            jkey[pos] = 1 - jkey[pos]; // 0 if 1, and 1 if 0
-        } else {
-            int pos = positions[keylocksize - i - 1] - keysize;
-            jlock[pos] = 1 - jlock[pos]; // 0 if 1, and 1 if 0
-        }
-
+void Cell::updateJDecs() {
+    jkey_dec = 0;
+    jlock_dec = 0;
+    int exp_2 = 1;
+    for (int i = 0; i < par.key_lock_len; ++i) {
+        if (genome.outputnodes[1 + i].Boolstate == 1)
+            jkey_dec += exp_2;
+        if (genome.outputnodes[par.key_lock_len + 1 + i].Boolstate == 1)
+            jlock_dec += exp_2;
+        exp_2 *= 2;
     }
-
-
-//   cerr<<"Ney: ";
-//   for(auto x: jkey) cerr<<x<<" ";
-//   //cerr<<endl;
-//   cerr<<"Nock: ";
-//   for(auto x: jlock) cerr<<x<<" ";
-//   cerr<<endl;
-//
-//   cerr<<"nmut = "<<nmut<<endl;
-//   for(int i=keylocksize-1; i> keylocksize - nmut-1;i--) cerr<<positions[i]<<" ";
-//   cerr<<endl;
-//   exit(1);
-//
-    return nmut;
-
 }

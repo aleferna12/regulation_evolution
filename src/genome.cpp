@@ -238,7 +238,6 @@ void Genome::FinishUpdate() {
     for (i = 0; i < outputnodes.size(); i++) {
         outputnodes[i].EndCycle();
     }
-
 }
 
 void Genome::MutateGenome(double mu, double mustd) {
@@ -308,23 +307,4 @@ void Genome::PrintGenome(char *filename) {
 
     ofs.flush();
     ofs.close();
-}
-
-void Genome::OutputGeneState(void) {
-    int i;
-    cout << "gene states" << endl;
-
-    for (const auto &n: regnodes) {
-        cout << n.genenr << "=" << n.Boolstate << endl;
-    }
-    for (const auto &n: outputnodes) {
-        cout << n.genenr << "=" << n.Boolstate << endl;
-    }
-
-}
-
-void Genome::GetOutput(array<int, 2> &out) {
-    for (auto &n: outputnodes) {
-        out[n.genenr - (innr + regnr)] = n.Boolstate;
-    }
 }

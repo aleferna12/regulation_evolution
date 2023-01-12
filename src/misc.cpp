@@ -32,7 +32,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 
 /** PRIVATE **/
 
-static int ScanForNumbers(char *string) {
+static int ScanForNumbers(const char *string) {
     int i = 0;
     int number, numpresent = FALSE;
     char tc;
@@ -161,7 +161,7 @@ char *GetFileName(const char *message, const char *ftype) {
     if (fname == NULL)
         fname = (char *) malloc(100 * sizeof(char));
 
-    fprintf(stderr, message);
+    fprintf(stderr, "%s", message);
     fflush(stderr);
 
     do {

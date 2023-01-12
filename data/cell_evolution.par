@@ -8,8 +8,8 @@ mcs = 20000000
 season_duration = 30000
 
 ### grid size ###
-sizex = 1000
-sizey = 1000
+sizex = 200
+sizey = 200
 
 
 
@@ -21,7 +21,7 @@ sizey = 1000
 
 T = 16
 
-# neigh =2 is Moore neigh (#set neighbours to 1 to avoid predators from eating beyond contact <- NO)
+# neigh = 2 is Moore neigh (#set neighbours to 1 to avoid predators from eating beyond contact <- NO)
 neighbours = 2
 conn_diss = 0			#whether to penalise loose pixels
 #unclear, only in deltaH
@@ -62,24 +62,18 @@ half_div_area_2 = -1
 # min_area_for_life is the minimum area below which we set a cell to apoptose and remove, default 5
 min_area_for_life = 4
 
-## Key-Lock Data ##
+## Adhesion ##
 
-#Jtable = ../data/Jcellevol.dat  THIS IS NOT USED ANY MORE, USE KEYLOCK FILE INSTEAD
-keylock_list_filename = ../data/KL_l24_14_28.dat
-#keylock_list_filename = ../data/KL_l24_14_28_compl.dat
-#keylock_list_filename = ../data/KL_l25_12_24.dat
-#keylock_list_filename = ../data/KL_l25_12_48.dat
-#keylock_list_filename = ../data/newKL_12_12_g6.dat
-#keylock_list_filename = newKL_14_28_g0.dat
-#keylock_list_filename = newKL_14_36_g-4.dat
+# Determines adhesion strength with the medium
+Jmed = 14
+# Term in the Jcell_cell adhesion equation
+Jalpha = 7
 
-#lookup table for J val with medium:
-# e.g if I get 10o4_3_2_1 -> J(tau,medium) = 10 + sum(4*key[0],3*key[1],2*key[2],1*key[3])
-#Jmed_rule_input = 10o5_4_3_1_1_1
-Jmed_rule_input = 8o4_3_2_1_1_1
-
-# THIS WAS 25. recently changed!
-key_lock_length = 24
+# Determines the length of the key and of the lock
+key_lock_len = 6
+# This determines the weights with which to multiply the matching positions between cell's keys and locks
+# The number of digits should match key_lock_len parameter
+key_lock_weights = 1 2 3 4 5 6
 
 #######################
 ## Genome Regulation ##
@@ -87,7 +81,8 @@ key_lock_length = 24
 #######################
 
 #genomefile = /home/aleferna/CProjects/Projects/regulation_evolution/runs/test/networkdir_
-nr_regnodes = 3
+# Should be around numberofoutputnodes + 1
+nr_regnodes = 14
 divtime = 20	# scaled nr of steps before a cell initiates division
 divdur = 1000     # duration of division, during which a cell stops moving
 scaling_cell_to_ca_time = 20  # scaling factor for: freq update food plane, predation, feeding and growth/divide
@@ -208,7 +203,7 @@ metabolic_conversion = 0.5
 ## output ##
 ############
 
-storage_stride = 1000
+storage_stride = 1
 graphics = false
 store = true
 divisioncolour = true
@@ -223,4 +218,4 @@ readcolortable = true
 colortable_filename = ../data/colortable.ctb
 # Which plots to make, specified as a space-delimited string
 # Possible values for the list are: tau food
-plots = food tau
+plots = tau food
