@@ -56,7 +56,7 @@ Parameter::Parameter() {
     min_area_for_life = 5;
     Jmed = 14;
     Jalpha = 7;
-    key_lock_len = 5;
+    key_lock_len = 6;
     n_chem = 1;
     diff_coeff = new double[1];
     diff_coeff[0] = 1e-13;
@@ -117,7 +117,7 @@ Parameter::Parameter() {
     readcolortable = false;
     colortable_filename = "default.ctb";
     plots = "tau";
-    key_lock_weights = "2 4 6 8 10";
+    key_lock_weights = "1 2 3 4 5 6";
     mut_rate = 0.01;
     startmu = 0.0;
     persduration = 0;
@@ -722,7 +722,7 @@ void Parameter::Read(const char *filename) {
     min_area_for_life = igetpar(fp, "min_area_for_life", 5, true);
     Jmed = fgetpar(fp, "Jmed", 14, true);
     Jalpha = fgetpar(fp, "Jalpha", 7, true);
-    key_lock_len = igetpar(fp, "key_lock_len", 5, true);
+    key_lock_len = igetpar(fp, "key_lock_len", 6, true);
     n_chem = igetpar(fp, "n_chem", 0, true);
     if (n_chem) {
         diff_coeff = dgetparlist(fp, "diff_coeff", n_chem, true);
@@ -783,7 +783,7 @@ void Parameter::Read(const char *filename) {
     readcolortable = bgetpar(fp, "readcolortable", false, true);
     colortable_filename = sgetpar(fp, "colortable_filename", "default.ctb", true);
     plots = sgetpar(fp, "plots", "tau", true);
-    key_lock_weights = sgetpar(fp, "key_lock_weights", "2 4 6 8 10", true);
+    key_lock_weights = sgetpar(fp, "key_lock_weights", "1 2 3 4 5 6", true);
     evolsim = igetpar(fp, "evolsim", 0, true);
     mut_rate = fgetpar(fp, "mut_rate", 0.01, true);
     persduration = igetpar(fp, "persduration", 0, true);
