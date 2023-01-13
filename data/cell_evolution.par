@@ -8,8 +8,8 @@ mcs = 20000000
 season_duration = 30000
 
 ### grid size ###
-sizex = 200
-sizey = 200
+sizex = 1000
+sizey = 1000
 
 
 

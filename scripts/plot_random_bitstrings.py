@@ -2,7 +2,7 @@ import plotly.express as px
 import numpy as np
 from pathlib import Path
 
-LEN = 6
+LEN = 12
 POP = 500000
 
 
@@ -29,13 +29,10 @@ def make_bitstrings(n, length):
 
 
 def cell_cell_J(k1, l1, k2, l2):
-    # Similar to prev. Jmed (results in a normal distr.):
-    mult = np.arange(1, 1 + len(k1))
-    # Proposed in the meeting:
-    # mult = np.full(len(k1), 2)**np.arange(0, len(k1))
+    mult = np.array([1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3])
     j1 = np.sum((k1 == l2) * mult)
     j2 = np.sum((k2 == l1) * mult)
-    return 7 + j1 + j2
+    return j1 + j2
 
 
 if __name__ == "__main__":

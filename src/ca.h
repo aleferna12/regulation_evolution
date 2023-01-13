@@ -283,8 +283,8 @@ public:
 
     void killCell(int c_sigma);
 
-    int getCellJ(int key_dec, int lock_dec) {
-        return cellJs[key_dec * max_key_lock_dec + lock_dec];
+    int getKLStrength(int key_dec, int lock_dec) {
+        return KL_strengths[key_dec * max_key_lock_dec + lock_dec];
     }
 
     double energyDifference(int sigma1, int sigma2);
@@ -331,11 +331,11 @@ private:
     std::vector<Cell> *cell{};
     int zygote_area;
     int thetime;
-    int *cellJs;
+    int *KL_strengths;
 
     int max_key_lock_dec;
 
-    static int calculateCellJ(unsigned long key_dec, unsigned long lock_dec, const vector<int> &rule) ;
+    static int calculateKLStrength(unsigned long key_dec, unsigned long lock_dec, const vector<int> &rule) ;
 };
 
 

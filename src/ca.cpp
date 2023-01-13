@@ -93,10 +93,10 @@ CellularPotts::CellularPotts(vector<Cell> *cells,
         throw runtime_error("'key_lock_len' parameter and length of 'key_lock_rule' parameter dont match");
 
     max_key_lock_dec = int(pow(2, par.key_lock_len));
-    cellJs = new int[max_key_lock_dec * max_key_lock_dec];
+    KL_strengths = new int[max_key_lock_dec * max_key_lock_dec];
     for (int i = 0; i < max_key_lock_dec; ++i)
         for (int j = 0; j < max_key_lock_dec; ++j)
-            cellJs[i * max_key_lock_dec + j] = calculateCellJ(i, j, rule);
+            KL_strengths[i * max_key_lock_dec + j] = calculateKLStrength(i, j, rule);
 
     BaseInitialisation(cells);
     sizex = sx;
@@ -129,7 +129,7 @@ CellularPotts::CellularPotts() {
     frozen = false;
     thetime = 0;
     zygote_area = 0;
-    cellJs = nullptr;
+    KL_strengths = nullptr;
     max_key_lock_dec = 0;
 
     CopyProb(par.T);
@@ -156,22 +156,21 @@ CellularPotts::~CellularPotts() {
         free(sigma);
         sigma = nullptr;
     }
-    if (cellJs) {
-        delete[] cellJs;
-        cellJs = nullptr;
+    if (KL_strengths) {
+        delete[] KL_strengths;
+        KL_strengths = nullptr;
     }
 }
 
 
-int CellularPotts::calculateCellJ(unsigned long key_dec, unsigned long  lock_dec, const vector<int> &rule) {
+int CellularPotts::calculateKLStrength(unsigned long key_dec, unsigned long  lock_dec, const vector<int> &rule) {
     auto key = bitset<32>{key_dec};
     auto lock = bitset<32>{lock_dec};
     auto matches = ~(key ^ lock);  // XNOR operation
     int res = 0;
-    // Technically bitstrings are being iterated in reverse here but that shouldn't be a problem (just means that the
-    // rule weights are applied in reverse)
     for (int i = 0; i < rule.size(); ++i)
-        if (matches[i] == 1)
+        // bitset[0] is the last digit, so we need to iterate in reverse
+        if (matches[rule.size() - 1 - i] == 1)
             res += rule[i];
     return res;
 }
@@ -637,8 +636,8 @@ double CellularPotts::energyDifference(int sigma1, int sigma2) {
         Cell &c1 = (*cell)[sigma1];
         Cell &c2 = (*cell)[sigma2];
         return par.Jalpha
-               + getCellJ(c1.jkey_dec, c2.jlock_dec)
-               + getCellJ(c2.jkey_dec, c1.jlock_dec);
+               + getKLStrength(c1.jkey_dec, c2.jlock_dec)
+               + getKLStrength(c2.jkey_dec, c1.jlock_dec);
     }
     return par.Jmed;
 }
