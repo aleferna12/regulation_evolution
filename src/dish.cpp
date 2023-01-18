@@ -888,7 +888,7 @@ int Dish::readCellData() {
         rc->times_divided = stoi(*it); ++it;
         rc->colour = stoi(*it); ++it;
         rc->ancestor = stoi(*it); ++it;
-        // Skip medJ
+        // Skip Jmed
         ++it;
         rc->jkey_dec = stoi(*it); ++it;
         rc->jlock_dec = stoi(*it); ++it;
@@ -945,8 +945,8 @@ int Dish::saveCellData(int Time) {
     vector<string> col_names{"sigma", "tau", "time_since_birth", "tvecx", "tvecy", "prevx", "prevy", "persdur",
                              "perstime", "mu", "half_div_area", "length", "last_meal", "food", "growth", "gextiming",
                              "dividecounter", "grad_conc", "meanx", "meany", "chemvecx", "chemvecy", "target_area",
-                             "chemmu", "times_divided", "colour", "ancestor", "medJ", "jkey_dec", "jlock_dec",
-                             "neighbour_list", "neighbourJ_list", "innr", "regnr", "outnr", "in_scale_list",
+                             "chemmu", "times_divided", "colour", "ancestor", "Jmed", "jkey_dec", "jlock_dec",
+                             "neighbour_list", "Jneighbour_list", "innr", "regnr", "outnr", "in_scale_list",
                              "reg_threshold_list", "reg_w_innode_list", "reg_w_regnode_list", "out_threshold_list",
                              "out_w_regnode_list", "time"};
     file << vectorToString(col_names, ',') << endl;
@@ -967,15 +967,15 @@ int Dish::saveCellData(int Time) {
         c.resetAncestor();
 
         vector<int> neighs {};
-        vector<double> neigh_Js {};
+        vector<double> Jneighs {};
         for (auto &n : c.neighbours) {
             if (cell[n.first].AliveP()) {
                 neighs.push_back(n.first);
-                neigh_Js.push_back(CPM->energyDifference(c.sigma, n.first));
+                Jneighs.push_back(CPM->energyDifference(c.sigma, n.first));
             }
         }
         file << vectorToString(neighs, ' ') << ',';
-        file << vectorToString(neigh_Js, ' ') << ',';
+        file << vectorToString(Jneighs, ' ') << ',';
 
         file << c.genome.innr << ',' << c.genome.regnr << ',' << c.genome.outnr << ',';
         file << vectorToString(c.genome.inputscale, ' ') << ',';

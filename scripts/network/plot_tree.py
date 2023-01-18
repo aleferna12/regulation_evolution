@@ -8,6 +8,7 @@ from parse import parse_cell_data
 from plot_adhesion import get_adhering_clusters, CellCluster
 from colorir import *
 
+logger = logging.getLogger(__name__)
 _cs = Palette.load()
 
 
@@ -21,7 +22,7 @@ def main():
     colored = False if len(sys.argv) > 5 and sys.argv[5] in ["false", '0'] else True
     reroot = True if len(sys.argv) > 6 and sys.argv[6] in ["true", '1'] else False
 
-    logging.info("Reading tree file")
+    logger.info("Reading tree file")
     tree = Tree(treepath, format=5)
     # When tree is constructed by neighbour joining they are unrooted so we must estimate
     if reroot:
@@ -32,11 +33,11 @@ def main():
     clusters = get_adhering_clusters(celldf)
     plot_tree(tree, clusters, outpath, min_cluster, colored)
 
-    logging.info("Finished")
+    logger.info("Finished")
 
 
 def get_cluster_colors(clusters: CellCluster, min_cluster=2, outcast_color="a9a9a9"):
-    palpath = Path(__file__).resolve().parent.parent.parent / "data"
+    palpath = Path(__file__).resolve().parent.parent / "colortable" / "palettes"
     pal = StackPalette.load("carnival", palettes_dir=palpath)
     grad = PolarGrad(pal, color_sys=HCLuv)
     # Only allocate colors for clusters with at least min_cluster neighbours
@@ -62,7 +63,7 @@ def get_cluster_colors(clusters: CellCluster, min_cluster=2, outcast_color="a9a9
 
 
 def plot_tree(tree: Tree, clusters: CellCluster, outpath, min_cluster=2, colored=True):
-    logging.info(f"Plotting tree to {outpath}")
+    logger.info(f"Plotting tree to '{outpath}'")
 
     colors = get_cluster_colors(clusters, min_cluster)
     leaf_color = {}

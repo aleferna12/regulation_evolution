@@ -203,14 +203,14 @@ metabolic_conversion = 0.5
 ## output ##
 ############
 
-storage_stride = 1000
 graphics = false
 store = true
 divisioncolour = true
+storage_stride = 3000
 moviedir = ../runs/data_film2
-save_data_period = 10000
+save_data_period = 3000
 celldatafile = ../runs/data_cellcount.txt
-save_lattice_period = 10000
+save_lattice_period = 21000
 latticedir = ../runs/backup
 
 #if readcolortable is true, it reads the color table from "colortable_filename", otherwise it generates a pretty one internally

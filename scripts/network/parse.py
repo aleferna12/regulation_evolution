@@ -1,39 +1,40 @@
-import ast
 import re
+import logging
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from enlighten import Counter
+
+logger = logging.getLogger(__name__)
 
 
 def parse_lattice(filepath) -> pd.DataFrame:
+    logger.info(f"Parsing dataframe from: '{filepath}'")
     return pd.read_csv(filepath, header=None)
 
 
-def parse_food_data(datapath, time_filter: list = None) -> pd.DataFrame:
-    df = _parse_dfs(datapath, time_filter)
-    df["sigma_list"] = df["sigma_list"].apply(lambda string: [int(x) for x in string.split(' ')])
-    return df
+def parse_food_data(datapath, time_filter: list = None, trust_filenames=True) -> pd.DataFrame:
+    df = _parse_dfs(datapath, time_filter, trust_filenames)
+    return df.sort_values("time")
 
 
 def parse_cell_data(datapath,
-                    time_filter: list = None) -> pd.DataFrame:
+                    time_filter: list = None,
+                    trust_filenames=True) -> pd.DataFrame:
     """Parses a CSV file into a dataframe containing cell information.
 
     The format of this dataframe is essential to API stability, please be mindful of changes to it.
+    
+    :param time_filter:
+    :param datapath:
+    :param trust_filenames: Whether to speed-up the filtering process by trusting that the file
+    names represent the time of the simulation.
     """
-    celldf = _parse_dfs(datapath, time_filter)
-    list_attrs = ["neighbour_list", "neighbourJ_list", "in_scale_list", "reg_threshold_list",
-                  "reg_w_innode_list", "reg_w_regnode_list", "out_threshold_list",
-                  "out_w_regnode_list"]
-    for key in list_attrs:
-        # If the string only contains one object it will be already parsed as a literal type
-        # so no need to split it
-        if celldf[key].dtype == object:
-            celldf[key] = celldf[key].apply(
-                lambda string: [ast.literal_eval(x) for x in string.split(' ')]
-            )
+
+    celldf = _parse_dfs(datapath, time_filter, trust_filenames)
     celldf = celldf.sort_values(["time", "sigma"])
 
+    # Can't drop the columns because they might be needed by other functions!
     if Path(datapath).is_file():
         return celldf.set_index("sigma", drop=False)
     # Multi-index
@@ -63,15 +64,25 @@ def build_time_filter(time_points, start=0, end=float("inf"), n=None):
     return time_points[indexes]
 
 
-def _parse_dfs(datapath, time_filter):
+def _parse_dfs(datapath, time_filter, trust_filenames):
+    logger.info(f"Parsing dataframe(s) from: '{datapath}'")    
     datapath = Path(datapath)
 
     if datapath.is_file():
-        return pd.read_csv(datapath).sort_values("time")
+        return pd.read_csv(datapath)
 
     dfs = []
-    for filepath in datapath.iterdir():
-        df = pd.read_csv(filepath)
-        if time_filter is None or df["time"][0] in time_filter:
-            dfs.append(df)
-    return pd.concat(dfs).sort_values("time")
+    filepaths = list(datapath.iterdir())
+    pbar = Counter(total=len(filepaths), desc="CSV files iterated")
+    for filepath in filepaths:
+        if time_filter is None:
+            dfs.append(pd.read_csv(filepath))
+        elif not trust_filenames:
+            df = pd.read_csv(filepath)
+            if df["time"][0] in time_filter:
+                dfs.append(df)
+        # Skips unecessary calls to pd.read_csv by trusting file name
+        elif int(re.search(r"\d+", filepath.name).group()) in time_filter:
+            dfs.append(pd.read_csv(filepath))
+        pbar.update()
+    return pd.concat(dfs)

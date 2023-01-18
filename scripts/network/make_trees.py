@@ -2,14 +2,18 @@
 
 Be mindful of the fact that not all generations are captured, since data is only saved every X
 MCSs. This means that some branches will be collapsed into multifurcations, resulting in some loss
-of phylogenetic information.
+of phylogenetic information. This can be improved (with some amount of work) by saving a vector of
+ancestors rather than a single one.
 """
 import logging
 import sys
 import pandas as pd
 from pathlib import Path
+from enlighten import Counter
 from ete3 import Tree
-from parse import parse_cell_data
+from parse import *
+
+logger = logging.getLogger(__name__)
 
 
 def main():
@@ -25,17 +29,18 @@ def main():
     nhx = False if len(sys.argv) > 6 and sys.argv[6] in ["0", "false"] else True
     fmt = int(sys.argv[7]) if len(sys.argv) > 7 else 5
 
-    celldf = parse_cell_data(datadir)
+    t_filter = build_time_filter(get_time_points(datadir))
+    celldf = parse_cell_data(datadir, time_filter=t_filter)
     trees = make_trees(celldf, dead_ends, names, single_leaf)
     longest_time, longest = write_trees(trees, outdir, nhx, fmt)
 
-    logging.info("Longest lineages are: " + ", ".join(longest))
-    logging.info(f"These lineages survived for {longest_time} MCSs)")
-    logging.info("Finished")
+    logger.info("Longest lineages are: " + ", ".join(longest))
+    logger.info(f"These lineages survived for {longest_time} MCSs)")
+    logger.info("Finished")
 
 
 def write_trees(trees, outdir, nhx=True, fmt=5):
-    logging.info(f"Writing trees to '{outdir}'")
+    logger.info(f"Writing trees to '{outdir}'")
     outdir = Path(outdir)
 
     longest = []
@@ -59,12 +64,14 @@ def write_trees(trees, outdir, nhx=True, fmt=5):
 
 # Remember that although the sigmas are added as names, the same id can refer to DIFFERENT cells
 def make_trees(celldf: pd.DataFrame, dead_ends=True, names=True, single_leaf=True):
-    logging.info("Building trees from cell ancestry data")
+    logger.info("Building trees from cell ancestry data")
     # This dict holds the descendents of the current cells
     prev_anc_child = {}
     # Order by time backwards
     # This is needed to deal with dead-ends in a nice way
-    for time in celldf["time"].sort_values(ascending=False).unique():
+    timesteps = celldf["time"].sort_values(ascending=False).unique()
+    pbar = Counter(total=len(timesteps), desc="Time-steps")
+    for time in timesteps:
         # This dict holds the ancestors of the current cells
         next_anc_child = {}
         tdf = celldf.loc[time]
@@ -81,6 +88,8 @@ def make_trees(celldf: pd.DataFrame, dead_ends=True, names=True, single_leaf=Tru
                 next_anc_child[anc_sigma] = []
             next_anc_child[anc_sigma].append(node)
         prev_anc_child = dict(next_anc_child)
+
+        pbar.update()
 
     # Construct root trees
     trees = []
