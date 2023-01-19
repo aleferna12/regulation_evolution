@@ -6,7 +6,7 @@ config.DEFAULT_PALETTES_DIR = Path(__file__).resolve().parent / "palettes"
 
 def main():
     pal = StackPalette.load("categ8") \
-          + StackPalette.load("chemgrad64_3") \
+          + StackPalette.load("chemgrad64") \
           + StackPalette.load("divgrad8") \
           + StackPalette.load("miggrad8")
     write_colortable(

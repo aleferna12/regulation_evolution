@@ -55,14 +55,15 @@ def make_netgraph(cellss):
     """Make directed network graph from cell series.
     The string attributes need to have been already parsed into lists of floats.
     """
-    netgraph = nx.DiGraph()
+    netgraph = nx.DiGraph(sigma=cellss["sigma"])
 
+    # ntype is used to plot and must be numerical, but is the same as type
     for i in range(cellss["innr"]):
-        netgraph.add_node(i, type="in", subset=0, scale=cellss["in_scale_list"][i])
+        netgraph.add_node(i, type="in", ntype=0, scale=cellss["in_scale_list"][i])
 
     for i in range(cellss["regnr"]):
         reg_id = cellss["innr"] + i
-        netgraph.add_node(reg_id, type="reg", subset=1, threshold=cellss["reg_threshold_list"][i])
+        netgraph.add_node(reg_id, type="reg", ntype=1, threshold=cellss["reg_threshold_list"][i])
         for j in range(cellss["innr"]):
             w_index = i * cellss["innr"] + j
             netgraph.add_edge(j, reg_id, weight=cellss["reg_w_innode_list"][w_index])
@@ -73,7 +74,7 @@ def make_netgraph(cellss):
 
     for i in range(cellss["outnr"]):
         out_id = cellss["innr"] + cellss["regnr"] + i
-        netgraph.add_node(out_id, type="out", subset=2, threshold=cellss["out_threshold_list"][i])
+        netgraph.add_node(out_id, type="out", ntype=2, threshold=cellss["out_threshold_list"][i])
         for j in range(cellss["regnr"]):
             reg_id = cellss["innr"] + j
             w_index = i * cellss["regnr"] + j
