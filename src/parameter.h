@@ -133,6 +133,7 @@ public:
     char *celldatadir;
     char *fooddatadir;
     char *latticefile;
+    char *cellgravesdatadir;
     int starttime;
     int save_lattice_period;
     int the_line;

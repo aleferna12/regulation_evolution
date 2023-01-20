@@ -291,6 +291,13 @@ public:
 
     double Adhesion_Energy(int sigma1, int sigma2);
 
+    // Not used in the simulations but useful to output data
+    double calculateGamma(int sigma1, int sigma2);
+
+    Edges &getEdgesVector() {
+        return edgeSetVector;
+    }
+
 private:
     int DeltaH(int x, int y, int xp, int yp, PDE *PDEfield = nullptr);
 

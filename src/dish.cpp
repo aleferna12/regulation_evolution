@@ -252,6 +252,7 @@ void Dish::makePlots(int Time, Graphics *g) {
             plotCellFood(g, 72, 16);
         else
             throw runtime_error("Unrecognized plot name in parameter 'plots'");
+        plotCellBorders(g);
         plotCellVectors(g);
 
         char fname[300];
@@ -283,7 +284,7 @@ void Dish::plotChemPlane(Graphics *g, int start_index, int n_colors) const {
                 }
                 // Make the pixel four times as large
                 // to fit with the CPM plane
-                g->QuadPoint(colori, x, y);
+                g->Point(colori, x, y);
             }
 }
 
@@ -292,7 +293,7 @@ void Dish::plotFoodPLane(Graphics *g, int color_index) const {
     for (int x = 1; x < par.sizex - 1; x++)
         for (int y = 1; y < par.sizey - 1; y++)
             if (FoodPlane->Sigma(x, y) != -1) {
-                g->QuadPoint(color_index, x, y);
+                g->Point(color_index, x, y);
             }
 }
 
@@ -307,8 +308,7 @@ void Dish::plotCellTau(Graphics *g, int div_index, int mig_index) {
         auto bb = c.getBoundingBox();
         for (int i = bb.getMinX(); i < bb.getMaxX(); ++i) for (int j = bb.getMinY(); j < bb.getMaxY(); ++j) {
             if (CPM->Sigma(i, j) == c.Sigma()) {
-                g->QuadPoint(color_i, i, j);
-                drawCellBorderIfNeeded(g, i, j);
+                g->Point(color_i, i, j);
             }
         }
     }
@@ -326,8 +326,7 @@ void Dish::plotCellFood(Graphics *g, int start_index, int n_colors) {
         auto bb = c.getBoundingBox();
         for (int i = bb.getMinX(); i < bb.getMaxX(); ++i) for (int j = bb.getMinY(); j < bb.getMaxY(); ++j) {
             if (CPM->Sigma(i, j) == c.sigma) {
-                g->QuadPoint(color_i, i, j);
-                drawCellBorderIfNeeded(g, i, j);
+                g->Point(color_i, i, j);
             }
         }
     }
@@ -339,13 +338,13 @@ void Dish::plotCellVectors(Graphics *g) {
     if (par.startmu > 0) {
         for (auto &c: cell) {
             if (c.sigma == 0 or !c.alive) continue;
-            int x1 = 2 * int(c.meanx);
-            int y1 = 2 * int(c.meany);
-            int x2 = 2 * int(c.meanx + 5 * c.tvecx);
-            if (x2 >= 2 * par.sizex) x2 = 2 * par.sizex; //if too large or too small, truncate it
+            int x1 = int(c.meanx);
+            int y1 = int(c.meany);
+            int x2 = int(c.meanx + 5 * c.tvecx);
+            if (x2 >= par.sizex) x2 = par.sizex; //if too large or too small, truncate it
             else if (x2 < 0) x2 = 0;
-            int y2 = 2 * int(c.meany + 5 * c.tvecy);
-            if (y2 >= 2 * par.sizey) y2 = 2 * par.sizey;
+            int y2 = int(c.meany + 5 * c.tvecy);
+            if (y2 >= par.sizey) y2 = par.sizey;
             else if (y2 < 0) y2 = 0;
             //now we have to wrap this
             // do we really? we could just truncate vectors up to the max size..
@@ -356,22 +355,18 @@ void Dish::plotCellVectors(Graphics *g) {
 }
 
 
-void Dish::drawCellBorderIfNeeded(Graphics *g, int i, int j) const {
-    // WAS -> if ( sigma(i, j] != sigma(i+1, j) )  /* if cellborder */ /* etc. etc. */
-    if (CPM->Sigma(i, j) != CPM->Sigma(i + 1, j) && i + 1 < sizex - 1) //if this cell different from what is on i+1,j
-    {
-        if (g) g->Point(1, 2 * i + 1, 2 * j); //draws 2i+1,2j black because cells neighbours
-        // else same CPM->Sigma
-    }
-    //we check sigma at point i,j+1
-    if (CPM->Sigma(i, j) != CPM->Sigma(i, j + 1) && j + 1 < sizey - 1) {
-        if (g) g->Point(1, 2 * i, 2 * j + 1);
-    }
-
-    /* Cells that touch eachother's corners are NO neighbours */
-    if (i + 1 < sizex - 1 && j + 1 < sizey - 1 &&
-        (CPM->Sigma(i, j) != CPM->Sigma(i + 1, j + 1) || CPM->Sigma(i + 1, j) != CPM->Sigma(i, j + 1))) {
-        if (g) g->Point(1, 2 * i + 1, 2 * j + 1);
+void Dish::plotCellBorders(Graphics *g) {
+    for (auto &c : cell) {
+        auto bb = c.getBoundingBox();
+        for (int i = bb.getMinX(); i < bb.getMaxX(); ++i) for (int j = bb.getMinY(); j < bb.getMaxY(); ++j) {
+            int sigma = c.Sigma();
+            if (sigma != CPM->Sigma(i, j))
+                continue;
+            if (i < SizeX() and sigma != CPM->Sigma(i + 1, j) and not (CPM->Sigma(i, j - 1) and sigma != CPM->Sigma(i, j - 1)))
+                g->Point(1, i + 1, j);
+            if (j < SizeY() and sigma != CPM->Sigma(i, j + 1))
+                g->Point(1, i, j + 1);
+        }
     }
 }
 
@@ -546,12 +541,32 @@ void Dish::UpdateCellParameters(int Time) {
     //cout<<"Update Cell parameters "<<Time<<endl;
     for (c = cell.begin(), ++c; c != cell.end(); ++c) {
         if (c->AliveP()) {
+            // Death checks
+            int death_period = 25;
+            string death_reason;
+            // notice that this keeps the cell in the cell array, it only removes its sigma from the field
+            if (c->Area() < par.min_area_for_life) {
+                death_reason = "squeezed";
+            } else if (c->food <= 0) {
+                death_reason = "starved";
+            }
             // Mark cell to die
             // Only calculate prob every 25 mcs
             // TODO: Test if its still working after making asynchronous (maybe plot average lifespan or something)
-            int death_period = 25;
-            if (c->food <= 0 or (c->time_since_birth % death_period == 0 and RANDOM() < par.gompertz_alpha * pow(M_E, par.gompertz_beta * c->time_since_birth / death_period))) {
+            else if (c->time_since_birth % death_period == 0 and RANDOM() < par.gompertz_alpha * pow(M_E, par.gompertz_beta * c->time_since_birth / death_period)) {
+                death_reason = "old";
+            }
+            if (not death_reason.empty()) {
                 to_kill.push_back(c->Sigma());
+                CellGravestone cg = {
+                    c->Sigma(),
+                    c->getTau(),
+                    c->time_since_birth,
+                    Time,
+                    CPM->calculateGamma(c->Sigma(), c->Sigma()),
+                    death_reason
+                };
+                cell_graves.push_back(std::move(cg));
                 continue;
             }
 
@@ -611,12 +626,6 @@ void Dish::UpdateCellParameters(int Time) {
                     c->setTau(1);
                     //cout<<"cell "<<c->Sigma()<<" is a migratory cell"<<endl;
                 }
-            }
-
-            //check area:if cell is too small (whether alive or not) we remove its sigma
-            // notice that this keeps the cell in the cell array, it only removes its sigma from the field
-            if (c->Area() < par.min_area_for_life) {
-                to_kill.push_back(c->Sigma());
             }
         }
     }
@@ -1006,6 +1015,25 @@ int Dish::saveCellData(int Time) {
         file << Time << endl;
     }
     return n_cells;
+}
+
+
+void Dish::saveCellGraveData(int Time) {
+    char filename[300];
+    sprintf(filename, "%s/t%09d.csv", par.cellgravesdatadir, Time);
+    ofstream file(filename);
+    if (not file)
+        throw runtime_error("Failed to open file");
+
+    vector<string> col_names{"sigma", "tau", "age", "time_death", "reason", "self_gamma"};
+    file << vectorToString(col_names, ',') << endl;
+
+    for (auto &cg : cell_graves) {
+        file << cg.sigma << ',' << cg.tau << ',' << cg.age << ',' << cg.time_death << ',' << cg.reason << ','
+        << cg.self_gamma << endl;
+    }
+    // Cant forget to clear the vector!
+    cell_graves.clear();
 }
 
 

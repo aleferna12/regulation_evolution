@@ -243,6 +243,7 @@ TIMESTEP {
         }
         if (!(i % par.save_data_period)) {
             dish->saveFoodData(i);
+            dish->saveCellGraveData(i);
             int popsize = dish->saveCellData(i);
             if (not popsize) {
                 cerr << "Global extinction after " << i << " time steps, simulation terminates now" << endl;
@@ -308,6 +309,7 @@ int main(int argc, char *argv[]) {
         DoesDirExistsIfNotMakeit(par.moviedir);  //see output.cpp
         DoesDirExistsIfNotMakeit(par.latticedir);  //see output.cpp
         DoesDirExistsIfNotMakeit(par.celldatadir);  //see output.cpp
+        DoesDirExistsIfNotMakeit(par.cellgravesdatadir);  //see output.cpp
         DoesDirExistsIfNotMakeit(par.fooddatadir);  //see output.cpp
 
         if (par.periodic_boundaries && par.lambda2 > 0.) {
@@ -349,7 +351,7 @@ int main(int argc, char *argv[]) {
         cerr<<"Hello 3"<<endl;
 #else
         cerr << "Using X11 graphics (batch mode). sizex and y are " << par.sizex << " " << par.sizey << endl;
-        X11Graphics g(par.sizex * 2, par.sizey * 2);
+        X11Graphics g(par.sizex, par.sizey);
         int t;
 
         for (t = 0; t <= par.mcs; t++) {

@@ -44,6 +44,16 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define DIVIDE 2
 
 
+struct CellGravestone {
+    int sigma;
+    int tau;
+    int age;
+    int time_death;
+    double self_gamma;
+    string reason;
+};
+
+
 class Dish {
 public:
     Dish();
@@ -76,12 +86,7 @@ public:
 
     void plotCellVectors(Graphics *g);
 
-    //! Used to decide whether a cell border should be drawn at this position.
-    void drawCellBorderIfNeeded(Graphics *g, int i, int j) const;
-
-    static int CalculateJwithMedium(vector<int> key);
-
-    static int CalculateJfromKeyLock(vector<int> key1, vector<int> lock1, vector<int> key2, vector<int> lock2);
+    void plotCellBorders(Graphics *g);
 
     void MutateCells(const vector<int> &sigma_to_update);
 
@@ -167,19 +172,25 @@ public:
     CellularPotts *CPM;
 
     void saveLattice(int Time) const;
+
     void readLattice();
 
-    //! Saves information about the cells as a CSV file in the directory specified by par.datadir
+    //! Saves information about the cells as a CSV file in the directory specified by par.celldatadir
     int saveCellData(int Time);
+
     int readCellData();
 
+    void saveCellGraveData(int Time);
+
     void saveFoodData(int Time);
+
     int readFoodData();
 
-protected:
+private:
+    // Info regarding cells that have died since last time we saved data
+    vector<CellGravestone> cell_graves;
     //! The cells in the Petri dish; accessible to derived classes
     std::vector<Cell> cell;
-
     int sizex, sizey;
     // Number of resource sources
     int grad_sources;

@@ -650,6 +650,11 @@ double CellularPotts::Adhesion_Energy(int sigma1, int sigma2) {
 }
 
 
+double CellularPotts::calculateGamma(int sigma1, int sigma2) {
+    return par.Jmed - Adhesion_Energy(sigma1, sigma2);
+}
+
+
 //this the function that changes the sigma
 // it also does book-keeping of everything
 void CellularPotts::ConvertSpinToMedium(int x, int y) {
