@@ -897,8 +897,9 @@ int Dish::readCellData() {
         rc->times_divided = stoi(*it); ++it;
         rc->colour = stoi(*it); ++it;
         rc->ancestor = stoi(*it); ++it;
-        // Skip Jmed
-        ++it;
+        // Skip self_gamma and Jmed
+        it += 2;
+        // These could be skipped as well but im leaving them
         rc->jkey_dec = stoi(*it); ++it;
         rc->jlock_dec = stoi(*it); ++it;
         // Skip neighbour info
@@ -954,8 +955,8 @@ int Dish::saveCellData(int Time) {
     vector<string> col_names{"sigma", "tau", "time_since_birth", "tvecx", "tvecy", "prevx", "prevy", "persdur",
                              "perstime", "mu", "half_div_area", "length", "last_meal", "food", "growth", "gextiming",
                              "dividecounter", "grad_conc", "meanx", "meany", "chemvecx", "chemvecy", "target_area",
-                             "chemmu", "times_divided", "colour", "ancestor", "Jmed", "jkey_dec", "jlock_dec",
-                             "neighbour_list", "Jneighbour_list", "innr", "regnr", "outnr", "in_scale_list",
+                             "chemmu", "times_divided", "colour", "ancestor", "self_gamma", "Jmed", "jkey_dec",
+                             "jlock_dec", "neighbour_list", "Jneighbour_list", "innr", "regnr", "outnr", "in_scale_list",
                              "reg_threshold_list", "reg_w_innode_list", "reg_w_regnode_list", "out_threshold_list",
                              "out_w_regnode_list", "time"};
     file << vectorToString(col_names, ',') << endl;
@@ -970,7 +971,8 @@ int Dish::saveCellData(int Time) {
              << c.half_div_area << ',' << c.length << ',' << c.last_meal << ',' << c.food << ',' << c.growth << ','
              << c.gextiming << ',' << c.dividecounter << ',' << c.grad_conc << ',' << c.meanx << ',' << c.meany << ','
              << c.chemvecx << ',' << c.chemvecy << ',' << c.target_area << ',' << c.chemmu << ','
-             << c.times_divided << ',' << c.colour << ',' << c.ancestor << ',' << par.Jmed << ',' << c.jkey_dec << ','
+             << c.times_divided << ',' << c.colour << ',' << c.ancestor << ','
+             << CPM->calculateGamma(c.sigma, c.sigma) << ',' << par.Jmed << ',' << c.jkey_dec << ','
              << c.jlock_dec <<  ',';
         // Need to reset everytime we save data
         c.resetAncestor();
@@ -1025,12 +1027,12 @@ void Dish::saveCellGraveData(int Time) {
     if (not file)
         throw runtime_error("Failed to open file");
 
-    vector<string> col_names{"sigma", "tau", "age", "time_death", "reason", "self_gamma"};
+    vector<string> col_names{"sigma", "tau", "age", "time_death", "reason", "self_gamma", "time"};
     file << vectorToString(col_names, ',') << endl;
 
     for (auto &cg : cell_graves) {
         file << cg.sigma << ',' << cg.tau << ',' << cg.age << ',' << cg.time_death << ',' << cg.reason << ','
-        << cg.self_gamma << endl;
+        << cg.self_gamma << ',' << Time << endl;
     }
     // Cant forget to clear the vector!
     cell_graves.clear();

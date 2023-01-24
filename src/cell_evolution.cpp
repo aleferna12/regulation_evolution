@@ -243,7 +243,8 @@ TIMESTEP {
         }
         if (!(i % par.save_data_period)) {
             dish->saveFoodData(i);
-            dish->saveCellGraveData(i);
+            if (not dish->cell_graves.empty())
+                dish->saveCellGraveData(i);
             int popsize = dish->saveCellData(i);
             if (not popsize) {
                 cerr << "Global extinction after " << i << " time steps, simulation terminates now" << endl;

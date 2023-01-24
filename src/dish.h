@@ -186,9 +186,10 @@ public:
 
     int readFoodData();
 
-private:
     // Info regarding cells that have died since last time we saved data
     vector<CellGravestone> cell_graves;
+
+private:
     //! The cells in the Petri dish; accessible to derived classes
     std::vector<Cell> cell;
     int sizex, sizey;

@@ -169,7 +169,7 @@ foodperspot = 20
 # Max food allowed in the system (regulates foodpatchperiod)
 maxfood = 16000
 # How much food does each cell start with?
-foodstart = 1000
+foodstart = 2000
 # How often in MCS we deduct 1 food from each cell
 metabperiod = 100
 # How often in MCS is a cell allowed to eat 1 food

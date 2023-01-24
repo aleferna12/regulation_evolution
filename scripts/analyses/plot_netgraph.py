@@ -21,7 +21,7 @@ def main():
     parser = argparse.ArgumentParser(prog="plot_netgraph",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("datafile",
-                        help="either a pickle or a CSV file")
+                        help="either a pickle or a CSV file to read the networks from")
     parser.add_argument("outputdir", help="directory where to save the SVGs")
     parser.add_argument("-p",
                         "--prune-level",

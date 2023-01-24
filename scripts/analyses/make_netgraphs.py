@@ -4,10 +4,18 @@ import pickle
 import networkx as nx
 from argparse import ArgumentParser
 from pathlib import Path
+
+import pandas as pd
 from enlighten import Counter
 from parse import *
 
 logger = logging.getLogger(__name__)
+_gene_attrs = ["in_scale_list",
+               "reg_threshold_list",
+               "reg_w_innode_list",
+               "reg_w_regnode_list",
+               "out_threshold_list",
+               "out_w_regnode_list"]
 
 
 def main():
@@ -33,15 +41,6 @@ def read_netgraphs_file(filepath):
 def make_netgraphs(celldf):
     logger.info("Creating graphs from the cells' GRNs")
 
-    for key in ["in_scale_list",
-                "reg_threshold_list",
-                "reg_w_innode_list",
-                "reg_w_regnode_list",
-                "out_threshold_list",
-                "out_w_regnode_list"]:
-        if isinstance(celldf[key].iat[0], str):
-            celldf[key] = celldf[key].apply(lambda s: np.fromstring(s, sep=' '))
-
     netgraphs = []
     pbar = Counter(total=len(celldf.index), desc="Networks parsed")
     for index in celldf.index:
@@ -51,10 +50,12 @@ def make_netgraphs(celldf):
     return netgraphs
 
 
-def make_netgraph(cellss):
-    """Make directed network graph from cell series.
-    The string attributes need to have been already parsed into lists of floats.
-    """
+def make_netgraph(cellss: pd.Series):
+    """Make directed network graph from cell series."""
+    cellss = cellss.copy()
+    for key in _gene_attrs:
+        cellss[key] = np.fromstring(cellss[key], sep=' ')
+
     netgraph = nx.DiGraph(sigma=cellss["sigma"])
 
     # ntype is used to plot and must be numerical, but is the same as type

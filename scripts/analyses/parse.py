@@ -4,8 +4,10 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from enlighten import Counter
+from make_netgraphs import _gene_attrs
 
 logger = logging.getLogger(__name__)
+_str_attrs = _gene_attrs + ["neighbour_list", "Jneighbour_list"]
 
 
 def parse_lattice(filepath) -> pd.DataFrame:
@@ -31,7 +33,10 @@ def parse_cell_data(datapath,
     names represent the time of the simulation.
     """
 
-    celldf = _parse_dfs(datapath, time_filter, trust_filenames)
+    celldf = _parse_dfs(datapath,
+                        time_filter,
+                        trust_filenames,
+                        dtype={col: str for col in _str_attrs})
     celldf = celldf.sort_values(["time", "sigma"])
 
     # Can't drop the columns because they might be needed by other functions!
@@ -39,6 +44,12 @@ def parse_cell_data(datapath,
         return celldf.set_index("sigma", drop=False)
     # Multi-index
     return celldf.set_index(["time", "sigma"], drop=False)
+
+
+def parse_grave_data(datapath, time_filter=None, trust_filenames=True) -> pd.DataFrame:
+    gravedf = _parse_dfs(datapath, time_filter, trust_filenames)
+    gravedf = gravedf.sort_values(["time_death", "sigma"])
+    return gravedf.set_index(["time_death", "sigma"], drop=False)
 
 
 def get_time_points(datapath):
@@ -64,7 +75,7 @@ def build_time_filter(time_points, start=0, end=float("inf"), n=None):
     return time_points[indexes]
 
 
-def _parse_dfs(datapath, time_filter, trust_filenames):
+def _parse_dfs(datapath, time_filter, trust_filenames, **csv_kwargs):
     logger.info(f"Parsing dataframe(s) from: '{datapath}'")    
     datapath = Path(datapath)
 
@@ -76,13 +87,13 @@ def _parse_dfs(datapath, time_filter, trust_filenames):
     pbar = Counter(total=len(filepaths), desc="CSV files iterated")
     for filepath in filepaths:
         if time_filter is None:
-            dfs.append(pd.read_csv(filepath))
+            dfs.append(pd.read_csv(filepath, **csv_kwargs))
+        # Skips unecessary calls to pd.read_csv by trusting file name
         elif not trust_filenames:
-            df = pd.read_csv(filepath)
+            df = pd.read_csv(filepath, **csv_kwargs)
             if df["time"][0] in time_filter:
                 dfs.append(df)
-        # Skips unecessary calls to pd.read_csv by trusting file name
         elif int(re.search(r"\d+", filepath.name).group()) in time_filter:
-            dfs.append(pd.read_csv(filepath))
+            dfs.append(pd.read_csv(filepath, **csv_kwargs))
         pbar.update()
     return pd.concat(dfs)

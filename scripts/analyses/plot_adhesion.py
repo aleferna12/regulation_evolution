@@ -1,8 +1,10 @@
+import argparse
 import logging
 import sys
-
+import warnings
 import numpy as np
 import plotly.graph_objects as go
+import plotly.express as px
 from typing import List, Set
 from plotly.subplots import make_subplots
 from enlighten import Counter
@@ -16,47 +18,50 @@ logger = logging.getLogger(__name__)
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    datadir = sys.argv[1]
-    outfile = sys.argv[2]
-    start_time_step = int(sys.argv[3]) if len(sys.argv) > 3 else 0
-    n_time_steps = int(sys.argv[4]) if len(sys.argv) > 4 else None
+    parser = argparse.ArgumentParser(prog="plot_adhesion",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("datadir", help="directory containing the cell CSV files")
+    parser.add_argument("outputfile", help="output HTML or SVG file")
+    parser.add_argument("-t",
+                        "--time-step",
+                        help="first timestep to plot",
+                        default=0,
+                        type=int)
+    parser.add_argument("-n",
+                        help="number of time-steps to plot (can be used to speed up plotting)",
+                        default=None,
+                        type=int)
+    args = parser.parse_args()
 
-    t_filter = build_time_filter(get_time_points(datadir), start=start_time_step, n=n_time_steps)
-    celldf = parse_cell_data(datadir, time_filter=t_filter)
-    fig = make_plots(celldf)
-
-    logger.info(f"Writing files to: {outfile}")
-    if outfile[-5:] == ".html":
-        fig.write_html(outfile)
-    else:
-        fig.write_image(outfile)
+    t_filter = build_time_filter(get_time_points(args.datadir), start=args.time_step, n=args.n)
+    celldf = parse_cell_data(args.datadir, time_filter=t_filter)
+    plot_adhesion(celldf, args.outputfile)
 
     logger.info("Finished")
 
 
-def make_plots(celldf: pd.DataFrame):
+def plot_adhesion(celldf: pd.DataFrame, outputfile):
     logger.info("Making adhesion plots")
 
-    fig = make_subplots(5, 1, subplot_titles=[
-        "Prevalence of multicellularity",
-        "Median gamma of neighbouring cells",
-        "Median gamma of neighbouring migrating cells",
-        "Median gamma of neighbouring dividing cells",
-        "Median gamma of neighbouring migrating-dividing cells"
-    ])
-
+    fig = make_subplots(2,
+                        1,
+                        shared_xaxes=True,
+                        subplot_titles=["Prevalence of multicellularity",
+                                        "Median gamma of neighbouring cells"])
     x = []
-    prev_y = []
-    neigh_gammas_med = []
-    mig_mig_gammas_med = []
-    div_div_gammas_med = []
-    mig_div_gammas_med = []
-    
+    multicel_perc = []
+    gamma_plots = {
+        "all x all": [],
+        "mig x mig": [],
+        "div x div": [],
+        "mig x div": []
+    }
+
     time_steps = celldf["time"].unique()
     pbar = Counter(total=len(time_steps), desc='Time-steps')
-    for season in time_steps:
-        x.append(int(season))
-        sdf = celldf[celldf["time"] == season]
+    for time_step in time_steps:
+        x.append(int(time_step))
+        sdf = celldf[celldf["time"] == time_step]
 
         clusters = get_adhering_clusters(sdf)
         unicells = 0
@@ -65,22 +70,23 @@ def make_plots(celldf: pd.DataFrame):
             if len(c) == 1:
                 unicells += 1
             total_pop += len(c)
-        prev_y.append(1 - unicells / total_pop)
+        multicel_perc.append(1 - unicells / total_pop)
 
         neigh_gammas = []
         mig_mig_gammas = []
         div_div_gammas = []
         mig_div_gammas = []
-        for sigma, tau, Jmed, neighs, neighJs in zip(sdf["sigma"],
+        for sigma, tau, Jmed, neighs, Jneighs in zip(sdf["sigma"],
                                                      sdf["tau"],
                                                      sdf["Jmed"],
                                                      sdf["neighbour_list"],
                                                      sdf["Jneighbour_list"]):
-            for neigh, neighJ in zip(neighs, neighJs):
+            for neigh, neighJ in zip(np.fromstring(neighs, sep=' ', dtype=int),
+                                     np.fromstring(Jneighs, sep=' ')):
                 if neigh == 0:
                     continue
                 gamma = Jmed - neighJ / 2
-                if tau == sdf.loc[(season, neigh), "tau"]:
+                if tau == sdf.loc[(time_step, neigh), "tau"]:
                     if tau == 1:
                         mig_mig_gammas.append(gamma)
                     else:
@@ -89,38 +95,52 @@ def make_plots(celldf: pd.DataFrame):
                     mig_div_gammas.append(gamma)
                 neigh_gammas.append(gamma)
 
-        neigh_gammas_med.append(np.median(neigh_gammas))
-        mig_mig_gammas_med.append(np.median(mig_mig_gammas))
-        div_div_gammas_med.append(np.median(div_div_gammas))
-        mig_div_gammas_med.append(np.median(mig_div_gammas))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            gamma_plots["all x all"].append(np.median(neigh_gammas))
+            gamma_plots["mig x mig"].append(np.median(mig_mig_gammas))
+            gamma_plots["div x div"].append(np.median(div_div_gammas))
+            gamma_plots["mig x div"].append(np.median(mig_div_gammas))
 
         pbar.update()
 
-    for i, ys in enumerate(
-            [prev_y, neigh_gammas_med, mig_mig_gammas_med, div_div_gammas_med, mig_div_gammas_med],
-            1):
+    colors = px.colors.qualitative.Plotly
+    fig.add_trace(go.Scatter(
+        x=x,
+        y=multicel_perc,
+        mode="lines",
+        showlegend=False
+    ), row=1, col=1)
+    for i, (name, ys) in enumerate(gamma_plots.items()):
         fig.add_trace(go.Scatter(
             x=x,
             y=ys,
-            mode="lines"
-        ), row=i, col=1)
-    fig.update_yaxes(title="gamma")
+            mode="lines",
+            name=name,
+            line_color=colors[i]
+        ), row=2, col=1)
     fig.update_yaxes(title="% of adhering cells", range=[0, 1], row=1, col=1)
-    return fig.update_layout(showlegend=False)
+    fig.update_yaxes(title="gamma", row=2, col=1)
+
+    logger.info(f"Writing plot to: {outputfile}")
+    if outputfile[-5:] == ".html":
+        fig.write_html(outputfile)
+    else:
+        fig.write_image(outputfile)
 
 
 def get_adhering_neighbours(celldf: pd.DataFrame):
     """Return a list of lists with the neighbours that each cell is adhering to."""
-    for key in ["neighbour_list", "Jneighbour_list"]:
-        if isinstance(celldf[key].iat[0], str):
-            celldf[key] = celldf[key].apply(lambda s: np.fromstring(s, sep=' ', dtype=int))
+    if not celldf["time"].nunique() == 1:
+        raise ValueError("make sure this function is called for a single time point")
 
     adh_neigh_lists = []
-    for neigh_list, neighJ_list, Jmed in zip(celldf["neighbour_list"],
-                                             celldf["Jneighbour_list"],
-                                             celldf["Jmed"]):
+    for neighs, Jneighs, Jmed in zip(celldf["neighbour_list"],
+                                     celldf["Jneighbour_list"],
+                                     celldf["Jmed"]):
         ad_neigh_list = []
-        for neigh, neighJ in zip(neigh_list, neighJ_list):
+        for neigh, neighJ in zip(np.fromstring(neighs, sep=' ', dtype=int),
+                                 np.fromstring(Jneighs, sep=' ')):
             if neigh != 0 and Jmed - neighJ / 2 > 0:
                 ad_neigh_list.append(neigh)
         adh_neigh_lists.append(ad_neigh_list)
@@ -130,8 +150,6 @@ def get_adhering_neighbours(celldf: pd.DataFrame):
 def get_adhering_clusters(celldf: pd.DataFrame) -> CellCluster:
     """Returns a list of list representing the different clusters of adhering cells in the
     system."""
-    if not celldf["time"].nunique() == 1:
-        raise ValueError("make sure this function is called for a single time point")
 
     adh_neigh_lists = get_adhering_neighbours(celldf)
     clusters = []
