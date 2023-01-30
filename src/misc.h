@@ -62,7 +62,7 @@ template<class T> std::vector<T> stringToVector(const std::string &values, char 
     T value;
     std::string value_str;
     while (getline(values_ss, value_str, delim)) {
-        std::stringstream (value_str) >> value;
+        std::stringstream(value_str) >> value;
         value_vec.push_back(value);
     }
     return value_vec;

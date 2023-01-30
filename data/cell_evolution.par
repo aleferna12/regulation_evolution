@@ -84,7 +84,7 @@ key_lock_weights = 1 2 3 4 5 6
 nr_regnodes = 14
 divtime = 20	# scaled nr of steps before a cell initiates division
 divdur = 1000     # duration of division, during which a cell stops moving
-scaling_cell_to_ca_time = 20  # scaling factor for: freq update food plane, predation, feeding and growth/divide
+scaling_cell_to_ca_time = 20  # scaling factor for: freq update cell parameters
 
 ########################
 ## initial conditions ##
@@ -205,9 +205,9 @@ metabolic_conversion = 0.5
 graphics = false
 store = true
 divisioncolour = true
-storage_stride = 3000
+storage_stride = 50
 moviedir = ../runs/data_film2
-save_data_period = 1000
+save_data_period = 50
 celldatafile = ../runs/data_cellcount.txt
 save_lattice_period = 21000
 latticedir = ../runs/backup

@@ -632,10 +632,6 @@ public:
         updateJDecs();
     }
 
-    inline void GetGeneOutput(array<int, 2> &out) {
-        genome.GetOutput(out);
-    }
-
     inline void MutateGenome(double mu_, double mustd) {
         genome.MutateGenome(mu_, mustd);
     }
@@ -1004,9 +1000,6 @@ private:
     inline int GetTimeSinceBirth() const {
         return time_since_birth;
     }
-
-    //! Called whenever a cell is constructed, from constructor
-    void ConstructorBody(int settau = 1, int setrecycledsigma = -1);
 
     // returns the maximum cell type index
     // (depends on Jtable)
