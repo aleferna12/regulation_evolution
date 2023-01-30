@@ -592,7 +592,7 @@ void Dish::UpdateCellParameters(int Time) {
                         if (c->Area() > 30) {
                             //cout<<"cell "<<c->Sigma()<<" will divide"<<endl;
                             if (!par.nodivisions) {
-                                // Divide cells later. Updating params while dividing did not work (Segmentation faults)
+                                // Divide cell later
                                 to_divide.push_back(c->Sigma());
                             } else {
                                 c->AddTimesDivided();
@@ -1027,12 +1027,12 @@ void Dish::saveCellGraveData(int Time) {
     if (not file)
         throw runtime_error("Failed to open file");
 
-    vector<string> col_names{"sigma", "tau", "age", "time_death", "reason", "self_gamma", "time"};
+    vector<string> col_names{"sigma", "tau", "time_since_birth", "time_death", "reason", "self_gamma", "time"};
     file << vectorToString(col_names, ',') << endl;
 
     for (auto &cg : cell_graves) {
-        file << cg.sigma << ',' << cg.tau << ',' << cg.age << ',' << cg.time_death << ',' << cg.reason << ','
-        << cg.self_gamma << ',' << Time << endl;
+        file << cg.sigma << ',' << cg.tau << ',' << cg.time_since_birth << ',' << cg.time_death << ','
+        << cg.reason << ',' << cg.self_gamma << ',' << Time << endl;
     }
     // Cant forget to clear the vector!
     cell_graves.clear();

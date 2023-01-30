@@ -11,7 +11,7 @@ import pandas as pd
 from pathlib import Path
 from enlighten import Counter
 from ete3 import Tree
-from parse import *
+from fileio import *
 
 logger = logging.getLogger(__name__)
 

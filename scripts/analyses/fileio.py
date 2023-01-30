@@ -41,9 +41,14 @@ def parse_cell_data(datapath,
 
     # Can't drop the columns because they might be needed by other functions!
     if Path(datapath).is_file():
-        return celldf.set_index("sigma", drop=False)
+        celldf = celldf.set_index("sigma", drop=False)
+        # Some operations dont like indexes and columns with the same name
+        celldf.index.name = "sigma_i"
+        return celldf
     # Multi-index
-    return celldf.set_index(["time", "sigma"], drop=False)
+    celldf = celldf.set_index(["time", "sigma"], drop=False)
+    celldf.index.names = ["time_i", "sigma_i"]
+    return celldf
 
 
 def parse_grave_data(datapath, time_filter=None, trust_filenames=True) -> pd.DataFrame:
@@ -73,6 +78,14 @@ def build_time_filter(time_points, start=0, end=float("inf"), n=None):
 
     indexes = np.round(np.linspace(0, len(time_points) - 1, n)).astype(int)
     return time_points[indexes]
+
+
+def write_plot(fig, outputfile):
+    logger.info(f"Writing plot to: {outputfile}")
+    if outputfile[-5:] == ".html":
+        fig.write_html(outputfile)
+    else:
+        fig.write_image(outputfile)
 
 
 def _parse_dfs(datapath, time_filter, trust_filenames, **csv_kwargs):

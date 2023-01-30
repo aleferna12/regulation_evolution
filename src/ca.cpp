@@ -632,18 +632,17 @@ int CellularPotts::DeltaH(int x, int y, int xp, int yp, PDE *PDEfield) {
 
 
 double CellularPotts::energyDifference(int sigma1, int sigma2) {
-    if (sigma1 and sigma2) {
-        Cell &c1 = (*cell)[sigma1];
-        Cell &c2 = (*cell)[sigma2];
-        return par.Jalpha
-               + getKLStrength(c1.jkey_dec, c2.jlock_dec)
-               + getKLStrength(c2.jkey_dec, c1.jlock_dec);
+    if (not (sigma1 and sigma2)) {
+        return par.Jmed;
     }
-    return par.Jmed;
+    Cell &c1 = (*cell)[sigma1];
+    Cell &c2 = (*cell)[sigma2];
+    return par.Jalpha
+           + getKLStrength(c1.jkey_dec, c2.jlock_dec)
+           + getKLStrength(c2.jkey_dec, c1.jlock_dec);
 }
 
 
-//TODO: Check if this function is necessary or can be implemented as part of energyDifference
 double CellularPotts::Adhesion_Energy(int sigma1, int sigma2) {
     if (sigma1 == sigma2) return 0;
     return energyDifference(sigma1, sigma2);
@@ -651,7 +650,8 @@ double CellularPotts::Adhesion_Energy(int sigma1, int sigma2) {
 
 
 double CellularPotts::calculateGamma(int sigma1, int sigma2) {
-    return par.Jmed - Adhesion_Energy(sigma1, sigma2);
+    // energyDifference is used instead of AdhesionStrength because we might want to calculate c1 x c1
+    return par.Jmed - energyDifference(sigma1, sigma2) / 2;
 }
 
 

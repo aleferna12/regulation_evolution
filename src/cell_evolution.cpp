@@ -135,7 +135,11 @@ INIT {
             cout << "Reading backfile" << endl;
             cout << "backup file is " << par.latticefile << endl;
             par.starttime = readCellData();
-            if (readFoodData() != par.starttime)
+            if (!par.fooddatafile) {
+                for (int i = 0; i < par.foodpatches; i++) {
+                    addRandomFPatch();
+                }
+            } else if (readFoodData() != par.starttime)
                 cerr << "Food data and cell data date from different times!" << endl;
             readLattice();
             CPM->InitializeEdgeList(false);

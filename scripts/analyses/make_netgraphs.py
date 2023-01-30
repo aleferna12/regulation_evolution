@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 from enlighten import Counter
-from parse import *
+from fileio import *
 
 logger = logging.getLogger(__name__)
 _gene_attrs = ["in_scale_list",

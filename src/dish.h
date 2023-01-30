@@ -47,7 +47,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 struct CellGravestone {
     int sigma;
     int tau;
-    int age;
+    int time_since_birth;
     int time_death;
     double self_gamma;
     string reason;

@@ -4,8 +4,8 @@ import re
 from pathlib import Path
 from ete3 import Tree, TreeStyle, AttrFace
 from random import shuffle, seed
-from parse import parse_cell_data
-from plot_adhesion import get_adhering_clusters, CellCluster
+from fileio import parse_cell_data
+from plot_timeline import get_adhering_clusters, get_cluster_colors, CellCluster
 from colorir import *
 
 logger = logging.getLogger(__name__)
@@ -34,32 +34,6 @@ def main():
     plot_tree(tree, clusters, outpath, min_cluster, colored)
 
     logger.info("Finished")
-
-
-def get_cluster_colors(clusters: CellCluster, min_cluster=2, outcast_color="a9a9a9"):
-    palpath = Path(__file__).resolve().parent.parent / "colortable" / "palettes"
-    pal = StackPalette.load("carnival", palettes_dir=palpath)
-    grad = PolarGrad(pal, color_sys=HCLuv)
-    # Only allocate colors for clusters with at least min_cluster neighbours
-    n_colors = len([c for c in clusters if len(c) >= min_cluster])
-    # There is a bug that prevents colorir.Grad.n_colors(1)
-    if n_colors == 1:
-        colors = [grad.n_colors(3)[1]]
-    else:
-        colors = grad.n_colors(n_colors)
-
-    # Want consistent results for n clusters
-    seed(0)
-    cluster_colors = []
-    for cluster in clusters:
-        if len(cluster) >= min_cluster:
-            shuffle(colors)
-            color = colors.pop()
-        else:
-            color = config.DEFAULT_COLOR_FORMAT.format(outcast_color)
-        cluster_colors.append(color)
-
-    return cluster_colors
 
 
 def plot_tree(tree: Tree, clusters: CellCluster, outpath, min_cluster=2, colored=True):
