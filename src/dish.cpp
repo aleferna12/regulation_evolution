@@ -27,6 +27,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <list>
 #include <set>
 #include <fstream>
+#include <cstring>
 #include <iostream>
 #include <cmath>
 #include "dish.h"
@@ -773,6 +774,7 @@ int Dish::readFoodData() {
         );
         fpatches.back().updateFoodLeft();
         cur_time = stoi(attrs[4]);
+        id++;
     }
     return cur_time;
 }

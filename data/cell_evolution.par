@@ -29,7 +29,7 @@ chemotaxis = 0			#For normal PDE-based chemotaxis
 #no longer active, for Compucell type extension based chemotaxis 
 extensiononly = false
 border_energy = 100		
-rseed = -1 # rseed deafult = -1, randomises the seed, any natural number is used as seed
+rseed = 78213 # rseed deafult = -1, randomises the seed, any natural number is used as seed
 # chancemediumcopied is the chance that instead of copying a pixel with another, cells copy medium from outer space was 0.0001
 chancemediumcopied = 0.0001  # 0.0
 subfield = 1.0
@@ -205,11 +205,11 @@ metabolic_conversion = 0.5
 graphics = false
 store = true
 divisioncolour = true
-storage_stride = 3000
+storage_stride = 500
 moviedir = ../runs/data_film2
-save_data_period = 1000
+save_data_period = 10000
 celldatafile = ../runs/data_cellcount.txt
-save_lattice_period = 21000
+save_lattice_period = 10000
 latticedir = ../runs/backup
 
 #if readcolortable is true, it reads the color table from "colortable_filename", otherwise it generates a pretty one internally

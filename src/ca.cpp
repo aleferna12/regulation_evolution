@@ -27,8 +27,8 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 // This code derives from a Cellular Potts implementation written around 1995
 // by Nick Savill
 
-#include <cstdio>
-#include <cmath>
+#include <stdio.h>
+#include <math.h>
 #include <cstdlib>
 #include <bitset>
 #include "misc.h"
@@ -40,7 +40,9 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "crash.h"
 #include "hull.h"
 
+#define ZYGFILE(Z) <Z.xpm>
 #define XPM(Z) Z ## _xpm
+#define ZYGXPM(Z) XPM(Z)
 
 //Leonie's sign function
 template<typename T>
@@ -64,6 +66,8 @@ const int CellularPotts::nx[25] = {0, 0, 1, 0, -1, 1, 1, -1, -1, 0, 2, 0, -2, 1,
 const int CellularPotts::ny[25] = {0, -1, 0, 1, 0, -1, 1, 1, -1, -2, 0, 2, 0, -2, -1, 1, 2, 2, 1, -1, -2, -2, 0, 2, 0};
 
 const int CellularPotts::nbh_level[5] = {0, 4, 8, 20, 24}; //0:self; 1:van Neumann; 2:Moore; etc...
+
+extern Parameter par;
 
 
 /** PRIVATE **/

@@ -30,7 +30,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #define _CA_HH_
 
 #include <vector>
-#include <cstdio>
+#include <stdio.h>
 #include <unordered_map>
 #include <array>
 #include "graph.h"

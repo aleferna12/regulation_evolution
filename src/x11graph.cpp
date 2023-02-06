@@ -284,10 +284,10 @@ void X11Graphics::ReadColorTable(XColor *cols, const char *colortable_filename) 
     FILE *fpc;
 
     strcpy(name, colortable_filename);
-    if ((fpc = fopen(name, "r")) == nullptr) {
+    if ((fpc = fopen(name, "r")) == NULL) {
         char *message = (char *) malloc(200 * sizeof(char));
-        if (message == nullptr) {
-            throw runtime_error("Memory panic in X11Graphics::ReadColorTable");
+        if (message == 0) {
+            throw "Memory panic in X11Graphics::ReadColorTable\n";
         }
         snprintf(message, 199, "X11Graphics::ReadColorTable: Colormap '%s' not found.", name);
         //cerr << message << endl;

@@ -23,8 +23,9 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #ifndef _CELL_HH_
 #define _CELL_HH_
 
+#include "parameter.h"
 //#define EMPTY -1
-#include <cmath>
+#include <math.h>
 #include <map>
 #include <utility>
 #include "random.h"
@@ -198,6 +199,8 @@ public:
         growth = src.growth;
 
         neighbours = src.neighbours;
+        jkey_dec = src.jkey_dec;
+        jlock_dec = src.jlock_dec;
 
         if (par.n_chem) {
             chem = new double[par.n_chem];

@@ -32,7 +32,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 
 /** PRIVATE **/
 
-static int ScanForNumbers(const char *string) {
+static int ScanForNumbers(char *string) {
     int i = 0;
     int number, numpresent = FALSE;
     char tc;
