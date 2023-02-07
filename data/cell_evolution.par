@@ -29,7 +29,7 @@ chemotaxis = 0			#For normal PDE-based chemotaxis
 #no longer active, for Compucell type extension based chemotaxis 
 extensiononly = false
 border_energy = 100		
-rseed = 78213 # rseed deafult = -1, randomises the seed, any natural number is used as seed
+rseed = -1 # rseed deafult = -1, randomises the seed, any natural number is used as seed
 # chancemediumcopied is the chance that instead of copying a pixel with another, cells copy medium from outer space was 0.0001
 chancemediumcopied = 0.0001  # 0.0
 subfield = 1.0
@@ -164,7 +164,7 @@ foodpatchperiod = 3000
 foodpatchlength = 10
 # How much food each spot contains
 # A normal range for the total food of the patch is 100_000 - 1_000_000, so calculate from that
-foodperspot = 20
+foodperspot = 25
 # Max food allowed in the system (regulates foodpatchperiod)
 maxfood = 16000
 # How much food does each cell start with?
@@ -205,7 +205,7 @@ metabolic_conversion = 0.5
 graphics = false
 store = true
 divisioncolour = true
-storage_stride = 500
+storage_stride = 2000
 moviedir = ../runs/data_film2
 save_data_period = 10000
 celldatafile = ../runs/data_cellcount.txt

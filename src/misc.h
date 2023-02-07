@@ -39,7 +39,10 @@ int FileExists(FILE **fp, const char *fname, const char *ftype);
 int ReadDouble(FILE *file, double *number);
 
 //! Finds positive root of quadratic equation using Bhaskara's
-double SolveQuadradic(double a, double b, double c);
+double solveQuadradic(double a, double b, double c);
+
+
+double dist(double x1, double y1, double x2, double y2);
 
 
 //! Functions to interpret a string delimited by a character as a vector of values and vice-versa

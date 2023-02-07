@@ -82,7 +82,7 @@ Dish::~Dish() {
 
 // Adds a new FoodPatch at a semi-random position (still takes into account mindist)
 int Dish::addRandomFPatch() {
-    int x = 0, y = 0;
+    int x, y;
     if (fpatches.empty()) {
         // Ok positions = [2, side - 3] (inclusive both sides)
         x = (int) RandomNumber(sizex - 4) + 1;
@@ -129,8 +129,8 @@ double Dish::DetermineMinDist(int n) {
     // (sepx + 1) * (sepy + 1) = grad_sources - 1
     // ratio * pow(sepx, 2) + sepx * (1 + ratio) + 2 - grad_sources = 0
     // Do the same for sepy and solve quadradic equations
-    double sepx = SolveQuadradic(ratio, 1 + ratio, 2 - n);
-    double sepy = SolveQuadradic(1 / ratio, 1 + 1 / ratio, 2 - n);
+    double sepx = solveQuadradic(ratio, 1 + ratio, 2 - n);
+    double sepy = solveQuadradic(1 / ratio, 1 + 1 / ratio, 2 - n);
     double mindistx = (par.sizex - 2) / (sepx * 2 + 2);
     double mindisty = (par.sizey - 2) / (sepy * 2 + 2);
     return sqrt(mindistx * mindistx + mindisty * mindisty);
@@ -650,7 +650,7 @@ int Dish::addFPatch(int x, int y) {
     for (auto &fp: fpatches) {
         if (fp.removed) {
             int id = fp.getId();
-            fpatches[id] = FoodPatch(this, id, x, y, fp.getLength(), fp.getFoodPerSpot(), nullptr);
+            fpatches[id] = FoodPatch(this, id, x, y, par.foodpatchlength, par.foodperspot, nullptr);
             return id;
         }
     }
@@ -751,7 +751,7 @@ double Dish::FoodAtPosition(int x, int y) {
 
 
 int Dish::readFoodData() {
-    int cur_time;
+    int cur_time = 0;
     ifstream file(par.fooddatafile);
     if (not file)
         throw runtime_error("Failed to open file");
@@ -848,7 +848,7 @@ void Dish::saveLattice(int Time) const {
 
 
 int Dish::readCellData() {
-    int cur_time;
+    int cur_time = 0;
     ifstream file(par.celldatafile);
     if (not file)
         throw runtime_error("Failed to open file");
@@ -863,83 +863,82 @@ int Dish::readCellData() {
 
         int sigma = stoi(*it); ++it;
         for (int j = 1; j < sigma - last_sigma; ++j) {
-            Cell *rc = new Cell(*this);
-            rc->alive = false;
-            rc->sigma = last_sigma + j;
-            cell.push_back(*rc);
+            Cell rc = Cell(*this);
+            rc.alive = false;
+            rc.sigma = last_sigma + j;
+            cell.push_back(rc);
         }
         last_sigma = sigma;
-
-        Cell *rc = new Cell(*this);
-        rc->alive = true;
-        rc->sigma = sigma;
-        rc->tau = stoi(*it); ++it;
-        rc->time_since_birth = stoi(*it); ++it;
-        rc->tvecx = stod(*it); ++it;
-        rc->tvecy = stod(*it); ++it;
-        rc->prevx = stod(*it); ++it;
-        rc->prevy = stod(*it); ++it;
-        rc->persdur = stoi(*it); ++it;
-        rc->perstime = stoi(*it); ++it;
-        rc->mu = stod(*it); ++it;
-        rc->half_div_area = stoi(*it); ++it;
-        rc->length = stod(*it); ++it;
-        rc->last_meal = stoi(*it); ++it;
-        rc->food = stod(*it); ++it;
-        rc->growth = stod(*it); ++it;
-        rc->gextiming = stoi(*it); ++it;
-        rc->dividecounter = stoi(*it); ++it;
-        rc->grad_conc = stoi(*it); ++it;
-        rc->meanx = stod(*it); ++it;
-        rc->meany = stod(*it); ++it;
-        rc->chemvecx = stod(*it); ++it;
-        rc->chemvecy = stod(*it); ++it;
-        rc->target_area = stoi(*it); ++it;
-        rc->chemmu = stod(*it); ++it;
-        rc->times_divided = stoi(*it); ++it;
-        rc->colour = stoi(*it); ++it;
-        rc->ancestor = stoi(*it); ++it;
+        Cell rc = Cell(*this);
+        rc.alive = true;
+        rc.sigma = sigma;
+        rc.tau = stoi(*it); ++it;
+        rc.time_since_birth = stoi(*it); ++it;
+        rc.tvecx = stod(*it); ++it;
+        rc.tvecy = stod(*it); ++it;
+        rc.prevx = stod(*it); ++it;
+        rc.prevy = stod(*it); ++it;
+        rc.persdur = stoi(*it); ++it;
+        rc.perstime = stoi(*it); ++it;
+        rc.mu = stod(*it); ++it;
+        rc.half_div_area = stoi(*it); ++it;
+        rc.length = stod(*it); ++it;
+        rc.last_meal = stoi(*it); ++it;
+        rc.food = stod(*it); ++it;
+        rc.growth = stod(*it); ++it;
+        rc.gextiming = stoi(*it); ++it;
+        rc.dividecounter = stoi(*it); ++it;
+        rc.grad_conc = stoi(*it); ++it;
+        rc.meanx = stod(*it); ++it;
+        rc.meany = stod(*it); ++it;
+        rc.chemvecx = stod(*it); ++it;
+        rc.chemvecy = stod(*it); ++it;
+        rc.target_area = stoi(*it); ++it;
+        rc.chemmu = stod(*it); ++it;
+        rc.times_divided = stoi(*it); ++it;
+        rc.colour = stoi(*it); ++it;
+        rc.ancestor = stoi(*it); ++it;
         // Skip self_gamma and Jmed
         it += 2;
         // These could be skipped as well but im leaving them
-        rc->jkey_dec = stoi(*it); ++it;
-        rc->jlock_dec = stoi(*it); ++it;
+        rc.jkey_dec = stoi(*it); ++it;
+        rc.jlock_dec = stoi(*it); ++it;
         // Skip neighbour info
         it += 2;
 
         int innr = stoi(*it); ++it;
         int regnr = stoi(*it); ++it;
         int outnr = stoi(*it); ++it;
-        rc->genome.innr = innr;
-        rc->genome.regnr = regnr;
-        rc->genome.outnr = outnr;
-        rc->genome.inputscale = stringToVector<double>(*it, ' '); ++it;
+        rc.genome.innr = innr;
+        rc.genome.regnr = regnr;
+        rc.genome.outnr = outnr;
+        rc.genome.inputscale = stringToVector<double>(*it, ' '); ++it;
 
         vector<double> reg_thres = stringToVector<double>(*it, ' '); ++it;
         vector<double> reg_w_in = stringToVector<double>(*it, ' '); ++it;
         vector<double> reg_w_reg = stringToVector<double>(*it, ' '); ++it;
         for (int i = 0; i < regnr; ++i) {
-            Gene *gene = new Gene(1, i + innr, innr, regnr);
-            gene->threshold = reg_thres[i];
+            Gene gene = Gene(1, i + innr, innr, regnr);
+            gene.threshold = reg_thres[i];
             for (int j = 0; j < innr; ++j)
-                gene->w_innode[j] = reg_w_in[i * innr + j];
+                gene.w_innode[j] = reg_w_in[i * innr + j];
             for (int j = 0; j < regnr; ++j)
-                gene->w_regnode[j] = reg_w_reg[i * regnr + j];
-            rc->genome.regnodes.push_back(*gene);
+                gene.w_regnode[j] = reg_w_reg[i * regnr + j];
+            rc.genome.regnodes.push_back(gene);
         }
 
         vector<double> out_thres = stringToVector<double>(*it, ' '); ++it;
         vector<double> out_w_reg = stringToVector<double>(*it, ' '); ++it;
         for (int i = 0; i < outnr; ++i) {
-            Gene *gene = new Gene(2, i + innr + regnr, innr, regnr);
-            gene->threshold = out_thres[i];
+            Gene gene = Gene(2, i + innr + regnr, innr, regnr);
+            gene.threshold = out_thres[i];
             for (int j = 0; j < regnr; ++j)
-                gene->w_regnode[j] = out_w_reg[i * regnr + j];
-            rc->genome.outputnodes.push_back(*gene);
+                gene.w_regnode[j] = out_w_reg[i * regnr + j];
+            rc.genome.outputnodes.push_back(gene);
         }
 
         cur_time = stoi(*it);
-        cell.push_back(*rc);
+        cell.push_back(rc);
     }
     return cur_time;
 }

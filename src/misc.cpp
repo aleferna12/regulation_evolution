@@ -178,9 +178,16 @@ char *GetFileName(const char *message, const char *ftype) {
 
 }
 
-double SolveQuadradic(double a, double b, double c) {
+double solveQuadradic(double a, double b, double c) {
     double root = sqrt(pow(b, 2) - 4 * a * c);
     return (-b + root) / (2 * a);
+}
+
+
+double dist(double x1, double y1, double x2, double y2) {
+    double cat1 = (x2 - x1) * (x2 - x1);
+    double cat2 = (y2 - y1) * (y2 - y1);
+    return sqrt(cat1 + cat2);
 }
 
 

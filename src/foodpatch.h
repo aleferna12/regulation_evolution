@@ -34,7 +34,7 @@ public:
 
     FoodPatch &operator=(const FoodPatch &fp);
 
-    virtual ~FoodPatch();
+    ~FoodPatch();
 
     int getX() const {
         return x;

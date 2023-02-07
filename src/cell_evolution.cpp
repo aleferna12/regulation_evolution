@@ -370,8 +370,5 @@ int main(int argc, char *argv[]) {
         std::cerr << error << "\n";
         exit(1);
     }
-    catch (...) {
-        std::cerr << "An unknown exception was caught\n";
-    }
     return 0;
 }

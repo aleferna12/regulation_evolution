@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "foodpatch.h"
 #include "dish.h"
+#include "misc.h"
 
 FoodPatch::FoodPatch(
     Dish *owner,
@@ -15,7 +16,6 @@ FoodPatch::FoodPatch(
     int food_per_spot,
     int *sigmas
 ) : id(id), x(x), y(y), length(length), food_per_spot(food_per_spot), owner(owner) {
-    // TODO: Add some random noise so patches look more interesting
     sigma = new int[length * length]{};
     initSigmas(sigmas);
 }
@@ -66,6 +66,7 @@ void FoodPatch::initSigmas(const int *sigmas) {
     int miny = max(2, y);
     int maxx = min(owner->SizeX() - 2, x + length);
     int maxy = min(owner->SizeY() - 2, y + length);
+    int center = length / 2;
     for (int gi = minx; gi < maxx; ++gi) {
         int i = getLocalX(gi);
         // Even though the actual border is only 0 and size - 1, for some reason
@@ -78,7 +79,8 @@ void FoodPatch::initSigmas(const int *sigmas) {
                 value = food_per_spot;
             else
                 value = sigmas[i * length + j];
-            if (owner->FoodPlane->Sigma(gi, gj) == -1 and value != 0) {
+            double dist_to_center = dist(center, center, i + .5, j + .5);
+            if (owner->FoodPlane->Sigma(gi, gj) == -1 and value != 0 and dist_to_center <= length / 2.) {
                 owner->FoodPlane->setSigma(gi, gj, id);
                 setSigma(i, j, value);
                 food_left += value;
