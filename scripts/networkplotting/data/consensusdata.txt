@@ -1,0 +1,35 @@
+[False  True  True  True  True  True  True  True  True  True  True False
+  True  True  True  True  True  True  True  True  True  True False  True
+  True  True  True  True  True  True  True  True  True False  True  True
+  True  True  True  True  True  True  True  True False  True  True  True
+  True  True  True  True  True  True  True False  True  True  True  True
+  True  True  True  True  True  True False  True  True  True  True  True
+  True  True  True  True  True False  True  True  True  True  True  True
+  True  True  True  True False  True  True  True  True  True  True  True
+  True  True  True False  True  True  True  True  True  True  True  True
+  True  True False  True  True  True  True  True  True  True  True  True
+  True False  True  True  True  True  True  True  True  True  True  True
+ False False  True  True  True  True  True  True  True  True  True False
+ False  True  True  True  True  True  True  True  True  True False False
+  True  True  True  True  True  True  True  True  True False False  True
+  True  True  True  True  True  True  True  True False False  True  True
+  True  True  True  True  True  True  True False False  True  True  True
+  True  True  True  True  True  True False False  True  True  True  True
+  True  True  True  True  True False False  True  True  True  True  True
+  True  True  True  True False False  True  True  True  True  True  True
+  True  True  True False False  True  True  True  True  True  True  True
+  True  True False False  True  True  True  True  True  True  True  True
+  True False False  True  True  True  True  True  True  True  True  True
+ False False  True  True  True  True  True  True  True  True  True False
+ False  True  True  True  True  True  True  True  True  True False False
+ False  True  True  True  True  True  True  True  True]
+consensus is [0 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 0 1 1 1
+ 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1
+ 1 1 1 0 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 0
+ 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 0 0 1 1 1 1 1 1 1 1 1 0 0 1 1 1
+ 1 1 1 1 1 1 0 0 1 1 1 1 1 1 1 1 1 0 0 1 1 1 1 1 1 1 1 1 0 0 1 1 1 1 1 1 1
+ 1 1 0 0 1 1 1 1 1 1 1 1 1 0 0 1 1 1 1 1 1 1 1 1 0 0 1 1 1 1 1 1 1 1 1 0 0
+ 1 1 1 1 1 1 1 1 1 0 0 1 1 1 1 1 1 1 1 1 0 0 1 1 1 1 1 1 1 1 1 0 0 1 1 1 1
+ 1 1 1 1 1 0 0 1 1 1 1 1 1 1 1 1 0 0 1 1 1 1 1 1 1 1 1 0 0 0 1 1 1 1 1 1 1
+ 1]
+file with individual closest to consensus: states_t0005640000_c0337

@@ -772,7 +772,6 @@ int Dish::readFoodData() {
             par.foodperspot,
             &sigmas[0]
         );
-        fpatches.back().updateFoodLeft();
         cur_time = stoi(attrs[4]);
         id++;
     }
