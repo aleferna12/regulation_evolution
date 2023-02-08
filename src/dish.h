@@ -72,16 +72,21 @@ public:
     //! Master function that should be modified whenever we add new subplots or change the colortable format.
     void makePlots(int Time, Graphics *g);
 
+    //! Plots the chemotactic gradient
     void plotChemPlane(Graphics *g, int start_index, int n_colors) const;
+
+    //! Plots circles irradiating from the food patches
+    //! \param bg_index: Color of the background, only used if not drawing the chemotactic gradient behind the circles
+    void plotChemPlaneCircles(Graphics *g, int fg_index, int bg_index) const;
 
     void plotFoodPLane(Graphics *g, int color_index) const;
 
-    //! makePlots the food for each cell (but differently for each cell type).
+    //! Plots the food for each cell (but differently for each cell type).
     //! \param start_index: First color of the two color gradients in the colortable (they must be in tandem).
     //! \param n_colors: Size of both gradients summed.
     void plotCellFood(Graphics *g, int start_index, int n_colors);
 
-    //! makePlots migrating and dividing cells.
+    //! Plots migrating and dividing cells.
     void plotCellTau(Graphics *g, int div_index, int mig_index);
 
     void plotCellVectors(Graphics *g);
@@ -139,7 +144,7 @@ public:
     }
 
     // Get distance of coordinate to the closest source of resources
-    pair<int, double> closestFPatch(int x, int y);
+    pair<int, double> closestFPatch(int x, int y) const;
 
     // ChemPlane in relation to the distance from a single peak F(x)
     double FoodEquation(double dist_from_peak) const;

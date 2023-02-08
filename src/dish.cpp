@@ -100,7 +100,7 @@ int Dish::addRandomFPatch() {
 }
 
 
-pair<int, double> Dish::closestFPatch(int x, int y) {
+pair<int, double> Dish::closestFPatch(int x, int y) const {
     double mindist_sq = sizex * sizex + sizey * sizey;
     int res_id = -1;
 
@@ -242,7 +242,10 @@ void Dish::UpdateNeighDuration() {
 void Dish::makePlots(int Time, Graphics *g) {
     g->BeginScene();
     g->ClearImage();
-    plotChemPlane(g, 8, 64);
+    if (par.chemgrad)
+        plotChemPlane(g, 8, 64);
+    if (par.chemcircles)
+        plotChemPlaneCircles(g, 1, 0);
     plotFoodPLane(g, 2);
 
     for (auto &plot : stringToVector<string>(par.plots, ' ')) {
@@ -267,7 +270,6 @@ void Dish::makePlots(int Time, Graphics *g) {
 void Dish::plotChemPlane(Graphics *g, int start_index, int n_colors) const {
     auto minmaxfood = ChemPlane->getMinMax();
 
-    // suspend=true suspends calling of DrawScene
     for (int x = 1; x < par.sizex - 1; x++)
         for (int y = 1; y < par.sizey - 1; y++)
 
@@ -287,6 +289,29 @@ void Dish::plotChemPlane(Graphics *g, int start_index, int n_colors) const {
                 // to fit with the CPM plane
                 g->Point(colori, x, y);
             }
+}
+
+
+void Dish::plotChemPlaneCircles(Graphics *g, int fg_index, int bg_index) const {
+    for (int x = 1; x < par.sizex - 1; x++)
+        for (int y = 1; y < par.sizey - 1; y++) {
+            auto fp_info = closestFPatch(x, y);
+            int radius = int(round(fp_info.second));
+            bool draw_circle = false;
+            if (radius >= par.circle_dist and radius % par.circle_dist < par.circle_thickness) {
+                auto fp = fpatches[fp_info.first];
+                double angle = atan2(y - fp.getCenterY(), x - fp.getCenterX()) * 180 / M_PI + 180;
+                int radius_band = radius / par.circle_dist;
+                int a = 360 / par.circle_segments / radius_band;
+                int b = int(round(par.circle_coverage * 360 / par.circle_segments / radius_band));
+                if (int(round(angle)) % a < b)
+                    draw_circle = true;
+            }
+            if (draw_circle)
+                g->Point(fg_index, x, y);
+            else if (not par.chemgrad)
+                g->Point(bg_index, x, y);
+        }
 }
 
 

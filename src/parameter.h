@@ -115,9 +115,14 @@ public:
     double frac_contlen_eaten;
     double metabolic_conversion;
     double chancemediumcopied;
-    bool readcolortable;
     char *colortable_filename;
     char *plots;
+    bool chemgrad;
+    bool chemcircles;
+    int circle_thickness;
+    int circle_dist;
+    int circle_segments;
+    double circle_coverage;
     int maxtau;
     double mut_rate;
     double startmu;

@@ -45,11 +45,11 @@ public:
     }
 
     double getCenterX() const {
-        return x + length / (double) 2;
+        return x + length / 2.;
     }
 
     double getCenterY() const {
-        return y + length / (double) 2;
+        return y + length / 2.;
     }
 
     int getId() const {

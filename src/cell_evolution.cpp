@@ -222,25 +222,6 @@ TIMESTEP {
             }
         }
 
-
-        // TO SCREEN
-        // UNUSED
-        if (par.graphics && !(i % par.storage_stride)) {
-
-            BeginScene();
-            ClearImage();
-            if (par.readcolortable) {
-                //  dish->Plot(this,1);
-                dish->makePlots(2, this);
-            } else {
-                dish->makePlots(0, this);
-            }
-            //dish->ChemPlane->Plot(this, dish->CPM);
-            //char title[400];
-            //snprintf(title,399,"CellularPotts: %d MCS",i);
-            //ChangeTitle(title);
-            EndScene();
-        }
         // TO FILE FOR MOVIE
         if (par.store && !(i % par.storage_stride)) {
             dish->makePlots(i, this);

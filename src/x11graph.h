@@ -157,22 +157,6 @@ private:
 
     void StoreCompPict(void);
 
-    void SendScene();
-
-    void receiveScene(int machineindex, int beastindex, int ndish);
-
-    void receiveScene1(int machineindex, int beastindex, int ndish);
-
-    void KillCell(struct creature *beast);
-
-    int ResizeField(struct creature *beast);
-
-    void ReceiveScene(int machineindex, int beastindex, int ndish);
-
-    void ReceiveScene1(int machineindex, int beastindex, int ndish);
-
-    void GenerateColorTable(XColor *colors);
-
     static void ReadColorTable(XColor *colors, const char *colortable_filename);
 
     void MakeColorMap();

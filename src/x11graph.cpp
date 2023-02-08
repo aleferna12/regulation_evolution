@@ -200,82 +200,6 @@ void X11Graphics::ReceiveScene1(int machineindex, int beastindex, int ndish) {
 }
 #endif
 
-void X11Graphics::GenerateColorTable(XColor *cols) {
-    // to make something color blind friendy,
-    // all colors have to be sufficiently different even when you exclude ag
-
-    //DOES THIS DO IT ??? YEP - more or less !!!
-    //            whi,blk,red,blu,yllw,cyan, green,magnt,brwn,grey
-    int i;
-    int ar[16], ag[16], ab[16];
-    if (!par.divisioncolour) {
-        int ar1[16] = {254, 0, 180, 0, 254, 50, 90, 245, 100, 255, 0, 200, 200, 200, 200, 200};
-        int ag1[16] = {254, 0, 0, 51, 210, 206, 254, 10, 50, 30, 51, 200, 200, 200, 200, 200};
-        int ab1[16] = {254, 0, 0, 102, 50, 250, 180, 200, 0, 30, 255, 200, 200, 200, 200, 200};
-        for (i = 0; i < 16; i++) {
-            ar[i] = ar1[i];
-            ag[i] = ag1[i];
-            ab[i] = ab1[i];
-        }
-    } else {
-        int ar2[16] = {254, 0, 120, 200, 250, 255, 255, 0, 0, 0, 0, 225, 0, 0, 0, 0};
-        int ag2[16] = {254, 0, 0, 0, 80, 180, 250, 0, 50, 200, 255, 255, 0, 0, 0, 0};
-        int ab2[16] = {254, 0, 0, 0, 0, 0, 0, 120, 255, 255, 255, 255, 0, 0, 0, 0};
-        for (i = 0; i < 16; i++) {
-            ar[i] = ar2[i];
-            ag[i] = ag2[i];
-            ab[i] = ab2[i];
-        }
-    }
-
-    //color 0 is white (background), 1 is black, the other until 10 are simple colors
-    // color blind friendly and pretty!
-    // red, yellow, blue, cyan, green, magenta, brown <- :$
-    for (i = 0; i < 16; i++) {
-        cols[i].red = ar[i];
-        cols[i].green = ag[i];
-        cols[i].blue = ab[i];
-    }
-
-    //cout<<"Hello0"<<endl;
-
-    // these 50 colors are for food, when no predators are on top
-    // start from yellow, go to red ("hot"-like color map, moving on the surface of the cube)
-    // steps are 250/50 =5 long
-    int r = 254, g = 254, b = 100;
-    int step = 5;
-    for (i = 16; i < 66; i++) {
-        //make colors
-        // r-= 1;
-
-        g -= step;
-
-        b -= step * 1 / 5;
-
-        cols[i].red = r;
-        cols[i].green = g;
-        cols[i].blue = b;
-    }
-
-    //cout<<"Hello1"<<endl;
-
-    //this is for the shading, when predators are below that
-    // maybe can be combined with map above?
-    r = 154;
-    g = 154;
-    b = 102;
-    for (i = 66; i < 116; i++) {
-        //make colors
-        g -= step / 2;
-        cols[i].red = r;
-        cols[i].green = g;
-        cols[i].blue = b;
-    }
-    //for(i=0;i<256;i++){
-    //  cerr<<i<<" "<<cols[i].red<<" "<<cols[i].green<<" "<<cols[i].blue<<endl;
-    //}
-    //exit(1);
-}
 
 void X11Graphics::ReadColorTable(XColor *cols, const char *colortable_filename) {
     int i;
@@ -327,10 +251,7 @@ void X11Graphics::MakeColorMap() {
     cerr << endl << endl << endl << "hello from colormap...ever called?" << endl;
     cerr << "MakeColorMap function makes colors" << endl;
 
-    if (par.readcolortable)
-        ReadColorTable(colors, par.colortable_filename);
-    else
-        GenerateColorTable(colors);
+    ReadColorTable(colors, par.colortable_filename);
 
     if (pseudoCol8) {
         new_colormap = XCreateColormap(display,
@@ -1217,13 +1138,8 @@ void X11Graphics::Write(char *fname, int quality) {
 
         cerr << "First call - inside Write(), making colors" << endl;
 
-        if (par.readcolortable) {
-            ReadColorTable(png_colors, par.colortable_filename);
-            cerr << "read color table" << endl;
-        } else {
-            GenerateColorTable(png_colors);
-            cerr << "generate color table" << endl;
-        }
+        ReadColorTable(png_colors, par.colortable_filename);
+        cerr << "read color table" << endl;
 
     }
 

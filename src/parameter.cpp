@@ -90,6 +90,11 @@ Parameter::Parameter() {
     gompertz_alpha = 0.0000075;
     gompertz_beta = 0.0004;
     scatter_start = true;
+    chemgrad = true;
+    chemcircles = true;
+    circle_dist = 40;
+    circle_segments = 15;
+    circle_thickness = 1;
     motiledeath = 1.0;
     dividingdeath = 0.;
     moviedir = strdup("data_film");
@@ -113,11 +118,11 @@ Parameter::Parameter() {
     min_contact_duration_for_preying = 10;
     frac_contlen_eaten = 1.;
     metabolic_conversion = 0.5;
-    readcolortable = false;
     colortable_filename = "default.ctb";
     plots = "tau";
     key_lock_weights = "1 2 3 4 5 6";
     mut_rate = 0.01;
+    circle_coverage = 0.5;
     startmu = 0.0;
     persduration = 0;
     scaling_cell_to_ca_time = 1;
@@ -393,6 +398,30 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             }
             mcs = atoi(argv[i]);
             cerr << "New value for maxtime (mcs in the code): " << mcs << endl;
+        } else if (0 == strcmp(argv[i], "-circle_segments")) {
+            i++;
+            if (i == argc) {
+                cerr << "Something odd in circle_segments?" << endl;
+                return 1;  //check if end of arguments, exit with error in case
+            }
+            circle_segments = atoi(argv[i]);
+            cerr << "New value for circle_segments (mcs in the code): " << circle_segments << endl;
+        } else if (0 == strcmp(argv[i], "-circle_thickness")) {
+            i++;
+            if (i == argc) {
+                cerr << "Something odd in circle_thickness?" << endl;
+                return 1;  //check if end of arguments, exit with error in case
+            }
+            circle_thickness = atoi(argv[i]);
+            cerr << "New value for circle_thickness (mcs in the code): " << circle_thickness << endl;
+        } else if (0 == strcmp(argv[i], "-circle_dist")) {
+            i++;
+            if (i == argc) {
+                cerr << "Something odd in circle_dist?" << endl;
+                return 1;  //check if end of arguments, exit with error in case
+            }
+            circle_dist = atoi(argv[i]);
+            cerr << "New value for circle_dist (mcs in the code): " << circle_dist << endl;
         } else if (0 == strcmp(argv[i], "-mutrate")) {
             i++;
             if (i == argc) {
@@ -401,6 +430,14 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             }
             mut_rate = atof(argv[i]);
             cerr << "New value for mutation rate: " << mut_rate << endl;
+        } else if (0 == strcmp(argv[i], "-circle_thickness")) {
+            i++;
+            if (i == argc) {
+                cerr << "Something odd in circle_thickness?" << endl;
+                return 1;  //check if end of arguments, exit with error in case
+            }
+            circle_thickness = atof(argv[i]);
+            cerr << "New value for circle_thickness: " << circle_thickness << endl;
         } else if (0 == strcmp(argv[i], "-mu")) {
             i++;
             if (i == argc) {
@@ -494,6 +531,12 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
         } else if (0 == strcmp(argv[i], "-noscatter_start")) {
             scatter_start = false;
             cerr << "Cells will not be scattered at the start of the first season" << endl;
+        } else if (0 == strcmp(argv[i], "-nochemgrad")) {
+            chemgrad = false;
+            cerr << "Not plotting chemotactic gradient" << endl;
+        } else if (0 == strcmp(argv[i], "-nochemcircles")) {
+            chemcircles = false;
+            cerr << "Not plotting circles around food patches" << endl;
         } else if (0 == strcmp(argv[i], "-nodivisions")) {
             nodivisions = true;
             cerr << "Cells will not actually divide" << endl;
@@ -777,10 +820,15 @@ void Parameter::Read(const char *filename) {
     mu = fgetpar(fp, "mu", 0., true);
     mustd = fgetpar(fp, "mustd", 0., true);
     divtime = igetpar(fp, "divtime", 200, true);
+    circle_thickness = igetpar(fp, "circle_thickness", 1, true);
+    circle_segments = igetpar(fp, "circle_segments", 15, true);
+    circle_dist = igetpar(fp, "circle_dist", 40, true);
     divdur = igetpar(fp, "divdur", 50, true);
     gompertz_alpha = fgetpar(fp, "gompertz_alpha", 0.0000075, true);
     gompertz_beta = fgetpar(fp, "gompertz_beta", 0.0004, true);
     scatter_start = bgetpar(fp, "scatter_start", true, true);
+    chemgrad = bgetpar(fp, "chemgrad", true, true);
+    chemcircles = bgetpar(fp, "chemcircles", true, true);
     motiledeath = fgetpar(fp, "motiledeath", 1.0, true);
     dividingdeath = fgetpar(fp, "dividingdeath", 0.0, true);
     moviedir = sgetpar(fp, "moviedir", "data_film", true);
@@ -805,12 +853,12 @@ void Parameter::Read(const char *filename) {
     frac_contlen_eaten = fgetpar(fp, "frac_contlen_eaten", 1., true);
     metabolic_conversion = fgetpar(fp, "metabolic_conversion", 0.5, true);
     chancemediumcopied = fgetpar(fp, "chancemediumcopied", 0.0001, true);
-    readcolortable = bgetpar(fp, "readcolortable", false, true);
     colortable_filename = sgetpar(fp, "colortable_filename", "default.ctb", true);
     plots = sgetpar(fp, "plots", "tau", true);
     key_lock_weights = sgetpar(fp, "key_lock_weights", "1 2 3 4 5 6", true);
     evolsim = igetpar(fp, "evolsim", 0, true);
     mut_rate = fgetpar(fp, "mut_rate", 0.01, true);
+    circle_coverage = fgetpar(fp, "circle_coverage", 0.5, true);
     persduration = igetpar(fp, "persduration", 0, true);
     startmu = fgetpar(fp, "startmu", 0.0, true);
     init_chemmu = fgetpar(fp, "init_chemmu", 0.0, true);
@@ -903,6 +951,9 @@ void Parameter::Write(ostream &os) const {
     os << " mu = " << mu << endl;
     os << " mustd = " << mustd << endl;
     os << " divtime= " << divtime << endl;
+    os << " circle_thickness= " << circle_thickness << endl;
+    os << " circle_dist= " << circle_dist << endl;
+    os << " circle_segments= " << circle_segments << endl;
     os << " divdur = " << divdur << endl;
     os << " gompertz_alpha = " << gompertz_alpha << endl;
     os << " gompertz_beta = " << gompertz_beta << endl;
@@ -931,11 +982,11 @@ void Parameter::Write(ostream &os) const {
     os << " celldatafile = " << celldatafile << endl;
     os << " fooddatafile = " << fooddatafile << endl;
     os << " save_data_period = " << save_data_period << endl;
-    os << " readcolortable = " << readcolortable << endl;
     os << " colortable_filename = " << colortable_filename << endl;
     os << " plots = " << plots << endl;
     os << " key_lock_weights = " << key_lock_weights << endl;
     os << " mut_rate = " << mut_rate << endl;
+    os << " circle_coverage = " << circle_coverage << endl;
     os << " evolsim = " << evolsim << endl;
     os << " persduration = " << persduration << endl;
     os << " startmu = " << startmu << endl;
