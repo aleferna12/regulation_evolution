@@ -106,7 +106,7 @@ public:
     int CountCells() const;
 
 //count how many cells of each group there are (when running competition), return 1 when one is extinct
-    int CountCellGroups() const;
+    bool groupExtinction() const;
 
     void CellsEat(int time); // Based on the old CellsEat2
 
@@ -121,8 +121,6 @@ public:
 
     //! \brief Returns the summed of all cells target area in the dish
     int TargetArea() const;
-
-    int ReadCompetitionFile(char *filename);
 
     //! \brief Returns the horizontal size of the dish.
     int SizeX() const;

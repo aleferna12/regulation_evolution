@@ -56,7 +56,7 @@ public:
         owner = &who;
 
         alive = true;
-        colour = 1; // undifferentiated
+        group = 1;
 
         meanx = 0.;
         meany = 0.;
@@ -161,7 +161,7 @@ public:
         date_of_birth = src.date_of_birth;
         //cerr<<"this?: "<<date_of_birth<<endl;
         colour_of_birth = src.colour_of_birth;
-        colour = src.colour;
+        group = src.group;
         dividecounter = src.dividecounter;
         genome = src.genome;
         gextiming = src.gextiming;
@@ -231,7 +231,7 @@ public:
         if (this == &src)
             return *this;
         //cout<<"Potato"<<endl;
-        colour = src.colour;
+        group = src.group;
         alive = src.alive;
         sigma = src.sigma;
         area = src.area;
@@ -300,10 +300,8 @@ public:
     }
 
     //! Returns the cell colour.
-    inline int Colour() const {
-
-        //return tau+1;
-        return colour;
+    inline int getGroup() const {
+        return group;
     };
 
 //this function maps migration vector angle to a colour in radial_colour array (see misc.cpp)
@@ -481,9 +479,9 @@ public:
         return tau;
     }
 
-    //! Set color of this cell to new_colour, irrespective of type.
-    inline int SetColour(const int new_colour) {
-        return colour = new_colour;
+    //! Set group of this cell to new_group, irrespective of type.
+    inline void setGroup(const int new_group) {
+        group = new_group;
     }
 
     //! Return Cell's actual area.
@@ -1018,7 +1016,7 @@ private:
     }
 
 protected:
-    int colour;
+    int group;
     bool alive;
     int sigma; // cell identity, 0 if medium
     int tau; // Cell type, when dynamicJ's are not used

@@ -74,7 +74,7 @@ Cell::~Cell() {
 
 void Cell::CellBirth(Cell &mother_cell) {
 
-    colour = mother_cell.colour;
+    group = mother_cell.group;
     //cerr<< "daughter colour is "<<colour<<" mother colour is "<<mother_cell.colour<<endl;
     alive = mother_cell.alive;
     v[0] = mother_cell.v[0];
@@ -92,8 +92,8 @@ void Cell::CellBirth(Cell &mother_cell) {
     date_of_birth = owner->Time();
     //cerr<<"sigma:"<<sigma<<" I am born at: "<<date_of_birth<<endl<<endl; //this works fine
 
-    colour_of_birth = mother_cell.colour;
-    colour = mother_cell.colour;
+    colour_of_birth = mother_cell.group;
+    group = mother_cell.group;
 
     alive = mother_cell.alive;
 

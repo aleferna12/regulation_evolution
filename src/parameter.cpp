@@ -81,7 +81,6 @@ Parameter::Parameter() {
     store = false;
     divisioncolour = false;
     genomefile = strdup("");
-    competitionfile = strdup("");
     nr_regnodes = 1;
     mu = 0.05;
     mustd = 0.1;
@@ -91,6 +90,7 @@ Parameter::Parameter() {
     gompertz_beta = 0.0004;
     scatter_start = true;
     chemgrad = true;
+    groupextinction = false;
     chemcircles = true;
     circle_dist = 40;
     circle_segments = 15;
@@ -235,7 +235,6 @@ void Parameter::PrintWelcomeStatement() {
     cerr << " -chemmu [FLOAT_NUMBER] scaling factor for chemotaxis in the Hamiltonian" << endl;
     cerr << " -fitscale [FLOAT_NUMBER] point in field where deathrate is half value" << endl;
     cerr << " -genomefile [string] starting genome with which to seed the field" << endl;
-    cerr << " -competitionfile [string] information for competition experiment" << endl;
     cerr << " -target_area [INT_NUMBER] that (initial) target area of cells" << endl;
     cerr << " -init_cell_config [0-3] initial configuration of cells when placed in center, see ca.cpp" << endl;
     cerr << " -cell_placement [1-4] field position of cells, (0=center) see ca.cpp" << endl;
@@ -367,20 +366,6 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             genomefile = strdup(argv[i]);
 
             cerr << "New value for genomefile: " << genomefile << endl;
-
-        } else if (0 == strcmp(argv[i], "-competitionfile")) {
-            i++;
-            if (i == argc) {
-                cerr << "Something odd in competitionfile?" << endl;
-                return 1;  //check if end of arguments, exit with error in case
-            }
-            //strcpy(moviedir, argv[i]);
-            free(competitionfile);
-            competitionfile = (char *) malloc(
-                    5 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
-            competitionfile = strdup(argv[i]);
-
-            cerr << "New value for competitionfile: " << competitionfile << endl;
 
         } else if (0 == strcmp(argv[i], "-seed")) {
             i++;
@@ -534,6 +519,9 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
         } else if (0 == strcmp(argv[i], "-nochemgrad")) {
             chemgrad = false;
             cerr << "Not plotting chemotactic gradient" << endl;
+        } else if (0 == strcmp(argv[i], "-groupextinction")) {
+            groupextinction = true;
+            cerr << "Stopping sim on group extinction" << endl;
         } else if (0 == strcmp(argv[i], "-nochemcircles")) {
             chemcircles = false;
             cerr << "Not plotting circles around food patches" << endl;
@@ -673,8 +661,6 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
                 return 1;  //check if end of arguments, exit with error in case
             }
             // I'm just going to work in c++ strings - a lot easier
-            free(celldatafile);
-            free(fooddatafile);
             free(moviedir);
             free(latticedir);
             free(celldatadir);
@@ -732,17 +718,12 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             std::cerr << "New value for name_fooddatadir: " << name_fooddatadir << '\n';
             std::cerr << "New value for name_networkdir: " << name_networkdir << '\n';
 
-            celldatafile = (char *) malloc(
-                    50 + strlen(argv[i]) * sizeof(char)); //strlen(argv[i]) is ok because argv[i] is null terminated
-            fooddatafile = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             moviedir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             latticedir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             celldatadir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             cellgravesdatadir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
             fooddatadir = (char *) malloc(50 + strlen(argv[i]) * sizeof(char));
-            celldatafile = strdup(name_outfile.c_str());
-            fooddatafile = strdup(name_outfile.c_str());
             strdup(name_outfile.c_str());
             moviedir = strdup(name_moviedir.c_str());
             latticedir = strdup(name_latticedir.c_str());
@@ -814,7 +795,6 @@ void Parameter::Read(const char *filename) {
     store = bgetpar(fp, "store", false, true);
     divisioncolour = bgetpar(fp, "divisioncolour", false, true);
     genomefile = sgetpar(fp, "genomefile", "", true);
-    competitionfile = sgetpar(fp, "competitionfile", "", true);
     nodivisions = bgetpar(fp, "nodivisions", false, true);
     nr_regnodes = igetpar(fp, "nr_regnodes", 0, true);
     mu = fgetpar(fp, "mu", 0., true);
@@ -828,12 +808,13 @@ void Parameter::Read(const char *filename) {
     gompertz_beta = fgetpar(fp, "gompertz_beta", 0.0004, true);
     scatter_start = bgetpar(fp, "scatter_start", true, true);
     chemgrad = bgetpar(fp, "chemgrad", true, true);
+    groupextinction = bgetpar(fp, "groupextinction", false, true);
     chemcircles = bgetpar(fp, "chemcircles", true, true);
     motiledeath = fgetpar(fp, "motiledeath", 1.0, true);
     dividingdeath = fgetpar(fp, "dividingdeath", 0.0, true);
     moviedir = sgetpar(fp, "moviedir", "data_film", true);
     celldatafile = sgetpar(fp, "celldatafile", "", true);
-    fooddatafile = sgetpar(fp, "celldatafile", "", true);
+    fooddatafile = sgetpar(fp, "fooddatafile", "", true);
     save_data_period = igetpar(fp, "save_data_period", 100, true);
     food_influx_location = sgetpar(fp, "food_influx_location", "nowhere", true);
     initial_food_amount = igetpar(fp, "initial_food_amount", 0, true);
@@ -943,9 +924,6 @@ void Parameter::Write(ostream &os) const {
     os << " store = " << sbool(store) << endl;
     if (genomefile) {
         os << " genomefile = " << genomefile << endl;
-    }
-    if (competitionfile) {
-        os << " competitionfile = " << competitionfile << endl;
     }
     os << " nr_regnodes = " << nr_regnodes << endl;
     os << " mu = " << mu << endl;

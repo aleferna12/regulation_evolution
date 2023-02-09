@@ -2,6 +2,7 @@ import re
 import logging
 import pandas as pd
 import numpy as np
+import plotly.express as px
 from pathlib import Path
 from enlighten import Counter
 from make_netgraphs import _gene_attrs
@@ -110,3 +111,33 @@ def _parse_dfs(datapath, time_filter, trust_filenames, **csv_kwargs):
             dfs.append(pd.read_csv(filepath, **csv_kwargs))
         pbar.update()
     return pd.concat(dfs)
+
+
+def plot_lattice(latdf, outputfile, colors=None, bg_color=None):
+    """Plots the lattice as an image.
+    :param outputfile:
+    :param bg_color:
+    :param colors: If given, will be used to map each sigma to a value on the image. Should be a
+        dictionary or pd.Series with sigmas as indexes and integers or rgb values as values.
+    :param latdf:
+    """
+    lat = latdf.values
+    if colors is None:
+        sigs = np.unique(lat)
+        # Remove zeros
+        colors = pd.Series(np.random.random(sigs.size - 1), sigs[1:])
+    else:
+        colors = pd.Series(colors)
+
+    if bg_color is None:
+        if len(colors.shape) == 2:
+            bg_color = np.zeros(colors.shape[1])
+        else:
+            bg_color = 0
+
+    colors = colors.reindex(np.arange(colors.index.max() + 1), fill_value=bg_color)
+    cvals = colors.values
+
+    img = cvals[lat]
+    fig = px.imshow(img)
+    write_plot(fig, outputfile)

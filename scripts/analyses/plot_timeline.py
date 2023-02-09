@@ -30,7 +30,6 @@ def main():
     parser.add_argument("-n",
                         help="number of time-steps to plot (can be used to speed up plotting)",
                         type=int)
-    parser.add_argument
     output = parser.add_argument_group("output arguments",
                                        "at least one of the following must be set")
     output.add_argument("-o",

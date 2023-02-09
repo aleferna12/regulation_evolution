@@ -698,22 +698,16 @@ int Dish::CountCells() const {
     return amount;
 }
 
-int Dish::CountCellGroups() const {
-
-    int amount2 = 0, amount3 = 0;
-    vector<Cell>::const_iterator i;
-    for ((i = cell.begin(), ++i); i != cell.end(); ++i) {
-        if (i->AliveP() && i->Colour() == 2) {
-            amount2++;
-        }
-        if (i->AliveP() && i->Colour() == 3) {
-            amount3++;
-        }
-
+bool Dish::groupExtinction() const {
+    vector<int> groups {};
+    for (auto &c : cell) {
+        if (c.group > groups.size())
+            groups.push_back(0);
+        groups[c.group]++;
     }
-    if (amount2 == 0 || amount3 == 0) {
-        return 1;
-    }
+    for (auto &g : groups)
+        if (g == 0)
+            return 1;
     return 0;
 }
 
@@ -844,7 +838,6 @@ void Dish::readLattice() {
             CPM->SetNextSigma(stoi(val));
         }
     }
-    updateChemPlane();
 }
 
 void Dish::saveLattice(int Time) const {
@@ -886,6 +879,9 @@ int Dish::readCellData() {
         auto it = attrs.begin();
 
         int sigma = stoi(*it); ++it;
+        if (sigma < last_sigma)
+            throw runtime_error("celldatafile is not ordered by sigma");
+
         for (int j = 1; j < sigma - last_sigma; ++j) {
             Cell rc = Cell(*this);
             rc.alive = false;
@@ -920,7 +916,7 @@ int Dish::readCellData() {
         rc.target_area = stoi(*it); ++it;
         rc.chemmu = stod(*it); ++it;
         rc.times_divided = stoi(*it); ++it;
-        rc.colour = stoi(*it); ++it;
+        rc.group = stoi(*it); ++it;
         rc.ancestor = stoi(*it); ++it;
         // Skip self_gamma and Jmed
         it += 2;
@@ -980,7 +976,7 @@ int Dish::saveCellData(int Time) {
     vector<string> col_names{"sigma", "tau", "time_since_birth", "tvecx", "tvecy", "prevx", "prevy", "persdur",
                              "perstime", "mu", "half_div_area", "length", "last_meal", "food", "growth", "gextiming",
                              "dividecounter", "grad_conc", "meanx", "meany", "chemvecx", "chemvecy", "target_area",
-                             "chemmu", "times_divided", "colour", "ancestor", "self_gamma", "Jmed", "jkey_dec",
+                             "chemmu", "times_divided", "group", "ancestor", "self_gamma", "Jmed", "jkey_dec",
                              "jlock_dec", "neighbour_list", "Jneighbour_list", "innr", "regnr", "outnr", "in_scale_list",
                              "reg_threshold_list", "reg_w_innode_list", "reg_w_regnode_list", "out_threshold_list",
                              "out_w_regnode_list", "time"};
@@ -996,7 +992,7 @@ int Dish::saveCellData(int Time) {
              << c.half_div_area << ',' << c.length << ',' << c.last_meal << ',' << c.food << ',' << c.growth << ','
              << c.gextiming << ',' << c.dividecounter << ',' << c.grad_conc << ',' << c.meanx << ',' << c.meany << ','
              << c.chemvecx << ',' << c.chemvecy << ',' << c.target_area << ',' << c.chemmu << ','
-             << c.times_divided << ',' << c.colour << ',' << c.ancestor << ','
+             << c.times_divided << ',' << c.group << ',' << c.ancestor << ','
              << CPM->calculateGamma(c.sigma, c.sigma) << ',' << par.Jmed << ',' << c.jkey_dec << ','
              << c.jlock_dec <<  ',';
         // Need to reset everytime we save data
@@ -1063,73 +1059,6 @@ void Dish::saveCellGraveData(int Time) {
     cell_graves.clear();
 }
 
-
-int Dish::ReadCompetitionFile(char *filename) {
-    std::ifstream ifs;
-    string line, key1, lock1, key2, lock2;
-    Cell *rc;
-
-    char grnfile1[500], grnfile2[500];
-
-    // copying the contents of the
-    // string to char array
-
-    int placement, groupsize;
-
-    ifs.open(filename, std::ifstream::in);
-
-    if (ifs.is_open()) {
-        //first read the placement and group sizes
-        getline(ifs, line);
-        stringstream strstr(line);
-        strstr >> placement >> groupsize;
-
-        strstr.clear();
-        strstr.str(std::string());
-        getline(ifs, line);
-        strstr << line;
-        strstr >> grnfile1 >> grnfile2;
-        //strcpy(char_array1,grnfile1.c_str());
-        //strcpy(char_array2,grnfile2.c_str());
-
-        strstr.clear();
-        strstr.str(std::string());
-        getline(ifs, line);
-        strstr << line;
-        strstr >> key1 >> key2;
-
-        strstr.clear();
-        strstr.str(std::string());
-        getline(ifs, line);
-        strstr << line;
-        strstr >> lock1 >> lock2;
-    } else {
-        return 1;
-    }
-
-    //place cells
-    CPM->Place2Groups(placement, par.size_init_cells, groupsize);
-    CPM->ConstructInitCells(*this);
-
-    for (auto &c: cell) {
-        if (c.Sigma()) {
-            //cerr<<"Setting competition for cell "<<c.Sigma()<<endl;
-            c.setGTiming((int) (RANDOM() * par.scaling_cell_to_ca_time));
-            c.dividecounter = 0;
-            c.SetTargetArea(par.target_area); //sets target area
-            if (c.getXpos() <= par.sizex / 2.) {
-                c.ReadGenomeFromFile(grnfile1);
-                //read the key and lock into the cell
-                c.SetColour(2);
-            } else {
-                c.ReadGenomeFromFile(grnfile2);
-                c.SetColour(3);
-            }
-            c.ClearGenomeState();
-        }
-    }
-    return 0;
-}
 
 int Dish::SizeX() const { return CPM->SizeX(); }
 

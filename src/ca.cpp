@@ -1447,14 +1447,14 @@ int CellularPotts::DivideCell(int cell_sigma, BoundingBox box) {
         // THIS USED TO BE ABOVE, WHERE THE SIGN *** IS !!!
         //MAKES NEW CELL AT THE END OF ARRAY
         daughterp = new Cell(*(motherp->owner));  //this calls  Cell(...){ plane=&who; ConstructorBody()}
-        int momcol = motherp->colour;
+        int momcol = motherp->group;
         daughterp->CellBirth(*motherp);
         cell->push_back(*daughterp);  //this calls default copy constructor Cell(const Cell &src)
         // prints "Tomato"
         //this puts new cells at the end of array if there was no space to recycle
         // renew pointer to mother (because after push_back memory might be relocated)
         motherp = &((*cell)[cell_sigma]);
-        if (motherp->colour != momcol) cerr << "this is the problem" << endl;
+        if (motherp->group != momcol) cerr << "this is the problem" << endl;
     }
     // renew pointers
     delete daughterp;

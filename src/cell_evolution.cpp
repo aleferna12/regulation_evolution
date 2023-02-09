@@ -64,7 +64,22 @@ INIT {
         // THIS IS JUST FOR EXPERIMENTS
         //CPM->PlaceOneCellsAtXY(par.sizex/2,par.sizey/2., par.size_init_cells, 1);
         //CPM->PlaceOneCellsAtXY(par.sizex/4,par.sizey/4, par.size_init_cells, 2);
-        if (!strlen(par.latticefile) && !strlen(par.competitionfile)) {
+        if (strlen(par.celldatafile) and strlen(par.latticefile)) {
+            cout << "Reading backfile" << endl;
+            cout << "backup file is " << par.latticefile << endl;
+            par.starttime = readCellData();
+            cout << par.fooddatafile << endl;
+            if (!strlen(par.fooddatafile)) {
+                for (int i = 0; i < par.foodpatches; i++) {
+                    addRandomFPatch();
+                }
+            } else if (readFoodData() != par.starttime)
+                cerr << "Food data and cell data date from different times!" << endl;
+            readLattice();
+            CPM->InitializeEdgeList(false);
+            InitContactLength();
+            updateChemPlane();
+        } else {
             //THIS IS TO USE FOR NORMAL INITIALISATION
             if (par.scatter_start) {
                 CPM->PlaceCellsRandomly(par.n_init_cells, par.size_init_cells);
@@ -117,33 +132,6 @@ INIT {
             InitCellMigration();
             UpdateCellParameters(0);//update cell status //UpdateCellParameters2();
             par.starttime = 0;
-        } else if (strlen(par.competitionfile)) {
-            ReadCompetitionFile(par.competitionfile);
-            CPM->InitializeEdgeList(false);
-            cout << "done initialising edge list for competition" << endl;
-            InitContactLength();
-            cout << "done initialising contacts for competition" << endl;
-            // Initialises food plane (now the gradient plane)
-            for (int init_time = 0; init_time < 10; init_time++) {
-                CPM->AmoebaeMove2(PDEfield);  //this changes neighs
-            }
-            cout << "done with update" << endl;
-            InitCellMigration();
-            UpdateCellParameters(0);//update cell status //UpdateCellParameters2();
-            par.starttime = 0;
-        } else {
-            cout << "Reading backfile" << endl;
-            cout << "backup file is " << par.latticefile << endl;
-            par.starttime = readCellData();
-            if (!par.fooddatafile) {
-                for (int i = 0; i < par.foodpatches; i++) {
-                    addRandomFPatch();
-                }
-            } else if (readFoodData() != par.starttime)
-                cerr << "Food data and cell data date from different times!" << endl;
-            readLattice();
-            CPM->InitializeEdgeList(false);
-            InitContactLength();
         }
     } catch (const char *error) {
         cerr << "Caught exception\n";
@@ -195,14 +183,10 @@ TIMESTEP {
                     std::cerr << "Time = " << i << '\n';
                     std::cerr << "There are " << dish->CountCells() << " cells" << '\n';
 
-                    if (strlen(par.competitionfile)) {
-                        //check if one of the groups is extinct. if yes, end simulation
-                        bool extinct = dish->CountCellGroups();
-
-                        if (extinct) {
-                            std::cout << "Group extinct after " << i << " time steps. ending simulation..." << endl;
-                            exit(0);
-                        }
+                    //check if one of the groups is extinct. if yes, end simulation
+                    if (par.groupextinction and dish->groupExtinction()) {
+                        std::cout << "Group extinct after " << i << " time steps. ending simulation..." << endl;
+                        exit(0);
                     }
                 }
             } else {
