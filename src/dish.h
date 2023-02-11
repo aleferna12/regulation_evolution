@@ -87,7 +87,10 @@ public:
     void plotCellFood(Graphics *g, int start_index, int n_colors);
 
     //! Plots migrating and dividing cells.
-    void plotCellTau(Graphics *g, int div_index, int mig_index);
+    void plotCellTau(Graphics *g, int mig_index, int div_index);
+
+    //! Plots cell color according to their 'group' attribute. Only supports two groups right now.
+    void plotCellGroup(Graphics *g, int group1_tau1, int group1_tau2, int group2_tau1, int group2_tau2);
 
     void plotCellVectors(Graphics *g);
 

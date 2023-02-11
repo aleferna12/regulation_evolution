@@ -16,19 +16,19 @@ def main():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     input_ = parser.add_argument_group("input")
     input_.add_argument(
+        "cellfile",
+        help="CSV file containing the template cells (number of rows must match number "
+             "of colors in the image). The attributes of the template will be copied to all cells"
+             "in the same color group (besides sigma, which will be reassigned; and color, which"
+             "will default to the group index on the table)"
+    )
+    input_.add_argument(
         "imgfile",
         help="PNG file containing a drawing of the initial setting of the simulation."
              "Colors represent entries on the 'cellfile' table (ordered in reverse by RGB value)."
              "The background must be white and will be ignored. Be careful not to have any fading "
              "colors, as these will be interpreted as additional cell templates. The image "
              "dimensions should match those of the simulation lattice"
-    )
-    input_.add_argument(
-        "cellfile",
-        help="CSV file containing the template cells (number of rows must match number "
-             "of colors in the image). The attributes of the template will be copied to all cells"
-             "in the same color group (besides sigma, which will be reassigned; and color, which"
-             "will default to the group index on the table)"
     )
     output = parser.add_argument_group("output")
     output.add_argument("outcellfile", help="CSV output file containing cell data")
@@ -69,7 +69,8 @@ def make_competition(imgfile, cellfile, cell_length=7):
 
     if len(colors) - 1 != len(attrdf):
         raise ValueError("number of non-white pixel colors in 'imgfile' and entries in 'cellfile' "
-                         "table must match")
+                         f"table must match (got {len(colors - 1)} and {len(attrdf)} "
+                         "respectively)")
 
     sq_lat = make_square_lat(img.shape[0], cell_length)
     # Mask sq_lat with indexes
@@ -85,7 +86,7 @@ def make_competition(imgfile, cellfile, cell_length=7):
                 continue
             cell_attrs = attrdf.iloc[group - 1].copy()
             cell_attrs["sigma"] = sigma
-            cell_attrs["colour"] = group
+            cell_attrs["group"] = group - 1
             cells.append(cell_attrs)
         pbar.update()
     celldf = pd.DataFrame(cells).set_index("sigma", drop=False).sort_index()

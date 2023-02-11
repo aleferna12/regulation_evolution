@@ -56,7 +56,7 @@ public:
         owner = &who;
 
         alive = true;
-        group = 1;
+        group = 0;
 
         meanx = 0.;
         meany = 0.;

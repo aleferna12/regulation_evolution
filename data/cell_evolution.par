@@ -7,8 +7,8 @@ mcs = 20000000
 season_duration = 30000
 
 ### grid size ###
-sizex = 1000
-sizey = 1000
+sizex = 250
+sizey = 250
 
 
 
@@ -219,11 +219,11 @@ latticedir = ../runs/backup
 # Use the scripts/colortable module to generate these from colorir palettes
 colortable_filename = ../data/colortable.ctb
 # Which plots to make, specified as a space-delimited string
-# Possible values for the list are: tau food
-plots = tau food
+# Possible values for the list are: tau food group
+plots = tau
 
 # Whether to draw the chemotactic gradient
-chemgrad = false
+chemgrad = true
 # Whether to draw concentric circles around the food
 chemcircles = true
 # The following are attributes used to draw the circles, they are ignored if chemcircles is false

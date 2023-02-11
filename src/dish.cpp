@@ -115,7 +115,6 @@ pair<int, double> Dish::closestFPatch(int x, int y) const {
             }
         }
     }
-
     return {res_id, sqrt(mindist_sq)};
 }
 
@@ -251,9 +250,11 @@ void Dish::makePlots(int Time, Graphics *g) {
     for (auto &plot : stringToVector<string>(par.plots, ' ')) {
         // The idea is to change these indexes if we ever need to update the colortable format
         if (plot == string("tau"))
-            plotCellTau(g, 72, 72 + 8);
+            plotCellTau(g, 72, 80);
         else if (plot == string("food"))
             plotCellFood(g, 72, 16);
+        else if (plot == string("group"))
+            plotCellGroup(g, 72, 80, 3, 4);
         else
             throw runtime_error("Unrecognized plot name in parameter 'plots'");
         plotCellBorders(g);
@@ -324,8 +325,10 @@ void Dish::plotFoodPLane(Graphics *g, int color_index) const {
 }
 
 
-void Dish::plotCellTau(Graphics *g, int div_index, int mig_index) {
+void Dish::plotCellTau(Graphics *g, int mig_index, int div_index) {
     for (auto &c : cell) {
+        if (not c.AliveP())
+            continue;
         int color_i;
         if (c.getTau() == DIVIDE)
             color_i = div_index;
@@ -343,8 +346,10 @@ void Dish::plotCellTau(Graphics *g, int div_index, int mig_index) {
 
 void Dish::plotCellFood(Graphics *g, int start_index, int n_colors) {
     for (auto &c : cell) {
+        if (not c.AliveP())
+            continue;
         int tau_index = start_index;
-        if (c.getTau() == MIGRATE)
+        if (c.getTau() == DIVIDE)
             tau_index += n_colors / 2;
         double perc = min(1., c.food / par.foodstart);
         int color_i = tau_index + int(round((n_colors/2. - 1) * (1 - perc)));
@@ -354,6 +359,31 @@ void Dish::plotCellFood(Graphics *g, int start_index, int n_colors) {
             if (CPM->Sigma(i, j) == c.sigma) {
                 g->Point(color_i, i, j);
             }
+        }
+    }
+}
+
+
+void Dish::plotCellGroup(Graphics *g, int group1_tau1, int group1_tau2, int group2_tau1, int group2_tau2) {
+    for (auto &c : cell) {
+        if (not c.AliveP())
+            continue;
+        int color_i;
+        if (c.group == 0)
+            if (c.tau == MIGRATE)
+                color_i = group1_tau1;
+            else
+                color_i = group1_tau2;
+        else
+            if (c.tau == MIGRATE)
+                color_i = group2_tau1;
+            else
+                color_i = group2_tau2;
+
+        auto bb = c.getBoundingBox();
+        for (int i = bb.getMinX(); i < bb.getMaxX(); ++i) for (int j = bb.getMinY(); j < bb.getMaxY(); ++j) {
+            if (CPM->Sigma(i, j) == c.sigma)
+                g->Point(color_i, i, j);
         }
     }
 }
