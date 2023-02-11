@@ -111,7 +111,7 @@ Parameter::Parameter() {
     foodpatchperiod = 1000;
     foodpatchlength = 1;
     foodperspot = 1;
-    maxfood = 10000;
+    maxfoodpatches = 1;
     foodstart = 1000;
     eatperiod = 1000;
     nodivisions = false;
@@ -228,7 +228,7 @@ void Parameter::PrintWelcomeStatement() {
             << " -foodpatchlength [INT_NUMBER] side of each food patch (total amount of spots per patch will be this squared)"
             << endl;
     cerr << " -foodperspot [INT_NUMBER] how much food each spot contains" << endl;
-    cerr << " -maxfood [INT_NUMBER] maximum food allowed in the system" << endl;
+    cerr << " -maxfoodpatches [INT_NUMBER] maximum number of food patches allowed to coexist in the system" << endl;
     cerr << " -foodstart [INT_NUMBER] initial food for cells" << endl;
     cerr << " -eatperiod [INT_NUMBER] how often a cell can eat" << endl;
     cerr << " -gradnoise [FLOAT_NUMBER] chances that any grid point has gradient, rather than being empty" << endl;
@@ -582,14 +582,14 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
             }
             foodperspot = atoi(argv[i]);
             cerr << "New value for foodperspot: " << foodperspot << endl;
-        } else if (0 == strcmp(argv[i], "-maxfood")) {
+        } else if (0 == strcmp(argv[i], "-maxfoodpatches")) {
             i++;
             if (i == argc) {
-                cerr << "Something odd in maxfood?" << endl;
+                cerr << "Something odd in maxfoodpatches?" << endl;
                 return 1;  //check if end of arguments, exit with error in case
             }
-            maxfood = atoi(argv[i]);
-            cerr << "New value for maxfood: " << maxfood << endl;
+            maxfoodpatches = atoi(argv[i]);
+            cerr << "New value for maxfoodpatches: " << maxfoodpatches << endl;
         } else if (0 == strcmp(argv[i], "-foodstart")) {
             i++;
             if (i == argc) {
@@ -827,7 +827,7 @@ void Parameter::Read(const char *filename) {
     foodpatchperiod = igetpar(fp, "foodpatchperiod", 1000, true);
     foodpatchlength = igetpar(fp, "foodpatchlength", 1, true);
     foodperspot = igetpar(fp, "foodperspot", 1, true);
-    maxfood = igetpar(fp, "maxfood", 10000, true);
+    maxfoodpatches = igetpar(fp, "maxfoodpatches", 10000, true);
     foodstart = igetpar(fp, "foodstart", 1000, true);
     eatperiod = igetpar(fp, "eatperiod", 1000, true);
     min_contact_duration_for_preying = igetpar(fp, "min_contact_duration_for_preying", 1., true);
@@ -946,7 +946,7 @@ void Parameter::Write(ostream &os) const {
     os << " foodpatchperiod = " << foodpatchperiod << endl;
     os << " foodpatchlength = " << foodpatchlength << endl;
     os << " foodperspot = " << foodperspot << endl;
-    os << " maxfood = " << maxfood << endl;
+    os << " maxfoodpatches = " << maxfoodpatches << endl;
     os << " foodstart = " << foodstart << endl;
     os << " eatperiod = " << eatperiod << endl;
     os << " divisioncolour = " << divisioncolour << endl;

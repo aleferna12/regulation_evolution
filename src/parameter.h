@@ -109,7 +109,7 @@ public:
     int foodperspot;
     int foodstart;
     int eatperiod;
-    int maxfood;
+    int maxfoodpatches;
     bool nodivisions; //whether to NOT execute divisions
     int min_contact_duration_for_preying;
     double frac_contlen_eaten;

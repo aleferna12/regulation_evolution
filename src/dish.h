@@ -165,7 +165,15 @@ public:
 
     void removeFPatch(int id);
 
-    int getFoodLeft() {
+    int getFoodPatches() const {
+        int fps = 0;
+        for (auto &fp : fpatches)
+            if (not fp.empty)
+                ++fps;
+        return fps;
+    }
+
+    int getFoodLeft() const {
         int food = 0;
         for (auto &fp: fpatches)
             food += fp.getFoodLeft();

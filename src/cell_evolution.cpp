@@ -57,7 +57,6 @@ using namespace std;
 
 INIT {
     try {
-
         // Define initial distribution of cells
         //CPM->GrowInCells(par.n_init_cells,par.size_init_cells,par.subfield);
 
@@ -140,7 +139,6 @@ INIT {
     }
 }
 
-static int last_added_fp = 0;
 
 TIMESTEP {
     try {
@@ -166,15 +164,16 @@ TIMESTEP {
 
         dish->UpdateNeighDuration();
 
+        static int last_added_fp = 0;
         if (i % 25 == 0) {
-            double emptiness = 1. - dish->getFoodLeft() / (double) par.maxfood;
+            double emptiness = 1. - dish->getFoodPatches() / (double) par.maxfoodpatches;
             if (emptiness >= 0) {
                 int timer = int(par.foodpatchperiod / emptiness);
                 if (i - last_added_fp > timer) {
-                    last_added_fp = i;
                     dish->addRandomFPatch();
                     // TODO: Change to only update around gradient (actually do this inside addFPatch)
                     dish->updateChemPlane();
+                    last_added_fp = i;
                 }
             }
 

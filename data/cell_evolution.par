@@ -158,15 +158,15 @@ gradnoise = 1.0
 gradscale = 5
 # Initial number of food patches resources placed in the field
 foodpatches = 20
-# New food patch timer (a new patch will be created at most every X MCS, less frequently if there is food on the lattice already)
-foodpatchperiod = 3000
 # Side of each food patch (total amount of spots per patch will be this squared)
 foodpatchlength = 10
 # How much food each spot contains
 # A normal range for the total food of the patch is 100_000 - 1_000_000, so calculate from that
 foodperspot = 25
-# Max food allowed in the system (regulates foodpatchperiod)
-maxfood = 16000
+# Maximum number of food patches allowed to coexist in the system
+maxfoodpatches = 20
+# New food patch timer (a new patch will be created at most every X MCS, less frequently if there is food on the lattice already)
+foodpatchperiod = 3000
 # How much food does each cell start with?
 foodstart = 2000
 # How often in MCS we deduct 1 food from each cell
