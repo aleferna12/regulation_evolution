@@ -98,18 +98,22 @@ def _parse_dfs(datapath, time_filter, trust_filenames, **csv_kwargs):
 
     dfs = []
     filepaths = list(datapath.iterdir())
-    pbar = Counter(total=len(filepaths), desc="CSV files iterated")
+    total = len(time_filter) if time_filter is not None else len(filepaths)
+    pbar = Counter(total=total, desc="CSV files iterated")
     for filepath in filepaths:
+        # Some very confusing conditionals to speed up processing
+        # Dont mess with this, it was very hard to figure out the optimal way to do it
+        add = False
         if time_filter is None:
-            dfs.append(pd.read_csv(filepath, **csv_kwargs))
-        # Skips unecessary calls to pd.read_csv by trusting file name
-        elif not trust_filenames:
-            df = pd.read_csv(filepath, **csv_kwargs)
-            if df["time"][0] in time_filter:
-                dfs.append(df)
-        elif int(re.search(r"\d+", filepath.name).group()) in time_filter:
-            dfs.append(pd.read_csv(filepath, **csv_kwargs))
-        pbar.update()
+            add = True
+        elif trust_filenames:
+            if int(re.search(r"\d+", filepath.name).group()) not in time_filter:
+                continue
+            add = True
+        df = pd.read_csv(filepath, **csv_kwargs)
+        if add or df["time"][0] in time_filter:
+            dfs.append(df)
+            pbar.update()
     return pd.concat(dfs)
 
 

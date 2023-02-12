@@ -93,7 +93,7 @@ scaling_cell_to_ca_time = 20  # scaling factor for: freq update food plane, pred
 howmany_makeit_for_nextgen = 100
 popsize = 100
 
-n_init_cells = 3
+n_init_cells = 30
 size_init_cells = 25
 
 #Initial configuration of cells, see ca.cpp placecellsorderly()

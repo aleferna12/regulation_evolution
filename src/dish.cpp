@@ -811,7 +811,15 @@ int Dish::readFoodData() {
     int id = 0;
     while (getline(file, line)) {
         auto attrs = stringToVector<string>(line, ',');
-        auto sigmas = stringToVector<int>(attrs[3], ' ');
+        auto sigma_vec = stringToVector<int>(attrs[3], ' ');
+        int *sigmas = nullptr;
+        // If sigma attribute was left empty we reinitialize the food patch
+        if (not sigma_vec.empty()) {
+            if (sigma_vec.size() != stoi(attrs[2]))
+                throw runtime_error("Failed to initialize food patch, sigma list and length don't match");
+            sigmas = &sigma_vec[0];
+        }
+
         fpatches.emplace_back(
             this,
             id,
@@ -819,7 +827,7 @@ int Dish::readFoodData() {
             stoi(attrs[1]),
             stoi(attrs[2]),
             par.foodperspot,
-            &sigmas[0]
+            sigmas
         );
         cur_time = stoi(attrs[4]);
         id++;
