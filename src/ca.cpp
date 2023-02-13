@@ -97,10 +97,13 @@ CellularPotts::CellularPotts(vector<Cell> *cells,
         throw runtime_error("'key_lock_len' parameter and length of 'key_lock_rule' parameter dont match");
 
     max_key_lock_dec = int(pow(2, par.key_lock_len));
-    KL_strengths = new int[max_key_lock_dec * max_key_lock_dec];
+    KL_strengths = new int[max_key_lock_dec * max_key_lock_dec] {};
     for (int i = 0; i < max_key_lock_dec; ++i)
-        for (int j = 0; j < max_key_lock_dec; ++j)
-            KL_strengths[i * max_key_lock_dec + j] = calculateKLStrength(i, j, rule);
+        for (int j = 0; j < max_key_lock_dec; ++j) {
+            int index = i * max_key_lock_dec + j;
+            if (par.evolvable_adh)
+                KL_strengths[index] = calculateKLStrength(i, j, rule);
+        }
 
     BaseInitialisation(cells);
     sizex = sx;

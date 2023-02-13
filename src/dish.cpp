@@ -592,51 +592,51 @@ void Dish::UpdateCellParameters(int Time) {
     vector<int> to_divide;
     vector<int> to_kill;
     array<double, 2> inputs = {0., 0.}; //was inputs(2,0.);
-    int interval;
 
     //cout<<"Update Cell parameters "<<Time<<endl;
     for (c = cell.begin(), ++c; c != cell.end(); ++c) {
         if (c->AliveP()) {
-            // Death checks
-            int death_period = 25;
-            string death_reason;
-            // notice that this keeps the cell in the cell array, it only removes its sigma from the field
-            if (c->Area() < par.min_area_for_life) {
-                death_reason = "squeezed";
-            } else if (c->food <= 0) {
-                death_reason = "starved";
-            }
-            // Mark cell to die
-            // Only calculate prob every 25 mcs
-            // TODO: Test if its still working after making asynchronous (maybe plot average lifespan or something)
-            else if (c->time_since_birth % death_period == 0 and RANDOM() < par.gompertz_alpha * pow(M_E, par.gompertz_beta * c->time_since_birth / death_period)) {
-                death_reason = "old";
-            }
-            if (not death_reason.empty()) {
-                to_kill.push_back(c->Sigma());
-                CellGravestone cg = {
-                    c->Sigma(),
-                    c->getTau(),
-                    c->time_since_birth,
-                    Time,
-                    CPM->calculateGamma(c->Sigma(), c->Sigma()),
-                    death_reason
-                };
-                cell_graves.push_back(std::move(cg));
-                continue;
-            }
-
             c->time_since_birth++;
-            interval = Time + c->Gextiming();
+            int interval = Time + c->Gextiming();
             //update the network withing each cell, if it is the right time
             if (!(interval % par.scaling_cell_to_ca_time)) {
+                // Death checks
+                string death_reason;
+                if (c->Area() < par.min_area_for_life) {
+                    death_reason = "squeezed";
+                } else if (c->food <= 0) {
+                    death_reason = "starved";
+                }
+                // We divide by scaling_cell_to_time to ensure that cells dont live longer depending on this parameter
+                else if (RANDOM() < par.gompertz_alpha * pow(M_E, par.gompertz_beta * c->time_since_birth / par.scaling_cell_to_ca_time)) {
+                    death_reason = "old";
+                }
+                if (not death_reason.empty()) {
+                    // Mark cell to die
+                    // notice that this keeps the cell in the cell array, it only removes its sigma from the field
+                    to_kill.push_back(c->Sigma());
+                    CellGravestone cg = {
+                        c->Sigma(),
+                        c->getTau(),
+                        c->time_since_birth,
+                        Time,
+                        CPM->calculateGamma(c->Sigma(), c->Sigma()),
+                        death_reason
+                    };
+                    cell_graves.push_back(std::move(cg));
+                    continue;
+                }
                 //calculate inputs
                 inputs[0] = (double) c->grad_conc;
+                // Normalize food by how many divisions the cell could afford (not considering that food gets
+                // halfed after each division)
                 double division_cost =
                     par.scaling_cell_to_ca_time * (par.divtime + par.divdur) / (double) par.metabperiod;
                 inputs[1] = c->food / division_cost;
                 c->UpdateGenes(inputs, true);
-                c->FinishGeneAndJDecsUpdate();
+                c->FinishGeneUpdate();
+                if (par.evolvable_adh)
+                    c->updateJDecs();
 
                 //cell decides to divide
                 if (c->genome.outputnodes[0].Boolstate == 1) {

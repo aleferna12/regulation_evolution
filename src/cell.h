@@ -628,9 +628,8 @@ public:
         genome.UpdateGeneExpression(input, sync);
     }
 
-    inline void FinishGeneAndJDecsUpdate() {
+    inline void FinishGeneUpdate() {
         genome.FinishUpdate();
-        updateJDecs();
     }
 
     inline void GetGeneOutput(array<int, 2> &out) {

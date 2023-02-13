@@ -67,6 +67,8 @@ min_area_for_life = 4
 Jmed = 14
 # Term in the Jcell_cell adhesion equation
 Jalpha = 7
+# If false adhesion is no longer an evolvable trait the J value for cell-cell interactions becomes Jalpha
+evolvable_adh = true
 
 # Determines the length of the key and of the lock
 key_lock_len = 6
@@ -84,7 +86,9 @@ key_lock_weights = 1 2 3 4 5 6
 nr_regnodes = 14
 divtime = 20	# scaled nr of steps before a cell initiates division
 divdur = 1000     # duration of division, during which a cell stops moving
-scaling_cell_to_ca_time = 20  # scaling factor for: freq update food plane, predation, feeding and growth/divide
+# Scaling factor for: freq update cell parameters and check for death
+# However increasing this parameter does NOT change life expectancy of cells
+scaling_cell_to_ca_time = 20
 
 ########################
 ## initial conditions ##
@@ -93,7 +97,7 @@ scaling_cell_to_ca_time = 20  # scaling factor for: freq update food plane, pred
 howmany_makeit_for_nextgen = 100
 popsize = 100
 
-n_init_cells = 30
+n_init_cells = 60
 size_init_cells = 25
 
 #Initial configuration of cells, see ca.cpp placecellsorderly()
@@ -162,7 +166,7 @@ foodpatches = 20
 maxfoodpatches = 20
 # New food patch timer (a new patch will be created at most every X MCS, less frequently if there is food on the lattice already)
 foodpatchperiod = 3000
-# Side of each food patch (total amount of spots per patch will be this squared)
+# Diameter of each food patch (total amount of spots per patch will approx. = pi * (length/2)^2)
 foodpatchlength = 10
 # How much food each spot contains
 # A normal range for the total food of the patch is 100_000 - 1_000_000, so calculate from that

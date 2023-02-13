@@ -84,6 +84,7 @@ public:
     bool store;
     bool divisioncolour;
     bool groupextinction;
+    bool evolvable_adh;
     char *genomefile;
     int nr_regnodes; //how many regulatory nodes in genomes
     int divtime; //how many steps does it take before a cell can start dividing?

@@ -1,5 +1,7 @@
 import argparse
 import logging
+from typing import List
+
 import numpy as np
 import pandas as pd
 from matplotlib.pyplot import imread
@@ -105,6 +107,27 @@ def make_square_lat(lat_size, cell_length):
     cells = np.arange(1, cells_in_lat**2 + 1).reshape((cells_in_lat, cells_in_lat))
     lat = np.kron(cells, np.ones((cell_length, cell_length)))
     return lat[:lat_size, :lat_size].astype(int)
+
+
+def sample_template(celldfs: List[pd.DataFrame], outputfile, food=200):
+    """Tries to sample a median cell from cell data frames and resets some attributes."""
+    templates = []
+    for i, celldf in enumerate(celldfs, 1):
+        celldf = celldf[celldf.tau == 1]
+        # Sort by closest to median food
+        med_food = celldf.food.median()
+        template = celldf.iloc[(celldf.food - med_food).abs().argsort()[0]]
+        template.sigma = i
+        templates.append(template)
+    tdf = pd.DataFrame(templates)
+    tdf.food = food
+    tdf.time = 0
+    tdf.time_since_birth = 0
+    tdf.last_meal = 0
+    tdf.times_divided = 0
+    tdf.dividecounter = 0
+    tdf.ancestor = tdf.sigma
+    tdf.to_csv(outputfile, index=False)
 
 
 if __name__ == "__main__":

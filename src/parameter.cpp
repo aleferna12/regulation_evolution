@@ -91,6 +91,7 @@ Parameter::Parameter() {
     scatter_start = true;
     chemgrad = true;
     groupextinction = false;
+    evolvable_adh = true;
     chemcircles = true;
     circle_dist = 40;
     circle_segments = 15;
@@ -522,6 +523,9 @@ int Parameter::ReadArguments(int argc, char *argv[]) {
         } else if (0 == strcmp(argv[i], "-groupextinction")) {
             groupextinction = true;
             cerr << "Stopping sim on group extinction" << endl;
+        }  else if (0 == strcmp(argv[i], "-noevolvable_adh")) {
+            evolvable_adh = false;
+            cerr << "Adhesion is not evolvable" << endl;
         } else if (0 == strcmp(argv[i], "-nochemcircles")) {
             chemcircles = false;
             cerr << "Not plotting circles around food patches" << endl;
@@ -809,6 +813,7 @@ void Parameter::Read(const char *filename) {
     scatter_start = bgetpar(fp, "scatter_start", true, true);
     chemgrad = bgetpar(fp, "chemgrad", true, true);
     groupextinction = bgetpar(fp, "groupextinction", false, true);
+    evolvable_adh = bgetpar(fp, "evolvable_adh", true, true);
     chemcircles = bgetpar(fp, "chemcircles", true, true);
     motiledeath = fgetpar(fp, "motiledeath", 1.0, true);
     dividingdeath = fgetpar(fp, "dividingdeath", 0.0, true);

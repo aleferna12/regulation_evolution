@@ -15,6 +15,8 @@ from fileio import *
 
 CellCluster = Set[int]
 logger = logging.getLogger(__name__)
+palette = px.colors.qualitative.Plotly
+palette[0], palette[2] = palette[2], palette[0]
 
 
 def main():
@@ -67,14 +69,12 @@ def plot_timeline(celldf: pd.DataFrame, outputfile):
                                                                  "Total food accumulated",
                                                                  "",
                                                                  "Mean food per cell"])
-    colors = px.colors.qualitative.Plotly
-
     # Plot food stuff
     mean_foods = celldf.groupby("time")["food"].mean()
     fig.add_trace(go.Scatter(
         x=mean_foods.index,
         y=mean_foods,
-        line_color=colors[0],
+        line_color=palette[0],
         name="all",
         legendgroup=0,
     ), row=3, col=1)
@@ -90,7 +90,7 @@ def plot_timeline(celldf: pd.DataFrame, outputfile):
             fig.add_trace(go.Scatter(
                 x=tau_foods.loc[tau].index,
                 y=tau_foods.loc[tau, col],
-                line_color=colors[tau],
+                line_color=palette[tau],
                 name="mig" if tau == 1 else "div",
                 stackgroup=None if col == "mean" else col,
                 legendgroup=tau,
@@ -104,7 +104,7 @@ def plot_timeline(celldf: pd.DataFrame, outputfile):
         y=med_gammas,
         name="all",
         legendgroup=0,
-        line_color=colors[0],
+        line_color=palette[0],
         showlegend=False
     ), row=1, col=2)
     tau_gammas = celldf.groupby(["tau", celldf["time"].astype("category")])["self_gamma"].median()
@@ -114,7 +114,7 @@ def plot_timeline(celldf: pd.DataFrame, outputfile):
             y=tau_gammas[tau],
             name="mig" if tau == 1 else "div",
             legendgroup=tau,
-            line_color=colors[tau],
+            line_color=palette[tau],
             showlegend=False
         ), row=1, col=2)
 
@@ -202,7 +202,6 @@ def plot_adhesion(celldf: pd.DataFrame, outputfile, top_n=5, min_cluster=50):
         pbar.update()
 
     # Plot prevalence of multicellularity
-    colors = px.colors.qualitative.Plotly
     fig.add_trace(go.Scatter(
         x=x,
         y=multicel_perc,
@@ -218,7 +217,7 @@ def plot_adhesion(celldf: pd.DataFrame, outputfile, top_n=5, min_cluster=50):
             y=ys,
             name=name,
             legendgroup=i,
-            line_color=colors[i]
+            line_color=palette[i]
         ), row=2, col=1)
 
     # Plot clusters
