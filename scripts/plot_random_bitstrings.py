@@ -1,6 +1,5 @@
 import plotly.express as px
 import numpy as np
-from pathlib import Path
 
 LEN = 12
 POP = 500000

@@ -714,7 +714,6 @@ int Dish::addFPatch(int x, int y) {
 }
 
 int Dish::CountCells() const {
-
     int amount = 0;
     vector<Cell>::const_iterator i;
     for ((i = cell.begin(), ++i); i != cell.end(); ++i) {
@@ -729,16 +728,12 @@ int Dish::CountCells() const {
 }
 
 bool Dish::groupExtinction() const {
-    vector<int> groups {};
+    int groups[2] {};
     for (auto &c : cell) {
-        if (c.group > groups.size())
-            groups.push_back(0);
-        groups[c.group]++;
+        if (c.AliveP())
+            groups[c.group]++;
     }
-    for (auto &g : groups)
-        if (g == 0)
-            return 1;
-    return 0;
+    return not (groups[0] or groups[1]);
 }
 
 int Dish::Area() const {

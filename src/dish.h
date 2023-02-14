@@ -108,7 +108,8 @@ public:
     //! Returns the number of cells in the dish, excluding apoptosed cells.
     int CountCells() const;
 
-//count how many cells of each group there are (when running competition), return 1 when one is extinct
+    //! Count how many cells of each group there are (when running competition), return 1 when one is extinct.
+    //! Assumes two groups!
     bool groupExtinction() const;
 
     void CellsEat(int time); // Based on the old CellsEat2
