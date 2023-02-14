@@ -127,6 +127,8 @@ zero_persistence_past_theline = 0
 mut_rate = 0.01
 evolsim = 1
 evolreg = true
+# Terminate simulation if one of the cell groups is extinct?
+groupextinction = true
 
 #genome mutation
 mu = 0.1
