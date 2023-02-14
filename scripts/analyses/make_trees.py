@@ -64,7 +64,7 @@ def main():
                         help="tree output format (following etetoolkit conventions)")
     parser.add_argument("-t",
                         "--last-time",
-                        default=float("inf"),
+                        default=-1,
                         type=int,
                         help="last time point to look at when making the trees (i.e. the present)")
     args = parser.parse_args()

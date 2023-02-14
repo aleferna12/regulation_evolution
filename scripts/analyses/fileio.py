@@ -72,11 +72,13 @@ def get_time_points(datapath):
     return sorted(times)
 
 
-def build_time_filter(time_points, start=0, end=float("inf"), n=None):
+def build_time_filter(time_points, start=0, end=-1, n=None):
     """Selects 'n' interspaced time points in the range ['start', 'end']."""
+    if end == -1:
+        end = float("inf")
+
     time_points = np.unique(time_points)
     time_points = time_points[(time_points >= start) & (time_points <= end)]
-
     if n is None:
         n = len(time_points)
     else:
