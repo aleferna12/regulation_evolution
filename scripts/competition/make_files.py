@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.pyplot import imread
 from enlighten import Counter
-from fileio import parse_cell_data
+from scripts.analyses.fileio import parse_cell_data
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    parser = argparse.ArgumentParser(prog="make_competition",
+    parser = argparse.ArgumentParser(prog="make_files",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     input_ = parser.add_argument_group("input")
     input_.add_argument(
@@ -110,7 +110,7 @@ def make_square_lat(lat_size, cell_length):
 
 
 def sample_template(celldfs: List[pd.DataFrame], outputfile, food=200):
-    """Tries to sample a median cell from cell data frames and resets some attributes."""
+    """Tries to sample a good cell from cell data frames and resets some attributes."""
     templates = []
     for i, celldf in enumerate(celldfs, 1):
         celldf = celldf[celldf.tau == 1]

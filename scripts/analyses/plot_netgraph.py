@@ -3,7 +3,6 @@ import logging
 import networkx as nx
 import matplotlib.pyplot as plt
 from pathlib import Path
-
 import numpy as np
 from enlighten import Counter
 from colorir import *

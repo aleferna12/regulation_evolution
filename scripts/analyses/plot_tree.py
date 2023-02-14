@@ -1,3 +1,4 @@
+import argparse
 import sys
 import logging
 import re
@@ -15,23 +16,39 @@ _cs = Palette.load()
 def main():
     logging.basicConfig(level=logging.INFO)
 
-    treepath = sys.argv[1]
-    datafile = sys.argv[2]
-    outpath = sys.argv[3]
-    min_cluster = int(sys.argv[4]) if len(sys.argv) > 4 else 2
-    colored = False if len(sys.argv) > 5 and sys.argv[5] in ["false", '0'] else True
-    reroot = True if len(sys.argv) > 6 and sys.argv[6] in ["true", '1'] else False
+    parser = argparse.ArgumentParser(prog="plot_tree",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("treepath", help="NEWICK file to be plotted")
+    parser.add_argument(
+        "datafile",
+        help="CSV file containing the cell data from the most recent time-step present in the tree"
+    )
+    parser.add_argument("outpath", help="output image file")
+    parser.add_argument("-m",
+                        "--min-cluster",
+                        default=2,
+                        type=int,
+                        help="minimum number of cells in a cluster for it to be assigned a color")
+    parser.add_argument("-c",
+                        "--no-color",
+                        action="store_true",
+                        help="do not plot cluster colors, branches only")
+    parser.add_argument("-r",
+                        "--reroot",
+                        action="store_true",
+                        help="reroot the tree on a mid-point before plotting (not recommended)")
+    args = parser.parse_args()
 
     logger.info("Reading tree file")
-    tree = Tree(treepath, format=5)
+    tree = Tree(args.treepath, format=5)
     # When tree is constructed by neighbour joining they are unrooted so we must estimate
-    if reroot:
+    if args.reroot:
         mid = tree.get_midpoint_outgroup()
         tree.set_outgroup(mid)
 
-    celldf = parse_cell_data(datafile)
+    celldf = parse_cell_data(args.datafile)
     clusters = get_adhering_clusters(celldf)
-    plot_tree(tree, clusters, outpath, min_cluster, colored)
+    plot_tree(tree, clusters, args.outpath, args.min_cluster, not args.no_color)
 
     logger.info("Finished")
 

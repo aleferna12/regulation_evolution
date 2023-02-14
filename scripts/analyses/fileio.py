@@ -5,9 +5,14 @@ import numpy as np
 import plotly.express as px
 from pathlib import Path
 from enlighten import Counter
-from make_netgraphs import _gene_attrs
 
 logger = logging.getLogger(__name__)
+_gene_attrs = ["in_scale_list",
+               "reg_threshold_list",
+               "reg_w_innode_list",
+               "reg_w_regnode_list",
+               "out_threshold_list",
+               "out_w_regnode_list"]
 _str_attrs = _gene_attrs + ["neighbour_list", "Jneighbour_list"]
 
 
