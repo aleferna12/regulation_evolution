@@ -226,7 +226,7 @@ latticedir = ../runs/backup
 colortable_filename = ../data/colortable.ctb
 # Which plots to make, specified as a space-delimited string
 # Possible values for the list are: tau food group
-plots = tau
+plots = group
 
 # Whether to draw the chemotactic gradient
 chemgrad = true

@@ -733,7 +733,7 @@ bool Dish::groupExtinction() const {
         if (c.AliveP())
             groups[c.group]++;
     }
-    return not (groups[0] or groups[1]);
+    return not (groups[0] and groups[1]);
 }
 
 int Dish::Area() const {

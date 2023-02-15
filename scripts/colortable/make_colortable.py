@@ -4,6 +4,7 @@ from colorir import *
 config.DEFAULT_PALETTES_DIR = Path(__file__).resolve().parent / "palettes"
 
 
+# Make changes to this function to create different palettes
 def main():
     pal = StackPalette.load("categ8") \
           + StackPalette.load("chemgrad64_2") \
