@@ -6,8 +6,10 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 from scripts.fileio import *
+from colorir import *
 
 logger = logging.getLogger(__name__)
+colors = px.colors.qualitative.Vivid
 
 
 def get_parser():
@@ -38,17 +40,17 @@ def plot_deaths(gravedf: pd.DataFrame, outputfile, bin_size):
     x = ["%i - %i mMCS" % (ti.left / 1000000, ti.right / 1000000)
          for ti in intervals.cat.categories]
 
-    fig = make_subplots(3,
-                        1,
-                        shared_xaxes=True,
-                        subplot_titles=["Number of deaths",
-                                        "Cause of death in %",
-                                        "Mean age of death"])
+    fig = make_subplots(
+        3,
+        1,
+        shared_xaxes=True,
+        subplot_titles=["Number of deaths", "Cause of death in %", "Mean age of death"]
+    )
 
     # Plot reason of death
     reasons = gravedf.groupby(["reason", intervals]).size()
-    for i, reason in enumerate(gravedf["reason"].unique()):
-        color = px.colors.qualitative.Plotly[i]
+    for i, reason in enumerate(np.sort(gravedf["reason"].unique())):
+        color = colors[i]
         fig.add_trace(go.Scatter(
             x=x,
             y=reasons[reason],

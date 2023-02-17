@@ -15,8 +15,8 @@ from scripts.fileio import *
 
 CellCluster = Set[int]
 logger = logging.getLogger(__name__)
-palette = px.colors.qualitative.Plotly
-palette[0], palette[2] = palette[2], palette[0]
+colors = px.colors.qualitative.Plotly
+colors[0], colors[2] = colors[2], colors[0]
 
 
 def get_parser():
@@ -83,7 +83,7 @@ def plot_timeline(celldf: pd.DataFrame, outputfile):
     fig.add_trace(go.Scatter(
         x=mean_foods.index,
         y=mean_foods,
-        line_color=palette[0],
+        line_color=colors[0],
         name="all",
         legendgroup=0,
     ), row=3, col=1)
@@ -99,7 +99,7 @@ def plot_timeline(celldf: pd.DataFrame, outputfile):
             fig.add_trace(go.Scatter(
                 x=tau_foods.loc[tau].index,
                 y=tau_foods.loc[tau, col],
-                line_color=palette[tau],
+                line_color=colors[tau],
                 name="mig" if tau == 1 else "div",
                 stackgroup=None if col == "mean" else col,
                 legendgroup=tau,
@@ -113,7 +113,7 @@ def plot_timeline(celldf: pd.DataFrame, outputfile):
         y=med_gammas,
         name="all",
         legendgroup=0,
-        line_color=palette[0],
+        line_color=colors[0],
         showlegend=False
     ), row=1, col=2)
     tau_gammas = celldf.groupby(["tau", celldf["time"].astype("category")])["self_gamma"].median()
@@ -123,7 +123,7 @@ def plot_timeline(celldf: pd.DataFrame, outputfile):
             y=tau_gammas[tau],
             name="mig" if tau == 1 else "div",
             legendgroup=tau,
-            line_color=palette[tau],
+            line_color=colors[tau],
             showlegend=False
         ), row=1, col=2)
 
@@ -226,7 +226,7 @@ def plot_adhesion(celldf: pd.DataFrame, outputfile, top_n=5, min_cluster=50):
             y=ys,
             name=name,
             legendgroup=i,
-            line_color=palette[i]
+            line_color=colors[i]
         ), row=2, col=1)
 
     # Plot clusters
@@ -310,17 +310,17 @@ def get_cluster_colors(clusters: list[CellCluster], min_cluster=2, outcast_color
     n_colors = len([c for c in clusters if len(c) >= min_cluster])
     # There is a bug that prevents colorir.Grad.n_colors(1)
     if n_colors == 1:
-        colors = [grad.n_colors(3)[1]]
+        color_list = [grad.n_colors(3)[1]]
     else:
-        colors = grad.n_colors(n_colors)
+        color_list = grad.n_colors(n_colors)
 
     # Want consistent results for n clusters
     seed(0)
     cluster_colors = []
     for cluster in clusters:
         if len(cluster) >= min_cluster:
-            shuffle(colors)
-            color = colors.pop()
+            shuffle(color_list)
+            color = color_list.pop()
         else:
             color = config.DEFAULT_COLOR_FORMAT.format(outcast_color)
         cluster_colors.append(color)
