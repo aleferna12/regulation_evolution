@@ -35,7 +35,7 @@ def plot_deaths(gravedf: pd.DataFrame, outputfile, bin_size):
     bins = range(0, gravedf["time_death"].max() + bin_size, bin_size)
     intervals = pd.cut(gravedf["time_death"], bins=bins)
     deaths_interval = gravedf.groupby(intervals).size()
-    x = ["%i - %i kMCS" % (ti.left / 1000, ti.right / 1000)
+    x = ["%i - %i mMCS" % (ti.left / 1000000, ti.right / 1000000)
          for ti in intervals.cat.categories]
 
     fig = make_subplots(3,
