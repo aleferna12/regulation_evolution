@@ -5,29 +5,30 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
-from fileio import *
+from scripts.fileio import *
 
 logger = logging.getLogger(__name__)
 
 
-def main():
-    logging.basicConfig(level=logging.INFO)
+def get_parser():
+    def run(args):
+        gravedf = parse_grave_data(args.datadir)
+        plot_deaths(gravedf, args.outputfile, args.bin_size)
+        logger.info("Finished")
 
-    parser = argparse.ArgumentParser(prog="plot_deaths",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("datadir", help="directory containing the cell grave data frames")
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Plot information about cell death"
+    )
+    parser.add_argument("datadir", help="Directory containing the cell grave data frames")
     parser.add_argument("outputfile", help="SVG output file")
     parser.add_argument("-b",
                         "--bin-size",
-                        help="determine the plot bin size in MCS",
+                        help="Determine the plot bin size in MCS",
                         type=int,
                         default=50000)
-    args = parser.parse_args()
-
-    gravedf = parse_grave_data(args.datadir)
-    plot_deaths(gravedf, args.outputfile, args.bin_size)
-
-    logger.info("Finished")
+    parser.set_defaults(run=run)
+    return parser
 
 
 def plot_deaths(gravedf: pd.DataFrame, outputfile, bin_size):
@@ -75,7 +76,3 @@ def plot_deaths(gravedf: pd.DataFrame, outputfile, bin_size):
     fig.update_xaxes(range=[0, len(x) - 1])
 
     write_plot(fig, outputfile)
-
-
-if __name__ == "__main__":
-    main()

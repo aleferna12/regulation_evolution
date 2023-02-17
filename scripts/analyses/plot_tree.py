@@ -5,19 +5,32 @@ import re
 from pathlib import Path
 from ete3 import Tree, TreeStyle, AttrFace
 from random import shuffle, seed
-from fileio import parse_cell_data
-from plot_timeline import get_adhering_clusters, get_cluster_colors, CellCluster
+from scripts.fileio import parse_cell_data
+from .plot_timeline import get_adhering_clusters, get_cluster_colors, CellCluster
 from colorir import *
 
 logger = logging.getLogger(__name__)
 _cs = Palette.load()
 
 
-def main():
-    logging.basicConfig(level=logging.INFO)
+def get_parser():
+    def run(args):
+        logger.info("Reading tree file")
+        tree = Tree(args.treepath, format=5)
+        # When tree is constructed by neighbour joining they are unrooted so we must estimate
+        if args.reroot:
+            mid = tree.get_midpoint_outgroup()
+            tree.set_outgroup(mid)
 
-    parser = argparse.ArgumentParser(prog="plot_tree",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        celldf = parse_cell_data(args.datafile)
+        clusters = get_adhering_clusters(celldf)
+        plot_tree(tree, clusters, args.outpath, args.min_cluster, not args.no_color)
+        logger.info("Finished")
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Plot the phylogenetic relations of the simulation"
+    )
     parser.add_argument("treepath", help="NEWICK file to be plotted")
     parser.add_argument(
         "datafile",
@@ -37,20 +50,8 @@ def main():
                         "--reroot",
                         action="store_true",
                         help="reroot the tree on a mid-point before plotting (not recommended)")
-    args = parser.parse_args()
-
-    logger.info("Reading tree file")
-    tree = Tree(args.treepath, format=5)
-    # When tree is constructed by neighbour joining they are unrooted so we must estimate
-    if args.reroot:
-        mid = tree.get_midpoint_outgroup()
-        tree.set_outgroup(mid)
-
-    celldf = parse_cell_data(args.datafile)
-    clusters = get_adhering_clusters(celldf)
-    plot_tree(tree, clusters, args.outpath, args.min_cluster, not args.no_color)
-
-    logger.info("Finished")
+    parser.set_defaults(run=run)
+    return parser
 
 
 def plot_tree(tree: Tree, clusters: CellCluster, outpath, min_cluster=2, colored=True):
@@ -114,7 +115,3 @@ def figtree_nexus_str(newick, clusters, min_cluster=2):
         f" Tree tree1 = [&R] {figtree_fmt}\n"
         "End;\n"
     )
-
-
-if __name__ == "__main__":
-    main()

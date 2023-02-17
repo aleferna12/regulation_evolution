@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 from colorir import *
 
@@ -5,28 +6,25 @@ config.DEFAULT_PALETTES_DIR = Path(__file__).resolve().parent / "palettes"
 
 
 # Make changes to this function to create different palettes
-def main():
-    pal = StackPalette.load("categ8") \
-          + StackPalette.load("chemgrad64_2") \
-          + StackPalette.load("miggrad8") \
-          + StackPalette.load("divgrad8")
-    write_colortable(
-        pal,
-        Path(__file__).parent.parent.parent / "data" / "colortable.ctb"
+def get_parser():
+    def run(args):
+        pal = StackPalette.load(args.palettes)
+        write_colortable(pal, args.outputfile)
+
+    parser = argparse.ArgumentParser(
+        description="Create a color table file from a set of predefined palettes"
     )
-
-
-def read_colortable(filepath) -> StackPalette:
-    with open(filepath) as file:
-        pal_raw = file.read()
-    pal = StackPalette()
-    color_fmt = ColorFormat(sRGB)
-    for row in pal_raw.split("\n"):
-        if not row:
-            continue
-        color = tuple(int(x) for x in row.split()[1:])
-        pal.add(color_fmt.format(color))
-    return pal
+    parser.add_argument("outputfile", help="Output file for the color table")
+    parser.add_argument(
+        "palettes",
+        default=["categ8", "chemgrad64", "miggrad8", "divgrad8"],
+        nargs="*",
+        help="Palettes to add to the color table (in order). The palettes files "
+             "must be located in 'scripts/colortable/palettes'. To generate palettes use the "
+             "'colorir' python package"
+    )
+    parser.set_defaults(run=run)
+    return parser
 
 
 def write_colortable(spalette: StackPalette, outfile):
@@ -40,7 +38,3 @@ def write_colortable(spalette: StackPalette, outfile):
 
 def resize_color_list(colors, ncolors):
     return Grad(colors, color_sys=CIELuv).n_colors(ncolors)
-
-
-if __name__ == "__main__":
-    main()

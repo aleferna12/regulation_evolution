@@ -4,23 +4,30 @@ import numpy as np
 import pandas as pd
 from matplotlib.pyplot import imread
 from enlighten import Counter
-from scripts.analyses.fileio import parse_cell_data
+from scripts.fileio import parse_cell_data
 
 logger = logging.getLogger(__name__)
 
 
-def main():
-    logging.basicConfig(level=logging.INFO)
+def get_parser():
+    def run(args):
+        celldf, latdf = make_competition(args.imgfile, args.cellfile, args.cell_length)
+        logger.info("Writing output competition files")
+        celldf.to_csv(args.outcellfile, index=False)
+        latdf.to_csv(args.latticefile, header=False, index=False)
+        logger.info("Finished")
 
-    parser = argparse.ArgumentParser(prog="make_files",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Create cell and lattice CSV files to start competition experiments"
+    )
     input_ = parser.add_argument_group("input")
     input_.add_argument(
         "cellfile",
-        help="CSV file containing the template cells (number of rows must match number "
-             "of colors in the image). The attributes of the template will be copied to all cells"
-             "in the same color group (besides sigma, which will be reassigned; and color, which"
-             "will default to the group index on the table)"
+        help="CSV file containing the template cells. The number of different groups must match "
+             "the number of unique pixel colors in 'imgfile'. If more than one template has the "
+             "same group attribute, they will be sampled sequentially when projected onto the "
+             "lattice"
     )
     input_.add_argument(
         "imgfile",
@@ -40,12 +47,8 @@ def main():
         default=7,
         type=int
     )
-    args = parser.parse_args()
-
-    celldf, latdf = make_competition(args.imgfile, args.cellfile, args.cell_length)
-    logger.info("Writing output competition files")
-    celldf.to_csv(args.outcellfile, index=False)
-    latdf.to_csv(args.latticefile, header=False, index=False)
+    parser.set_defaults(run=run)
+    return parser
 
 
 def make_competition(imgfile, cellfile, cell_length=7):
@@ -60,12 +63,13 @@ def make_competition(imgfile, cellfile, cell_length=7):
     attrdf = parse_cell_data(cellfile)
     attrdf = attrdf.reset_index(drop=True)
     attrdf["time"] = 0
+    gdf = attrdf.groupby("group")
 
     colors, indexes = np.unique(np.reshape(img, (-1, img.shape[2])), axis=0, return_inverse=True)
-    if len(colors) - 1 != len(attrdf):
-        raise ValueError("number of non-white pixel colors in 'imgfile' and entries in 'cellfile' "
-                         f"table must match (got {len(colors - 1)} and {len(attrdf)} "
-                         "respectively)")
+    if len(colors) - 1 != len(gdf):
+        raise ValueError("number of non-white pixel colors in 'imgfile' and unique 'group' "
+                         f"attributes in 'cellfile' must match (got {len(colors - 1)} and "
+                         f"{len(gdf)} respectively)")
 
     # Reverse colors and indexes so they are ordered by reverse rgb when matching the cells
     colors = colors[::-1]
@@ -89,8 +93,10 @@ def make_competition(imgfile, cellfile, cell_length=7):
     pbar = Counter(desc="Cells created", total=len(sigma_count[0]) - 1)
     for sigma, group in np.stack([sigma_map, group_map], axis=2).reshape((-1, 2)):
         if sigma != 0:
-            cell_attrs = attrdf.iloc[group - 1].copy()
+            groupdf = gdf.get_group(group - 1)
+            cell_attrs = groupdf.iloc[sigma % len(gdf)].copy()
             cell_attrs["sigma"] = sigma
+            cell_attrs["ancestor"] = sigma
             cell_attrs["group"] = group - 1
             cells.append(cell_attrs)
             pbar.update()
@@ -98,12 +104,8 @@ def make_competition(imgfile, cellfile, cell_length=7):
     celldf = pd.DataFrame(cells).set_index("sigma", drop=False).sort_index()
     celldf.index.name = "sigma_i"
 
-    # Remove cells that are not whole and borders
-    trimmed_lat = np.where(np.isin(lat, celldf["sigma"]), lat, 0)[1:-1, 1:-1]
+    # Remove borders
+    trimmed_lat = lat[1:-1, 1:-1]
     latdf = pd.DataFrame(trimmed_lat)
 
     return celldf, latdf
-
-
-if __name__ == "__main__":
-    main()

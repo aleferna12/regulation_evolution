@@ -11,7 +11,7 @@ from typing import List, Set
 from random import seed, shuffle
 from plotly.subplots import make_subplots
 from colorir import *
-from fileio import *
+from scripts.fileio import *
 
 CellCluster = Set[int]
 logger = logging.getLogger(__name__)
@@ -19,46 +19,55 @@ palette = px.colors.qualitative.Plotly
 palette[0], palette[2] = palette[2], palette[0]
 
 
-def main():
-    logging.basicConfig(level=logging.INFO)
+def get_parser():
+    def run(args):
+        if args.outputfile is None and args.adhesionfile is None:
+            parser.error("either -o or -a must be set for output")
 
-    parser = argparse.ArgumentParser(prog="plot_timeline")
+        t_filter = build_time_filter(get_time_points(args.datadir),
+                                     start=args.start_time,
+                                     n=args.n)
+        celldf = parse_cell_data(args.datadir, time_filter=t_filter)
+        if args.outputfile is not None:
+            plot_timeline(celldf, args.outputfile)
+        if args.adhesionfile is not None:
+            plot_adhesion(celldf,
+                          args.adhesionfile,
+                          top_n=args.top_n,
+                          min_cluster=args.min_cluster)
+
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Plot information about the evolution of the simulation over time"
+    )
     parser.add_argument("datadir", help="directory containing the cell CSV files")
     parser.add_argument("-t",
                         "--start-time",
-                        help="first time-step to plot",
+                        help="First time-step to plot",
                         default=0,
                         type=int)
     parser.add_argument("-n",
-                        help="number of time-steps to plot (can be used to speed up plotting)",
+                        help="Number of time-steps to plot (can be used to speed up plotting)",
                         type=int)
     output = parser.add_argument_group("output arguments",
                                        "at least one of the following must be set")
     output.add_argument("-o",
                         "--outputfile",
-                        help="output HTML or SVG file", )
+                        help="Output HTML or SVG file", )
     output.add_argument("-a",
                         "--adhesionfile",
-                        help="output HTML or SVG file for adhesion plots (these are slow)")
+                        help="Output HTML or SVG file for adhesion plots (these are slow)")
     adhesion = parser.add_argument_group("adhesion plot arguments")
     adhesion.add_argument("--top-n",
-                          help="how many of the clusters with best fitness to plot",
+                          help="How many of the clusters with best fitness to plot",
                           default=5,
                           type=int)
     adhesion.add_argument("--min-cluster",
-                          help="minimum size of cluster to be considered for the plot",
+                          help="Minimum size of cluster to be considered for the plot",
                           default=50,
                           type=int)
-    args = parser.parse_args()
-    if args.outputfile is None and args.adhesionfile is None:
-        parser.error("either -o or -a must be set for output")
-
-    t_filter = build_time_filter(get_time_points(args.datadir), start=args.start_time, n=args.n)
-    celldf = parse_cell_data(args.datadir, time_filter=t_filter)
-    if args.outputfile is not None:
-        plot_timeline(celldf, args.outputfile)
-    if args.adhesionfile is not None:
-        plot_adhesion(celldf, args.adhesionfile, top_n=args.top_n, min_cluster=args.min_cluster)
+    parser.set_defaults(run=run)
+    return parser
 
 
 def plot_timeline(celldf: pd.DataFrame, outputfile):
@@ -347,7 +356,3 @@ def get_cell_cell_j(k1, l1, k2, l2, Ja, weights):
 
 def get_gamma(k1, l1, k2, l2, Jmed, Ja, weights):
     return Jmed - get_cell_cell_j(k1, l1, k2, l2, Ja, weights) / 2
-
-
-if __name__ == "__main__":
-    main()

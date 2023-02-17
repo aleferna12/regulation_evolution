@@ -7,85 +7,84 @@ ancestors rather than a single one.
 """
 import argparse
 import logging
-import sys
 import pandas as pd
 from pathlib import Path
 from enlighten import Counter
 from ete3 import Tree
-from fileio import *
-
+from scripts.fileio import *
 logger = logging.getLogger(__name__)
 
 
-def main():
-    logging.basicConfig(level=logging.INFO)
+def get_parser():
+    def run(args):
+        t_filter = build_time_filter(get_time_points(args.datadir), end=args.last_time)
+        celldf = parse_cell_data(args.datadir, time_filter=t_filter)
+        trees = make_trees(celldf,
+                           extinct=args.extinct,
+                           names=not args.no_names,
+                           single_lineage=args.single_lineage,
+                           stop_mrca=args.stop_mrca,
+                           collapse_branches=not args.no_collapse)
+        longest_time, longest = write_trees(trees,
+                                            args.outdir,
+                                            not args.no_nhx,
+                                            args.format,
+                                            not args.no_root)
+        logger.info("Longest lineages are: " + ", ".join(longest))
+        logger.info(f"These lineages survived for {longest_time} MCSs)")
+        logger.info("Finished")
 
-    parser = argparse.ArgumentParser(prog="make_trees",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("datadir", help="directory containing the cell data as CSV files")
-    parser.add_argument("outdir", help="directory where the trees will be created")
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Create tree files to be plotted with 'plot_tree'"
+    )
+    parser.add_argument("datadir", help="Directory containing the cell data as CSV files")
+    parser.add_argument("outdir", help="Directory where the trees will be created")
     parser.add_argument("-e", 
                         "--extinct", 
                         action="store_true",
-                        help="include extinct lineages")
+                        help="Include extinct lineages")
     parser.add_argument("-n", 
                         "--no-names",
                         action="store_true",
-                        help="do not include the sigmas of cells as branch names")
+                        help="Do not include the sigmas of cells as branch names")
     parser.add_argument(
         "-s",
         "--single-lineage",
         action="store_true",
-        help="allow trees that consist of a single lineage to be created (may cause problems with "
+        help="Allow trees that consist of a single lineage to be created (may cause problems with "
              "visualization in some programs)"
     )
     parser.add_argument("-x",
                         "--no-nhx",
                         action="store_true",
-                        help="do not include NHX attributes in the trees (such as time)")
+                        help="Do not include NHX attributes in the trees (such as time)")
     parser.add_argument("-m",
                         "--stop-mrca",
                         action="store_true",
-                        help="stop computing when the MRCA of the living cells is found")
+                        help="Stop computing when the MRCA of the living cells is found")
     parser.add_argument(
         "-c",
         "--no-collapse",
         action="store_true",
-        help="do not collapse lineages with a single descendent into a single branch"
+        help="Do not collapse lineages with a single descendent into a single branch"
     )
     parser.add_argument("-r",
                         "--no-root",
                         action="store_true",
-                        help="do not include root attributes and information for compatibility")
+                        help="Do not include root attributes and information for compatibility")
     parser.add_argument("-f",
                         "--format",
                         default=5,
                         type=int,
-                        help="tree output format (following etetoolkit conventions)")
+                        help="Tree output format (following etetoolkit conventions)")
     parser.add_argument("-t",
                         "--last-time",
                         default=-1,
                         type=int,
-                        help="last time point to look at when making the trees (i.e. the present)")
-    args = parser.parse_args()
-
-    t_filter = build_time_filter(get_time_points(args.datadir), end=args.last_time)
-    celldf = parse_cell_data(args.datadir, time_filter=t_filter)
-    trees = make_trees(celldf,
-                       extinct=args.extinct,
-                       names=not args.no_names,
-                       single_lineage=args.single_lineage,
-                       stop_mrca=args.stop_mrca,
-                       collapse_branches=not args.no_collapse)
-    longest_time, longest = write_trees(trees,
-                                        args.outdir,
-                                        not args.no_nhx,
-                                        args.format,
-                                        not args.no_root)
-
-    logger.info("Longest lineages are: " + ", ".join(longest))
-    logger.info(f"These lineages survived for {longest_time} MCSs)")
-    logger.info("Finished")
+                        help="Last time point to look at when making the trees (i.e. the present)")
+    parser.set_defaults(run=run)
+    return parser
 
 
 def write_trees(trees, outdir, nhx=True, fmt=5, root_info=True):
@@ -174,7 +173,3 @@ def _build_node(sigma, children, time, names, collapse_branches):
     for child in children:
         node.add_child(child)
     return node
-
-
-if __name__ == "__main__":
-    main()

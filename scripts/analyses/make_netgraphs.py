@@ -4,7 +4,7 @@ import pickle
 import networkx as nx
 import pandas as pd
 import numpy as np
-import fileio as fio
+import scripts.fileio as fio
 from argparse import ArgumentParser
 from pathlib import Path
 from enlighten import Counter
@@ -12,19 +12,18 @@ from enlighten import Counter
 logger = logging.getLogger(__name__)
 
 
-def main():
-    logging.basicConfig(level=logging.INFO)
+def get_parser():
+    def run(args):
+        celldf = fio.parse_cell_data(args.datafile)
+        netgraphs = make_netgraphs(celldf)
+        with open(args.outputfile, "wb") as file:
+            pickle.dump(netgraphs, file)
 
-    parser = ArgumentParser(prog="make_netgraphs")
-    parser.add_argument("datafile", help="input CSV file")
-    parser.add_argument("outputfile", help="output pickle file containing the network graphs")
-    args = parser.parse_args()
-
-    celldf = fio.parse_cell_data(args.datafile)
-    netgraphs = make_netgraphs(celldf)
-
-    with open(args.outputfile, "wb") as file:
-        pickle.dump(netgraphs, file)
+    parser = ArgumentParser(description="Create network files to be plotted with 'plot_netgraph'")
+    parser.add_argument("datafile", help="Input CSV file")
+    parser.add_argument("outputfile", help="Output pickle file containing the network graphs")
+    parser.set_defaults(run=run)
+    return parser
 
 
 def read_netgraphs_file(filepath):
@@ -76,7 +75,3 @@ def make_netgraph(cellss: pd.Series):
             netgraph.add_edge(reg_id, out_id, weight=cellss["out_w_regnode_list"][w_index])
 
     return netgraph
-
-
-if __name__ == "__main__":
-    main()
