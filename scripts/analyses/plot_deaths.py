@@ -32,7 +32,7 @@ def get_parser():
 
 
 def plot_deaths(gravedf: pd.DataFrame, outputfile, bin_size):
-    bins = range(0, gravedf["time_death"].max() + bin_size, bin_size)
+    bins = range(gravedf["time_death"].min(), gravedf["time_death"].max() + bin_size, bin_size)
     intervals = pd.cut(gravedf["time_death"], bins=bins)
     deaths_interval = gravedf.groupby(intervals).size()
     x = ["%i - %i mMCS" % (ti.left / 1000000, ti.right / 1000000)
