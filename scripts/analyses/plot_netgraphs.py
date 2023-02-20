@@ -65,3 +65,4 @@ def plot_netgraph(netgraph, outfile, prune_level=1):
     fig, ax = plt.subplots()
     nx.draw(netgraph, pos, ax=ax, edge_color=edge_colors, with_labels=True)
     fig.savefig(outfile)
+    plt.close(fig)

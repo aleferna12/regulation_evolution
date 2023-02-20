@@ -126,6 +126,7 @@ def plot_timeline(celldf: pd.DataFrame, outputfile):
             line_color=colors[tau],
             showlegend=False
         ), row=1, col=2)
+    fig.update_xaxes(showticklabels=True)
 
     write_plot(fig, outputfile)
 
@@ -257,6 +258,7 @@ def plot_adhesion(celldf: pd.DataFrame, outputfile, top_n=5, min_cluster=50):
 
     fig.update_yaxes(range=[0, 1], row=1, col=1)
     fig.update_yaxes(title="total food", row=3, col=1)
+    fig.update_xaxes(showticklabels=True)
     write_plot(fig, outputfile)
 
 

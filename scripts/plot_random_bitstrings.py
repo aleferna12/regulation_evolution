@@ -6,7 +6,7 @@ from plotly.subplots import make_subplots
 POP = 500000
 JMED = 14
 JALPHA = 7
-MULT = [3] * 6
+MULT = [1, 2, 3, 4, 5, 6]
 MULT = np.array(MULT)
 
 
@@ -32,6 +32,8 @@ def main():
                       yaxis_title="relative freq.",
                       title="Weights: " + " ".join(str(x) for x in MULT))
     fig.update_yaxes(range=[0, 0.25])
+    fig.update_xaxes(range=[0, 50], row=1, col=1)
+    fig.update_xaxes(range=[-25, 25], row=2, col=1)
     # fig.write_html(Path("~/Desktop/Jcc.html").expanduser())
     fig.show()
 
