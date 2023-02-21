@@ -244,14 +244,6 @@ int main(int argc, char *argv[]) {
 
 
     try {
-
-#ifdef QTGRAPHICS
-        //QCoreApplication a(argc, argv);
-        QApplication a(argc, argv);
-        QTimer g;
-        //QApplication a2(argc, argv);
-#endif
-
         par.Read(argv[1]); // Read parameters from file
 
         //command line arguments overwrite whatever is in the parameter file
@@ -286,36 +278,6 @@ int main(int argc, char *argv[]) {
 
         Seed(par.rseed);
 
-        //QMainWindow mainwindow w;
-#ifdef QTGRAPHICS
-        cerr<<"wat is deze? "<<par.readcolortable<<endl;
-        //exit(1);
-        //QtGraphics g(par.sizex*2,par.sizey*2);
-
-        QImage image(par.sizex*2,par.sizey*2, QImage::Format_ARGB32);
-        QPainter painter(&image);
-        QPaintDevice *device = painter.device();
-
-        //QtGraphics g2(par.sizex*2,par.sizey*2);
-        cerr<<"Hello 1"<<endl;
-        //a->setMainWidget( &g );
-        //a->connect(&g, SIGNAL(SimulationDone(void)), SLOT(quit(void)) );
-        g.connect (&g, SIGNAL(timeout()), &a, SLOT(quit()));
-        cerr<<"Hello 1.1"<<endl;
-
-        //a2.setMainWidget( &g2 );
-        //a2.connect(&g2, SIGNAL(SimulationDone(void)), SLOT(quit(void)) );
-
-        if (par.graphics)
-        {
-          //g.show();
-          //   // g2.show();
-          cerr<<"Hello 2"<<endl;
-        }
-        a.exec();
-        //a2.exec();
-        cerr<<"Hello 3"<<endl;
-#else
         cerr << "Using X11 graphics (batch mode). sizex and y are " << par.sizex << " " << par.sizey << endl;
         X11Graphics g(par.sizex, par.sizey);
         int t;
@@ -325,7 +287,6 @@ int main(int argc, char *argv[]) {
             g.TimeStep();
 
         }
-#endif
 
     } catch (const char *error) {
         std::cerr << error << "\n";
