@@ -164,17 +164,14 @@ TIMESTEP {
 
         dish->UpdateNeighDuration();
 
-        static int last_added_fp = 0;
         if (i % 25 == 0) {
-            double emptiness = 1. - dish->getFoodPatches() / (double) par.maxfoodpatches;
-            if (emptiness > 0) {
-                int timer = int(par.foodpatchperiod / emptiness);
-                if (i - last_added_fp > timer) {
-                    dish->addRandomFPatch();
-                    // TODO: Change to only update around gradient (actually do this inside addFPatch)
-                    dish->updateChemPlane();
-                    last_added_fp = i;
-                }
+            // Try to add fpatch
+            static int last_added_fp = 0;
+            if (dish->getFoodPatches() < par.maxfoodpatches and i - last_added_fp > par.foodpatchperiod) {
+                dish->addRandomFPatch();
+                // TODO: Change to only update around gradient (actually do this inside addFPatch)
+                dish->updateChemPlane();
+                last_added_fp = i;
             }
 
             if (par.evolsim) {

@@ -17,7 +17,7 @@ def read_colortable(filepath) -> StackPalette:
     with open(filepath) as file:
         pal_raw = file.read()
     pal = StackPalette()
-    color_fmt = ColorFormat(sRGB)
+    color_fmt = ColorFormat(sRGB, max_rgb=255)
     for row in pal_raw.split("\n"):
         if not row:
             continue

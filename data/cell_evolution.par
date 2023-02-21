@@ -167,7 +167,7 @@ foodpatches = 20
 # Maximum number of food patches allowed to coexist in the system
 maxfoodpatches = 20
 # New food patch timer (a new patch will be created at most every X MCS, less frequently if there is food on the lattice already)
-foodpatchperiod = 3000
+foodpatchperiod = 8000
 # Diameter of each food patch (total amount of spots per patch will approx. = pi * (length/2)^2)
 foodpatchlength = 10
 # How much food each spot contains
