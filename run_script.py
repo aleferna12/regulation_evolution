@@ -1,4 +1,5 @@
 import argparse
+import logging
 import re
 from scripts.analyses import make_netgraphs, make_trees, plot_deaths, plot_netgraphs, \
     plot_timeline, plot_tree
@@ -7,6 +8,8 @@ from scripts.colortable import make_colortable, print_colortable
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
+
     parser = argparse.ArgumentParser(
         prog="run_script",
         description="To see help about each script run 'python run_script <script> --help'"
