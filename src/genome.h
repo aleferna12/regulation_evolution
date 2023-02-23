@@ -31,6 +31,7 @@ public:
     Genome(int in, int reg, int out);
 
     void InitGenome(int in, int reg, int out); //constructor body for handy init in classes
+
     ~Genome();
 
     Genome(const Genome &Parent); //copy constructor

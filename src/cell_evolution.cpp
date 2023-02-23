@@ -250,7 +250,7 @@ int main(int argc, char *argv[]) {
         if (argc > 2) {
             int exit_valarg = par.ReadArguments(argc, argv);
             if (0 != exit_valarg) {
-                par.PrintWelcomeStatement(); //see parameter.h
+                Parameter::PrintWelcomeStatement(); //see parameter.h
                 exit(1);
             }
         }

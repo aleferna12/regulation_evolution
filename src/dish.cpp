@@ -899,13 +899,13 @@ void Dish::saveLattice(int Time) const {
     }
 }
 
-const vector<string> Dish::cell_data_attrs = {"sigma", "tau", "time_since_birth", "tvecx", "tvecy", "prevx", "prevy", "persdur",
-                                              "perstime", "mu", "half_div_area", "length", "last_meal", "food", "growth", "gextiming",
-                                              "dividecounter", "grad_conc", "meanx", "meany", "chemvecx", "chemvecy", "target_area",
-                                              "chemmu", "times_divided", "group", "ancestor", "self_gamma", "Jmed", "jkey_dec",
-                                              "jlock_dec", "neighbour_list", "Jneighbour_list", "innr", "regnr", "outnr", "in_scale_list",
-                                              "reg_threshold_list", "reg_w_innode_list", "reg_w_regnode_list", "out_threshold_list",
-                                              "out_w_regnode_list", "time"};
+const string Dish::cell_headers = "sigma,tau,time_since_birth,tvecx,tvecy,prevx,prevy,persdur,perstime,mu,"
+                                  "half_div_area,length,last_meal,food,growth,gextiming,dividecounter,grad_conc,"
+                                  "meanx,meany,chemvecx,chemvecy,target_area,chemmu,times_divided,group,ancestor,"
+                                  "self_gamma,Jmed,jkey_dec,jlock_dec,neighbour_list,Jneighbour_list,innr,regnr,"
+                                  "outnr,in_scale_list,reg_threshold_list,reg_w_innode_list,reg_w_regnode_list,"
+                                  "out_threshold_list,out_w_regnode_list,time";
+
 int Dish::readCellData() {
     int cur_time = 0;
     ifstream file(par.celldatafile);
@@ -914,9 +914,8 @@ int Dish::readCellData() {
 
     string line;
     getline(file, line);
-    auto cell_attrs = stringToVector<string>(line, ',');
-    if (cell_attrs != cell_data_attrs)
-        throw runtime_error("Cell backup file contains incorrect set of attributes");
+    if (line != cell_headers)
+        throw runtime_error("Cell backup file contains bad headers. Correct is:\n" + cell_headers);
 
     int last_sigma = 0;
     while (getline(file, line)) {
@@ -978,7 +977,6 @@ int Dish::readCellData() {
     return cur_time;
 }
 
-
 int Dish::saveCellData(int Time) {
     int n_cells = 0;
 
@@ -988,7 +986,7 @@ int Dish::saveCellData(int Time) {
     if (not file)
         throw runtime_error("Failed to open file");
 
-    file << vectorToString(cell_data_attrs, ',') << endl;
+    file << cell_headers << endl;
     for (auto &c: cell) {
         if (not c.AliveP() or c.sigma == 0)
             continue;
@@ -1047,7 +1045,8 @@ int Dish::saveCellData(int Time) {
     return n_cells;
 }
 
-const vector<string> Dish::cellgrave_data_attrs = {"sigma", "tau", "time_since_birth", "time_death", "reason", "self_gamma", "time"};
+const string Dish::cellgrave_headers = "sigma,tau,time_since_birth,time_death,reason,self_gamma,time";
+
 void Dish::saveCellGraveData(int Time) {
     char filename[300];
     sprintf(filename, "%s/t%09d.csv", par.cellgravesdatadir, Time);
@@ -1055,7 +1054,7 @@ void Dish::saveCellGraveData(int Time) {
     if (not file)
         throw runtime_error("Failed to open file");
 
-    file << vectorToString(cellgrave_data_attrs, ',') << endl;
+    file << cellgrave_headers << endl;
     for (auto &cg : cell_graves) {
         file << cg.sigma << ',' << cg.tau << ',' << cg.time_since_birth << ',' << cg.time_death << ','
         << cg.reason << ',' << cg.self_gamma << ',' << Time << endl;

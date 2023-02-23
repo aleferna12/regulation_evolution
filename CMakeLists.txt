@@ -1,6 +1,7 @@
 # Dont forget to set CMAKE_PREFIX_PATH to CONDA_PREFIX if dependencies live in conda environment
 cmake_minimum_required(VERSION 3.16)
 project(regulation_evolution)
+include_directories(src)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS -Wall)
@@ -49,7 +50,12 @@ set_target_properties(cell_evolution
         PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
-#add_executable(scan_genome
-#        scripts/genome/scan_genome.cpp
-#        src/gene.cpp src/genome.h
-#        src/gene.cpp src/gene.h)
+add_executable(sweep_genome
+        scripts/genome/sweep_genome.cpp
+        src/genome.cpp src/genome.h
+        src/gene.cpp src/gene.h
+        src/misc.cpp src/misc.h
+        src/random.cpp src/random.h)
+set_target_properties(sweep_genome
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/scripts/genome)

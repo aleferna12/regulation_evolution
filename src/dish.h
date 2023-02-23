@@ -211,8 +211,8 @@ private:
     // Number of resource sources
     int grad_sources;
     vector<FoodPatch> fpatches;
-    static const vector<string> cell_data_attrs;
-    static const vector<string> cellgrave_data_attrs;
+    static const string cell_headers;
+    static const string cellgrave_headers;
 };
 
 #define INIT void Dish::Init(void)
