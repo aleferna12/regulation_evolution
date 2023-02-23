@@ -36,20 +36,18 @@ public:
     Genome(const Genome &Parent); //copy constructor
 
     //read and write genome
-    void ResetGenomeState(void);
+    void ResetGenomeState();
+
+    static vector<string>::iterator readGenomeInfo(vector<string>::iterator it, Genome &genome);
 
     void ReadFromFile(char *filename);
 
     void WriteToFile(char *filename);
 
-    void PrintGenome(char *filename); //makes a dot plot
-
-    void GetOutput(array<int, 2> &out);
-
     //genomic functions
     void UpdateGeneExpression(const array<double, 2> &input, bool sync_cells);
 
-    void FinishUpdate(void);
+    void FinishUpdate();
 
     void MutateGenome(double mu, double mustd);
 

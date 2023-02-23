@@ -152,13 +152,13 @@ public:
     double FoodEquation(double dist_from_peak) const;
 
     // Determines how much food is in a specific position
-    double FoodAtPosition(int x, int y);
+    double FoodAtPosition(int x, int y) const;
 
     static double DetermineMinDist(int n);
 
-    double distMostIsolatedPoint();
+    double distMostIsolatedPoint() const;
 
-    void updateChemPlane();
+    void updateChemPlane() const;
 
     int addFPatch(int x, int y);
 
@@ -211,6 +211,8 @@ private:
     // Number of resource sources
     int grad_sources;
     vector<FoodPatch> fpatches;
+    static const vector<string> cell_data_attrs;
+    static const vector<string> cellgrave_data_attrs;
 };
 
 #define INIT void Dish::Init(void)

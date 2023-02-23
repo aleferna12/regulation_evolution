@@ -2,10 +2,10 @@ import plotly.graph_objects as go
 import numpy as np
 from plotly.subplots import make_subplots
 
-POP = 500000
+POP = 400000
 JMED = 14
 JALPHA = 7
-MULT = [1, 2, 3, 4, 5, 6]
+MULT = [1.5] * 15
 MULT = np.array(MULT)
 
 
@@ -23,9 +23,9 @@ def main():
                 gammas.append(gamma(JMED, JALPHA, ccJ))
 
     fig = make_subplots(2, 1)
-    values, counts = np.unique(ccJs, return_counts=True)
+    values, counts = np.unique(np.round(ccJs, 8), return_counts=True)
     fig.add_trace(go.Scatter(x=values, y=counts / np.sum(counts)), row=1, col=1)
-    values, counts = np.unique(gammas, return_counts=True)
+    values, counts = np.unique(np.round(gammas, 8), return_counts=True)
     fig.add_trace(go.Scatter(x=values, y=counts / np.sum(counts)), row=2, col=1)
     fig.update_layout(xaxis_title="Jcc",
                       yaxis_title="relative freq.",
@@ -43,8 +43,8 @@ def make_bitstrings(n, length):
 
 
 def cell_cell_J(k1, l1, k2, l2):
-    j1 = np.sum((k1 == l2) * MULT)
-    j2 = np.sum((k2 == l1) * MULT)
+    j1 = np.sum((k1 == l2).astype(float) * MULT)
+    j2 = np.sum((k2 == l1).astype(float) * MULT)
     return j1 + j2
 
 

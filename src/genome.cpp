@@ -1,6 +1,7 @@
 #include "genome.h"
 #include "random.h"
 #include "output.h"
+#include "misc.h"
 
 //default constructor required for init in other class
 Genome::Genome() {
@@ -263,48 +264,37 @@ void Genome::MutateGenome(double mu, double mustd) {
 
 }
 
-//prints a dot format network to standard output.
-//madness, I know...
-void Genome::PrintGenome(char *filename) {
+vector<string>::iterator Genome::readGenomeInfo(vector<string>::iterator it, Genome &genome) {
+    int innr = stoi(*it); ++it;
+    int regnr = stoi(*it); ++it;
+    int outnr = stoi(*it); ++it;
+    genome.innr = innr;
+    genome.regnr = regnr;
+    genome.outnr = outnr;
+    genome.inputscale = stringToVector<double>(*it, ' '); ++it;
 
-    std::ofstream ofs;
-
-    ofs.open(filename, std::ofstream::out);
-
-    ofs << "digraph G { " << endl;
-    ofs << "layout=\"dot\"" << endl;
-
-    ofs << "node [fontname=\"arial\",fontsize=18,style=filled];" << endl;
-    ofs << "bgcolor=\"#FFFFFF\";" << endl;
-
-    int count;
-    for (auto n: regnodes) {
-        ofs << n.genenr << " [label=\"" << n.genenr << ", " << n.threshold << "\"];" << endl;
-        count = 0;
-        for (const auto w: n.w_innode) {
-            ofs << count << "-> " << n.genenr << "[label=\" " << w << "\"];" << endl;
-            count++;
-        }
-        count = 0;
-        for (const auto w: n.w_regnode) {
-            ofs << count + innr << "-> " << n.genenr << "[label=\" " << w << "\"];" << endl;
-            count++;
-        }
-    }
-    ofs << " " << endl;
-    for (auto n: outputnodes) {
-        ofs << n.genenr << " [label=\"" << n.genenr << ", " << n.threshold << "\"];" << endl;
-        count = 0;
-        for (const auto w: n.w_regnode) {
-            ofs << count + innr << "-> " << n.genenr << "[label=\" " << w << "\"];" << endl;
-            count++;
-        }
+    vector<double> reg_thres = stringToVector<double>(*it, ' '); ++it;
+    vector<double> reg_w_in = stringToVector<double>(*it, ' '); ++it;
+    vector<double> reg_w_reg = stringToVector<double>(*it, ' '); ++it;
+    for (int i = 0; i < regnr; ++i) {
+        Gene gene = Gene(1, i + innr, innr, regnr);
+        gene.threshold = reg_thres[i];
+        for (int j = 0; j < innr; ++j)
+            gene.w_innode[j] = reg_w_in[i * innr + j];
+        for (int j = 0; j < regnr; ++j)
+            gene.w_regnode[j] = reg_w_reg[i * regnr + j];
+        genome.regnodes.push_back(gene);
     }
 
-    ofs << "}" << endl;
-    ofs << "" << endl;
-    ofs << "" << endl;
-
-    ofs.flush();
-    ofs.close();
+    vector<double> out_thres = stringToVector<double>(*it, ' '); ++it;
+    vector<double> out_w_reg = stringToVector<double>(*it, ' '); ++it;
+    for (int i = 0; i < outnr; ++i) {
+        Gene gene = Gene(2, i + innr + regnr, innr, regnr);
+        gene.threshold = out_thres[i];
+        for (int j = 0; j < regnr; ++j)
+            gene.w_regnode[j] = out_w_reg[i * regnr + j];
+        genome.outputnodes.push_back(gene);
+    }
+    return it;
 }
+

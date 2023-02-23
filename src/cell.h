@@ -632,10 +632,6 @@ public:
         genome.FinishUpdate();
     }
 
-    inline void GetGeneOutput(array<int, 2> &out) {
-        genome.GetOutput(out);
-    }
-
     inline void MutateGenome(double mu_, double mustd) {
         genome.MutateGenome(mu_, mustd);
     }

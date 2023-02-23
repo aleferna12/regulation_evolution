@@ -5,6 +5,13 @@ project(regulation_evolution)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS -Wall)
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+find_package(PNG REQUIRED)
+find_package(X11 REQUIRED)
+
 add_executable(cell_evolution
         src/cell_evolution.cpp
         src/ca.cpp src/ca.h
@@ -30,13 +37,6 @@ add_executable(cell_evolution
         src/boundingbox.cpp src/boundingbox.h
         src/foodpatch.cpp src/foodpatch.h)
 
-find_package(PNG REQUIRED)
-find_package(X11 REQUIRED)
-
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
-
 target_link_libraries(cell_evolution PNG::PNG X11::X11)
 target_compile_options(cell_evolution PRIVATE
         -Wno-unused-parameter
@@ -45,3 +45,11 @@ target_compile_options(cell_evolution PRIVATE
         -Wno-unused-result
         -Wno-write-strings
         -Wno-misleading-indentation)
+set_target_properties(cell_evolution
+        PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+
+#add_executable(scan_genome
+#        scripts/genome/scan_genome.cpp
+#        src/gene.cpp src/genome.h
+#        src/gene.cpp src/gene.h)

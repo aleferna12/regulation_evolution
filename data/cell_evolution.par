@@ -128,7 +128,7 @@ mut_rate = 0.01
 evolsim = 1
 evolreg = true
 # Terminate simulation if one of the cell groups is extinct?
-groupextinction = true
+groupextinction = false
 
 #genome mutation
 mu = 0.1

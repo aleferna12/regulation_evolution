@@ -26,8 +26,6 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include <vector>
 #include <list>
 #include <set>
-#include <fstream>
-#include <cstring>
 #include <iostream>
 #include <cmath>
 #include "dish.h"
@@ -36,6 +34,7 @@ Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 #include "pde.h"
 #include "intplane.h"
 #include "misc.h"
+#include "genome.h"
 
 #define EXTERNAL_OFF
 
@@ -510,7 +509,7 @@ void Dish::CellsEat(int time) {
 }
 
 
-double Dish::distMostIsolatedPoint() {
+double Dish::distMostIsolatedPoint() const {
     double dist = 0;
     for (int i = 1; i < sizex - 1; i++)
         for (int j = 1; j < sizey - 1; j++) {
@@ -523,7 +522,7 @@ double Dish::distMostIsolatedPoint() {
 }
 
 
-void Dish::updateChemPlane() {
+void Dish::updateChemPlane() const {
     for (int i = 1; i < sizex - 1; i++)
         for (int j = 1; j < sizey - 1; j++) {
             double dfood = FoodAtPosition(i, j);
@@ -774,7 +773,7 @@ double Dish::FoodEquation(double dist_from_peak) const {
 }
 
 
-double Dish::FoodAtPosition(int x, int y) {
+double Dish::FoodAtPosition(int x, int y) const {
     // double pfood_j = 0.125;
 
     // makes gradient
@@ -811,9 +810,10 @@ int Dish::readFoodData() {
         auto attrs = stringToVector<string>(line, ',');
         auto sigma_vec = stringToVector<int>(attrs[3], ' ');
         int *sigmas = nullptr;
+        int length = stoi(attrs[2]);
         // If sigma attribute was left empty we reinitialize the food patch
         if (not sigma_vec.empty()) {
-            if (sigma_vec.size() != stoi(attrs[2]))
+            if (sigma_vec.size() != length * length)
                 throw runtime_error("Failed to initialize food patch, sigma list and length don't match");
             sigmas = &sigma_vec[0];
         }
@@ -899,7 +899,13 @@ void Dish::saveLattice(int Time) const {
     }
 }
 
-
+const vector<string> Dish::cell_data_attrs = {"sigma", "tau", "time_since_birth", "tvecx", "tvecy", "prevx", "prevy", "persdur",
+                                              "perstime", "mu", "half_div_area", "length", "last_meal", "food", "growth", "gextiming",
+                                              "dividecounter", "grad_conc", "meanx", "meany", "chemvecx", "chemvecy", "target_area",
+                                              "chemmu", "times_divided", "group", "ancestor", "self_gamma", "Jmed", "jkey_dec",
+                                              "jlock_dec", "neighbour_list", "Jneighbour_list", "innr", "regnr", "outnr", "in_scale_list",
+                                              "reg_threshold_list", "reg_w_innode_list", "reg_w_regnode_list", "out_threshold_list",
+                                              "out_w_regnode_list", "time"};
 int Dish::readCellData() {
     int cur_time = 0;
     ifstream file(par.celldatafile);
@@ -907,8 +913,11 @@ int Dish::readCellData() {
         throw runtime_error("Failed to open file");
 
     string line;
-    // Skip headers
     getline(file, line);
+    auto cell_attrs = stringToVector<string>(line, ',');
+    if (cell_attrs != cell_data_attrs)
+        throw runtime_error("Cell backup file contains incorrect set of attributes");
+
     int last_sigma = 0;
     while (getline(file, line)) {
         auto attrs = stringToVector<string>(line, ',');
@@ -962,37 +971,7 @@ int Dish::readCellData() {
         // Skip neighbour info
         it += 2;
 
-        int innr = stoi(*it); ++it;
-        int regnr = stoi(*it); ++it;
-        int outnr = stoi(*it); ++it;
-        rc.genome.innr = innr;
-        rc.genome.regnr = regnr;
-        rc.genome.outnr = outnr;
-        rc.genome.inputscale = stringToVector<double>(*it, ' '); ++it;
-
-        vector<double> reg_thres = stringToVector<double>(*it, ' '); ++it;
-        vector<double> reg_w_in = stringToVector<double>(*it, ' '); ++it;
-        vector<double> reg_w_reg = stringToVector<double>(*it, ' '); ++it;
-        for (int i = 0; i < regnr; ++i) {
-            Gene gene = Gene(1, i + innr, innr, regnr);
-            gene.threshold = reg_thres[i];
-            for (int j = 0; j < innr; ++j)
-                gene.w_innode[j] = reg_w_in[i * innr + j];
-            for (int j = 0; j < regnr; ++j)
-                gene.w_regnode[j] = reg_w_reg[i * regnr + j];
-            rc.genome.regnodes.push_back(gene);
-        }
-
-        vector<double> out_thres = stringToVector<double>(*it, ' '); ++it;
-        vector<double> out_w_reg = stringToVector<double>(*it, ' '); ++it;
-        for (int i = 0; i < outnr; ++i) {
-            Gene gene = Gene(2, i + innr + regnr, innr, regnr);
-            gene.threshold = out_thres[i];
-            for (int j = 0; j < regnr; ++j)
-                gene.w_regnode[j] = out_w_reg[i * regnr + j];
-            rc.genome.outputnodes.push_back(gene);
-        }
-
+        it = Genome::readGenomeInfo(it, rc.genome);
         cur_time = stoi(*it);
         cell.push_back(rc);
     }
@@ -1009,15 +988,7 @@ int Dish::saveCellData(int Time) {
     if (not file)
         throw runtime_error("Failed to open file");
 
-    vector<string> col_names{"sigma", "tau", "time_since_birth", "tvecx", "tvecy", "prevx", "prevy", "persdur",
-                             "perstime", "mu", "half_div_area", "length", "last_meal", "food", "growth", "gextiming",
-                             "dividecounter", "grad_conc", "meanx", "meany", "chemvecx", "chemvecy", "target_area",
-                             "chemmu", "times_divided", "group", "ancestor", "self_gamma", "Jmed", "jkey_dec",
-                             "jlock_dec", "neighbour_list", "Jneighbour_list", "innr", "regnr", "outnr", "in_scale_list",
-                             "reg_threshold_list", "reg_w_innode_list", "reg_w_regnode_list", "out_threshold_list",
-                             "out_w_regnode_list", "time"};
-    file << vectorToString(col_names, ',') << endl;
-
+    file << vectorToString(cell_data_attrs, ',') << endl;
     for (auto &c: cell) {
         if (not c.AliveP() or c.sigma == 0)
             continue;
@@ -1076,7 +1047,7 @@ int Dish::saveCellData(int Time) {
     return n_cells;
 }
 
-
+const vector<string> Dish::cellgrave_data_attrs = {"sigma", "tau", "time_since_birth", "time_death", "reason", "self_gamma", "time"};
 void Dish::saveCellGraveData(int Time) {
     char filename[300];
     sprintf(filename, "%s/t%09d.csv", par.cellgravesdatadir, Time);
@@ -1084,9 +1055,7 @@ void Dish::saveCellGraveData(int Time) {
     if (not file)
         throw runtime_error("Failed to open file");
 
-    vector<string> col_names{"sigma", "tau", "time_since_birth", "time_death", "reason", "self_gamma", "time"};
-    file << vectorToString(col_names, ',') << endl;
-
+    file << vectorToString(cellgrave_data_attrs, ',') << endl;
     for (auto &cg : cell_graves) {
         file << cg.sigma << ',' << cg.tau << ',' << cg.time_since_birth << ',' << cg.time_death << ','
         << cg.reason << ',' << cg.self_gamma << ',' << Time << endl;
