@@ -241,8 +241,6 @@ int PDE::MapColour(double val) {
 // ------------------------ //
 //////////////////////////////
 int main(int argc, char *argv[]) {
-
-
     try {
         par.Read(argv[1]); // Read parameters from file
 

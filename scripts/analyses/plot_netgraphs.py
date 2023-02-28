@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from enlighten import Counter
 from colorir import *
-from .make_netgraphs import *
+from scripts.analyses.make_netgraphs import *
 from scripts.fileio import parse_cell_data
 
 config.DEFAULT_COLOR_FORMAT = ColorFormat(sRGB, max_rgb=1, round_to=-1, include_a=True)

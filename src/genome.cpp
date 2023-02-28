@@ -298,3 +298,18 @@ vector<string>::iterator Genome::readGenomeInfo(vector<string>::iterator it, Gen
     return it;
 }
 
+pair<int, int> Genome::calculateJdecs() {
+    int jkey_dec = 0;
+    int jlock_dec = 0;
+    int exp_2 = 1;
+    int key_lock_len = (outnr - 1) / 2;
+    for (int i = 1; i < key_lock_len + 1; ++i) {
+        if (outputnodes[i].Boolstate == 1)
+            jkey_dec += exp_2;
+        if (outputnodes[key_lock_len + i].Boolstate == 1)
+            jlock_dec += exp_2;
+        exp_2 *= 2;
+    }
+    return {jkey_dec, jlock_dec};
+}
+

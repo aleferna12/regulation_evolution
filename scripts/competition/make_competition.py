@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.pyplot import imread
 from enlighten import Counter
-from scripts.fileio import parse_cell_data
+from ..fileio import parse_cell_data
 
 logger = logging.getLogger(__name__)
 

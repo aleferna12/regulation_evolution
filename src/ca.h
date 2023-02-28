@@ -287,9 +287,13 @@ public:
         return KL_strengths[key_dec * max_key_lock_dec + lock_dec];
     }
 
+    //! Creates a table in the heap containing the energy difference values for every possible combination of
+    //! keys and locks
+    static int *allocateKLStrengths(vector<int> &rule, int max_kl_dec, bool evolvable_adh);
+
     double energyDifference(int sigma1, int sigma2);
 
-    double Adhesion_Energy(int sigma1, int sigma2);
+    double adhesionEnergy(int sigma1, int sigma2);
 
     // Not used in the simulations but useful to output data
     double calculateGamma(int sigma1, int sigma2);

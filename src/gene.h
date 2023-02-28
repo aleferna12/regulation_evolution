@@ -22,7 +22,7 @@ public:
     Gene(const Gene &obj); //copy constructor
 
     //gene functions
-    void inline EndCycle(void) { Boolstate = NewBool; }
+    void inline EndCycle() { Boolstate = NewBool; }
 
     void Mutate(double mu, double mustd);
 

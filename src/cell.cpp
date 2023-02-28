@@ -255,14 +255,7 @@ BoundingBox Cell::getBoundingBox() {
 
 
 void Cell::updateJDecs() {
-    jkey_dec = 0;
-    jlock_dec = 0;
-    int exp_2 = 1;
-    for (int i = 0; i < par.key_lock_len; ++i) {
-        if (genome.outputnodes[1 + i].Boolstate == 1)
-            jkey_dec += exp_2;
-        if (genome.outputnodes[par.key_lock_len + 1 + i].Boolstate == 1)
-            jlock_dec += exp_2;
-        exp_2 *= 2;
-    }
+    auto p = genome.calculateJdecs();
+    jkey_dec = p.first;
+    jlock_dec = p.second;
 }

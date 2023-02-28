@@ -52,9 +52,7 @@ public:
 
     void MutateGenome(double mu, double mustd);
 
-    //output functions
-
-
+    pair<int, int> calculateJdecs();
 };
 
 

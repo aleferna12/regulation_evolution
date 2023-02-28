@@ -4,17 +4,16 @@ import pickle
 import networkx as nx
 import pandas as pd
 import numpy as np
-import scripts.fileio as fio
 from argparse import ArgumentParser
-from pathlib import Path
 from enlighten import Counter
+from scripts.fileio import parse_cell_data, _gene_attrs
 
 logger = logging.getLogger(__name__)
 
 
 def get_parser():
     def run(args):
-        celldf = fio.parse_cell_data(args.datafile)
+        celldf = parse_cell_data(args.datafile)
         netgraphs = make_netgraphs(celldf)
         with open(args.outputfile, "wb") as file:
             pickle.dump(netgraphs, file)
@@ -46,7 +45,7 @@ def make_netgraphs(celldf):
 def make_netgraph(cellss: pd.Series):
     """Make directed network graph from cell series."""
     cellss = cellss.copy()
-    for key in fio._gene_attrs:
+    for key in _gene_attrs:
         cellss[key] = np.fromstring(cellss[key], sep=' ')
 
     netgraph = nx.DiGraph(sigma=cellss["sigma"])

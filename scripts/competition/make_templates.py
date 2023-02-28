@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import pandas as pd
 from typing import List
-from scripts.fileio import *
+from ..fileio import *
 
 logger = logging.getLogger(__name__)
 

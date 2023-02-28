@@ -659,16 +659,14 @@ void Dish::UpdateCellParameters(int Time) {
                         c->SetTargetArea(par.target_area);
                         c->dividecounter = 0;
                         c->ClearGenomeState(); //reset the GRN!
-                    }
-                        //not time to divide yet, but do stop migrating and start growing
+                    } //not time to divide yet, but do stop migrating and start growing
                     else if (c->dividecounter > par.divtime) {
                         //cout<<"cell "<<c->Sigma()<<" starting to divide"<<endl;
                         if (c->TargetArea() < par.target_area * 2)
                             c->SetTargetArea(c->TargetArea() + 1);
                         c->setMu(0.);
                         c->setChemMu(0.0);
-                        // TODO: Shouldn't this be out of this condition?
-                        c->setTau(2); //basically only for color right now...
+                        c->setTau(2);
                     }
                 }
                     //this is a migratory cell

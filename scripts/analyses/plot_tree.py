@@ -5,9 +5,9 @@ import re
 from pathlib import Path
 from ete3 import Tree, TreeStyle, AttrFace
 from random import shuffle, seed
-from scripts.fileio import parse_cell_data
-from .plot_timeline import get_adhering_clusters, get_cluster_colors, CellCluster
 from colorir import *
+from scripts.fileio import parse_cell_data
+from scripts.analyses.plot_timeline import get_adhering_clusters, get_cluster_colors, CellCluster
 
 logger = logging.getLogger(__name__)
 _cs = Palette.load()

@@ -5,8 +5,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
-from scripts.fileio import *
 from colorir import *
+from scripts.fileio import *
 
 logger = logging.getLogger(__name__)
 colors = px.colors.qualitative.Vivid

@@ -95,15 +95,8 @@ CellularPotts::CellularPotts(vector<Cell> *cells,
     auto rule = stringToVector<int>(par.key_lock_weights, ' ');
     if (par.key_lock_len != rule.size())
         throw runtime_error("'key_lock_len' parameter and length of 'key_lock_rule' parameter dont match");
-
     max_key_lock_dec = int(pow(2, par.key_lock_len));
-    KL_strengths = new int[max_key_lock_dec * max_key_lock_dec] {};
-    for (int i = 0; i < max_key_lock_dec; ++i)
-        for (int j = 0; j < max_key_lock_dec; ++j) {
-            int index = i * max_key_lock_dec + j;
-            if (par.evolvable_adh)
-                KL_strengths[index] = calculateKLStrength(i, j, rule);
-        }
+    KL_strengths = allocateKLStrengths(rule, max_key_lock_dec, par.evolvable_adh);
 
     BaseInitialisation(cells);
     sizex = sx;
@@ -169,6 +162,16 @@ CellularPotts::~CellularPotts() {
     }
 }
 
+int *CellularPotts::allocateKLStrengths(vector<int> &rule, int max_kl_dec, bool evolvable_adh) {
+    int *KL_array = new int[max_kl_dec * max_kl_dec] {};
+    for (int i = 0; i < max_kl_dec; ++i)
+        for (int j = 0; j < max_kl_dec; ++j) {
+            int index = i * max_kl_dec + j;
+            if (evolvable_adh)
+                KL_array[index] = calculateKLStrength(i, j, rule);
+        }
+    return KL_array;
+}
 
 int CellularPotts::calculateKLStrength(unsigned long key_dec, unsigned long  lock_dec, const vector<int> &rule) {
     auto key = bitset<32>{key_dec};
@@ -345,7 +348,7 @@ int CellularPotts::DeltaHWithMedium(int x, int y, PDE *PDEfield) {
         } else {
             //DH += (*cell)[sxyp].EnergyDifference((*cell)[neighsite]) - (*cell)[sxy].EnergyDifference((*cell)[neighsite]);
             // notice that sxyp is medium, so there is no need of calling the function.
-            DH += energyDifference(sxyp, neighsite) - Adhesion_Energy(sxy, neighsite);
+            DH += energyDifference(sxyp, neighsite) - adhesionEnergy(sxy, neighsite);
         }
     }
 
@@ -474,15 +477,15 @@ int CellularPotts::DeltaH(int x, int y, int xp, int yp, PDE *PDEfield) {
 
             // MAKE A FUNCTION that takes all values: J's and regulation and sigmas
             //get to the point where you write:
-            //DH += Adhesion_Energy( s1 , s2, J value)
-            //    - Adhesion_Energy( same but for the other pair)
-            //DH += Adhesion_Energy( (*cell)[neighsite].GetExtProtExpress_Fraction() , (*cell)[sxyp].GetExtProtExpress_Fraction() , sxyp , neighsite, (*cell)[sxyp].EnergyDifference((*cell)[neighsite]) )
-            //    - Adhesion_Energy( (*cell)[neighsite].GetExtProtExpress_Fraction() , (*cell)[sxy].GetExtProtExpress_Fraction() , sxy , neighsite, (*cell)[sxy].EnergyDifference((*cell)[neighsite]) )
-            // cerr<< "sigmas sxyp, neigh: "<<sxyp<<" "<<neighsite<<": "<< Adhesion_Energy(sxyp , neighsite)<<endl;
-            // cerr<< "sigmas sxy, neigh: "<<sxy<<" "<<neighsite<<": "<< Adhesion_Energy(sxy , neighsite)<<endl;
-            // cerr<< "DH += " << (int) (Adhesion_Energy(sxyp , neighsite) - Adhesion_Energy(sxy , neighsite))<<endl ;
-            DH += Adhesion_Energy(sxyp, neighsite)
-                  - Adhesion_Energy(sxy, neighsite);
+            //DH += adhesionEnergy( s1 , s2, J value)
+            //    - adhesionEnergy( same but for the other pair)
+            //DH += adhesionEnergy( (*cell)[neighsite].GetExtProtExpress_Fraction() , (*cell)[sxyp].GetExtProtExpress_Fraction() , sxyp , neighsite, (*cell)[sxyp].EnergyDifference((*cell)[neighsite]) )
+            //    - adhesionEnergy( (*cell)[neighsite].GetExtProtExpress_Fraction() , (*cell)[sxy].GetExtProtExpress_Fraction() , sxy , neighsite, (*cell)[sxy].EnergyDifference((*cell)[neighsite]) )
+            // cerr<< "sigmas sxyp, neigh: "<<sxyp<<" "<<neighsite<<": "<< adhesionEnergy(sxyp , neighsite)<<endl;
+            // cerr<< "sigmas sxy, neigh: "<<sxy<<" "<<neighsite<<": "<< adhesionEnergy(sxy , neighsite)<<endl;
+            // cerr<< "DH += " << (int) (Adhesion_Energy(sxyp , neighsite) - adhesionEnergy(sxy , neighsite))<<endl ;
+            DH += adhesionEnergy(sxyp, neighsite)
+                  - adhesionEnergy(sxy, neighsite);
             // NOTICE THAT DH is an integer... dammit! This can create problems when multiplying with a factor
             //DH += (*cell)[sxyp].EnergyDifference((*cell)[neighsite])
             //      - (*cell)[sxy].EnergyDifference((*cell)[neighsite]);
@@ -650,7 +653,7 @@ double CellularPotts::energyDifference(int sigma1, int sigma2) {
 }
 
 
-double CellularPotts::Adhesion_Energy(int sigma1, int sigma2) {
+double CellularPotts::adhesionEnergy(int sigma1, int sigma2) {
     if (sigma1 == sigma2) return 0;
     return energyDifference(sigma1, sigma2);
 }
