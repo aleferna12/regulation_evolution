@@ -9,7 +9,7 @@
             "args": [
                 "../data/cell_evolution.par", 
                 "-name", 
-                "../runs/debug"
+                "../runs/debug/"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/bin",
