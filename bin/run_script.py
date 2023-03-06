@@ -32,7 +32,8 @@ def main():
                      "competition.make_competition",
                      "competition.make_templates",
                      "colortable.make_colortable",
-                     "colortable.print_colortable"]:
+                     "colortable.print_colortable",
+                     "genome.plot_genomes"]:
         mod = importlib.import_module(f"scripts.{mod_name}")
         subparser = mod.get_parser()
         subparsers.add_parser(

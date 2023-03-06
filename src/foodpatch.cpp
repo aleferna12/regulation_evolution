@@ -89,8 +89,8 @@ void FoodPatch::initSigmas(const int *sigmas) {
     }
     // Just to be sure
     if (food_left == 0) {
-        cerr << "tried to initialize FoodPatch at an invalid position: " << x << ", " << y;
-        exit(1);
+        empty = true;
+        cerr << "Warning: tried to initialize FoodPatch at an invalid position: " << x << ", " << y;
     }
 }
 

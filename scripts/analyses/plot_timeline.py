@@ -40,7 +40,7 @@ def get_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Plot information about the evolution of the simulation over time"
     )
-    parser.add_argument("datadir", help="directory containing the cell CSV files")
+    parser.add_argument("datadir", help="Directory containing the cell CSV files")
     parser.add_argument("-t",
                         "--start-time",
                         help="First time-step to plot",
@@ -49,7 +49,7 @@ def get_parser():
     parser.add_argument("-n",
                         help="Number of time-steps to plot (can be used to speed up plotting)",
                         type=int)
-    output = parser.add_argument_group("output arguments",
+    output = parser.add_argument_group("Output arguments",
                                        "at least one of the following must be set")
     output.add_argument("-o",
                         "--outputfile",
@@ -328,33 +328,3 @@ def get_cluster_colors(clusters: list[CellCluster], min_cluster=2, outcast_color
         cluster_colors.append(color)
 
     return cluster_colors
-
-
-def get_median_gamma(key_locks, Jmed, Ja, weights, n=None):
-    """Calculates the medium gamma from all x all cells.
-
-    :param key_locks: Numpy matrix of (key, lock) pairs or each cell
-    :param n: Samples n key-lock pairs from total population to speed up calculations
-    :param Ja:
-    :param Jmed:
-    :param weights:
-    """
-    if n is not None:
-        rng = np.random.default_rng(0)
-        indexes = rng.choice(len(key_locks), min(n, len(key_locks)), replace=False)
-        key_locks = key_locks[indexes]
-
-    gammas = []
-    for k1, l1 in key_locks:
-        for k2, l2 in key_locks:
-            gammas.append(get_gamma(k1, l1, k2, l2, Jmed, Ja, weights))
-
-    return np.median(gammas)
-
-
-def get_cell_cell_j(k1, l1, k2, l2, Ja, weights):
-    return Ja + np.sum((k1 == l2) * weights) + np.sum((k2 == l1) * weights)
-
-
-def get_gamma(k1, l1, k2, l2, Jmed, Ja, weights):
-    return Jmed - get_cell_cell_j(k1, l1, k2, l2, Ja, weights) / 2

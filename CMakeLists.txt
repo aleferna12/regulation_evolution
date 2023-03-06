@@ -5,6 +5,7 @@ include_directories(src)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS -Wall)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
@@ -46,16 +47,10 @@ target_compile_options(cell_evolution PRIVATE
         -Wno-unused-result
         -Wno-write-strings
         -Wno-misleading-indentation)
-set_target_properties(cell_evolution
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
-add_executable(sweep_genome
-        scripts/genome/sweep_genome.cpp
+add_executable(sweep_genomes
+        scripts/genome/sweep_genomes.cpp
         src/genome.cpp src/genome.h
         src/gene.cpp src/gene.h
         src/misc.cpp src/misc.h
         src/random.cpp src/random.h)
-set_target_properties(sweep_genome
-        PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/scripts/genome)

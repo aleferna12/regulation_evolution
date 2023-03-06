@@ -83,10 +83,7 @@ Dish::~Dish() {
 int Dish::addRandomFPatch() {
     int x, y;
     if (fpatches.empty()) {
-        // Ok positions = [2, side - 3] (inclusive both sides)
-        x = (int) RandomNumber(sizex - 4) + 1;
-        y = (int) RandomNumber(sizey - 4) + 1;
-        return addFPatch(x, y);
+        return addFPatch(par.sizex / 2, par.sizey / 2);
     }
     double dist = 0;
     double mindist = DetermineMinDist(int(fpatches.size()) + 1);

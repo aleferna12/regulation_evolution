@@ -13,6 +13,7 @@ struct GenomeTableEntry {
     int tau;
     int jkey_dec;
     int jlock_dec;
+    int id;
 };
 
 using namespace std;
@@ -21,9 +22,9 @@ using Output = pair<int, pair<int, int>>;
 
 const string genome_headers = "innr,regnr,outnr,in_scale_list,reg_threshold_list,reg_w_innode_list,"
                               "reg_w_regnode_list,out_threshold_list,out_w_regnode_list";
-const string out_headers = "chem,food,tau,jkey_dec,jlock_dec";
+const string out_headers = "chem,food,tau,jkey_dec,jlock_dec,id";
 
-Genome readGenomes(const string &inputfile) {
+vector<Genome> readGenomes(const string &inputfile) {
     ifstream file(inputfile);
     if (not file)
         throw runtime_error("Failed to open file");
@@ -33,16 +34,16 @@ Genome readGenomes(const string &inputfile) {
     if (line != genome_headers)
         throw runtime_error("Inadequate file headers for genome input. Should be:\n" + genome_headers);
 
-    getline(file, line);
-    auto attrs = stringToVector<string>(line, ',');
-    if (getline(file, line)) {
-        throw runtime_error("'inputfile' contains more than one row");
+    vector<Genome> genomes {};
+    while (getline(file, line)) {
+        auto attrs = stringToVector<string>(line, ',');
+        auto it = attrs.begin();
+        Genome genome;
+        Genome::readGenomeInfo(it, genome);
+        genomes.push_back(std::move(genome));
     }
 
-    auto it = attrs.begin();
-    Genome genome;
-    Genome::readGenomeInfo(it, genome);
-    return genome;
+    return genomes;
 }
 
 void writeGenomeTable(vector<GenomeTableEntry> &genome_table, string &outputfile) {
@@ -52,7 +53,8 @@ void writeGenomeTable(vector<GenomeTableEntry> &genome_table, string &outputfile
 
     file << out_headers << endl;
     for (auto &row : genome_table) {
-        file << row.chem << ',' << row.food << ',' << row.tau << ',' << row.jkey_dec << ',' << row.jlock_dec << endl;
+        file << row.chem << ',' << row.food << ',' << row.tau << ',' << row.jkey_dec << ',' << row.jlock_dec << ','
+             << row.id << endl;
     }
 }
 
@@ -82,19 +84,22 @@ Output getOutput(Genome &genome, Input &input, int MCSs) {
     return {genome.outputnodes[0].Boolstate + 1, genome.calculateJdecs()};
 }
 
-vector<GenomeTableEntry> makeGenomeTable(Genome &genome, vector<Input> &inputs, int MCSs) {
+vector<GenomeTableEntry> makeGenomeTable(vector<Genome> &genomes, vector<Input> &inputs, int MCSs) {
     vector<GenomeTableEntry> genome_table {};
-
-    for (auto &input: inputs) {
-        auto output = getOutput(genome, input, MCSs);
-        GenomeTableEntry row {
-            input.first,
-            input.second,
-            output.first,
-            output.second.first,
-            output.second.second
-        };
-        genome_table.push_back(row);
+    for (int i = 0; i < genomes.size(); ++i) {
+        auto genome = genomes[i];
+        for (auto &input: inputs) {
+            auto output = getOutput(genome, input, MCSs);
+            GenomeTableEntry row{
+                input.first,
+                input.second,
+                output.first,
+                output.second.first,
+                output.second.second,
+                i
+            };
+            genome_table.push_back(row);
+        }
     }
     return genome_table;
 }
@@ -135,7 +140,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    auto genome = readGenomes(args[0]);
+    auto genomes = readGenomes(args[0]);
     auto inputs = makeInputs(
         stod(args[2]),
         stod(args[3]),
@@ -144,7 +149,7 @@ int main(int argc, char *argv[]) {
         stod(args[6]),
         stod(args[7])
     );
-    auto genome_table = makeGenomeTable(genome, inputs, MCSs);
+    auto genome_table = makeGenomeTable(genomes, inputs, MCSs);
     writeGenomeTable(genome_table, args[1]);
     return EXIT_SUCCESS;
 }
