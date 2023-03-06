@@ -1,0 +1,11 @@
+.idea
+cmake-build-debug
+cmake-build-release
+runs/backup
+runs/debug
+**/__pycache__
+bin/cell_evolution
+bin/sweep_genomes
+scripts/genome/no-mul-uni_out.csv
+scripts/genome/data/2.csv
+scripts/genome/no-mul-uni.csv
