@@ -1,6 +1,7 @@
 import logging
 import argparse
 import subprocess
+import ast
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -31,13 +32,28 @@ def get_parser():
                                 args.max_foodparc,
                                 args.step_foodparc,
                                 args.mcss)
+        
+        marker_style = {}
+        if args.marker_style:
+            for style_name, style_val in zip(args.marker_style[::2], args.marker_style[1::2]):
+                try:
+                    marker_style[style_name] = ast.literal_eval(style_val)
+                except ValueError:  # Assume its a string
+                    marker_style[style_name] = style_val
         fig = plot_genome(sweepdf,
                           args.outputfile,
                           args.Jmed,
                           args.Jalpha,
                           args.weights,
                           keylock_tups,
-                          column_titles=column_titles)
+                          column_titles=column_titles,
+                          two_colorscales=args.two_colorscales,
+                          colorscale=args.colorscale,
+                          sep=args.sep,
+                          marker_spacing=args.marker_spacing,
+                          mig_marker_color=args.mig_marker_color,
+                          div_marker_color=args.div_marker_color,
+                          **marker_style)
         if args.show:
             fig.show("browser")
 
@@ -132,6 +148,45 @@ def get_parser():
                         "--show",
                         action="store_true",
                         help="Show figure after plotting")
+    parser.add_argument(
+        "--two-colorscales",
+        action="store_true",
+        help="Use different colorscales for migrating and dividing cells. Otherwise, 'colorscale' will be used for both"
+    )
+    parser.add_argument(
+        "--colorscale",
+        default="Viridis",
+        help="If not 'two-colorscales', then which colorscale to use. Any plotly colorscales are available"
+    )
+    parser.add_argument(
+        "--sep",
+        default=0,
+        type=float,
+        help="Gap between cells in the heatmaps"
+    )
+    parser.add_argument(
+        "--marker-spacing",
+        default=5,
+        type=int,
+        help="How much to space the markers apart. Set to 0 to disable markers"
+    )
+    parser.add_argument(
+        "--mig-marker-color",
+        default="#dd4f33",
+        help="Color used for the migrating markers"
+    )
+    parser.add_argument(
+        "--div-marker-color",
+        default="#4675f0",
+        help="Color used for the migrating markers"
+    )
+    parser.add_argument(
+        "--marker-style",
+        nargs="+",
+        help="Styling properties for the markers passed as pairs <property> <value>. "
+             "Look at the docs of plotly's Scatter for a full API. "
+             "E.g.: --marker-style marker_symbol square marker_size 5"
+    )
     parser.set_defaults(run=run)
     return parser
 
@@ -172,7 +227,7 @@ def sweep_genomes(genomesdf: pd.DataFrame,
         return pd.read_csv(outputfile)
 
 
-def sample_genomes_and_keylocks(celldfs: list[pd.DataFrame]):
+def sample_genomes_and_keylocks(celldfs: "list[pd.DataFrame]"):
     logger.info("Sampling information from cell dataframes")
     genomes = []
     keylock_tups = []
@@ -197,9 +252,15 @@ def plot_genome(sweepdf: pd.DataFrame,
                 Jmed,
                 Jalpha,
                 weights,
-                keylock_tups: list[tuple[int, int, int, int]],
-                sep=0,
-                column_titles=None):
+                keylock_tups: "list[tuple[int, int, int, int]]",
+                column_titles,
+                two_colorscales,
+                colorscale,
+                sep,
+                marker_spacing,
+                mig_marker_color,
+                div_marker_color,
+                **marker_style):
     logger.info(f"Plotting the network outputs to: {outputfile}")
     weights = np.array(weights, dtype=float)
     gdf = sweepdf.groupby("id")
@@ -220,23 +281,44 @@ def plot_genome(sweepdf: pd.DataFrame,
                                Jalpha,
                                weights,
                                keylocks,
-                               sep)
-        fig.add_traces(traces, rows=[1, 1, 2, 2], cols=g_id + 1)
+                               two_colorscales,
+                               colorscale,
+                               sep,
+                               marker_spacing,
+                               mig_marker_color,
+                               div_marker_color,
+                               **marker_style)
+        fig.add_traces(traces[:4], rows=[1, 1, 2, 2], cols=g_id + 1)
+        fig.add_traces(traces[4:], rows=1, cols=g_id + 1)
+        fig.add_traces(traces[4:], rows=2, cols=g_id + 1)
+        fig.update_xaxes(range=[traces[0].x[0], traces[0].x[-1]],
+                         constrain="domain",
+                         showticklabels=True)
         fig.update_yaxes(scaleanchor="x" + ("" if not g_id else str(g_id + 1)),
                          scaleratio=.5,
                          constrain="domain",
+                         range=[traces[0].y[0], traces[0].y[-1]],
                          col=g_id + 1)
         pbar.update()
-    fig.update_xaxes(constrain="domain",
-                     showticklabels=True)
     fig.update_xaxes(title="food parcels", row=2)
     fig.update_yaxes(title="chemotactic signal", col=1)
-    fig.update_layout(width=400 * (len(gdf)), height=600)
+    fig.update_layout(width=400 * (len(gdf)) + two_colorscales * 100, height=600)
     write_plot(fig, outputfile)
     return fig
 
 
-def make_heatmaps(df, Jmed, Jalpha, weights, keylocks: tuple[int, int, int, int], sep):
+def make_heatmaps(df, 
+                  Jmed,
+                  Jalpha, 
+                  weights,
+                  keylocks: "tuple[int, int, int, int]",
+                  two_colorscales,
+                  colorscale,
+                  sep,
+                  marker_spacing,
+                  mig_marker_color,
+                  div_marker_color,
+                  **marker_style):
     chem_vals = df.chem.unique()
     foodparc_vals = df.food.unique()
     img_size = (len(chem_vals), len(foodparc_vals))
@@ -274,30 +356,34 @@ def make_heatmaps(df, Jmed, Jalpha, weights, keylocks: tuple[int, int, int, int]
                          color_coords=[0, .5, .75, 1]).to_plotly_colorscale()
     divscale = PolarGrad(["#f6f2fa", "#bf94ec", "#386388", "#001f4d"],
                          color_coords=[0, .5, .75, 1]).to_plotly_colorscale()
+    mig_img = np.where(tau_img == 1, sel_gammas_img, np.nan)
+    div_img = np.where(tau_img == 2, sel_gammas_img, np.nan)
 
+    traces = []
     # Self-gamma
-    trace_1a = go.Heatmap(
-        z=np.where(tau_img == 1, sel_gammas_img, np.nan),
+    traces.append(go.Heatmap(
+        z=mig_img,
         x=foodparc_vals,
         y=chem_vals,
         zmin=min_gamma,
         zmax=max_gamma,
-        colorscale=migscale,
+        xgap=sep,
+        ygap=sep,
         colorbar=go.heatmap.ColorBar(y=1, yanchor="top", len=0.5),
-        xgap=sep,
-        ygap=sep
-    )
-    trace_1b = go.Heatmap(
-        z=np.where(tau_img == 2, sel_gammas_img, np.nan),
+        colorscale=migscale if two_colorscales else colorscale
+    ))
+    traces.append(go.Heatmap(
+        z=div_img,
         x=foodparc_vals,
         y=chem_vals,
         zmin=min_gamma,
         zmax=max_gamma,
-        colorscale=divscale,
-        colorbar=go.heatmap.ColorBar(xpad=75, y=1, yanchor="top", len=0.5),
         xgap=sep,
-        ygap=sep
-    )
+        ygap=sep,
+        colorbar=go.heatmap.ColorBar(xpad=75, y=1, yanchor="top", len=0.5),
+        colorscale=divscale if two_colorscales else colorscale,
+        showscale=two_colorscales,
+    ))
 
     migkey = bistring_from_dec(keylocks[0], weights.size)
     miglock = bistring_from_dec(keylocks[1], weights.size)
@@ -313,29 +399,54 @@ def make_heatmaps(df, Jmed, Jalpha, weights, keylocks: tuple[int, int, int, int]
             other_lock = miglock
         other_gammas.append(get_gamma(jkey, jlock, other_key, other_lock, Jmed, Jalpha, weights))
     other_gammas_img = np.reshape(other_gammas, img_size)
-    trace_2a = go.Heatmap(
+    traces.append(go.Heatmap(
         z=np.where(tau_img == 1, other_gammas_img, np.nan),
         x=foodparc_vals,
         y=chem_vals,
         zmin=min_gamma,
         zmax=max_gamma,
-        colorscale=migscale,
         xgap=sep,
         ygap=sep,
+        colorscale=migscale if two_colorscales else colorscale,
         showscale=False
-    )
-    trace_2b = go.Heatmap(
+    ))
+    traces.append(go.Heatmap(
         z=np.where(tau_img == 2, other_gammas_img, np.nan),
         x=foodparc_vals,
         y=chem_vals,
         zmin=min_gamma,
         zmax=max_gamma,
-        colorscale=divscale,
         xgap=sep,
         ygap=sep,
+        colorscale=divscale if two_colorscales else colorscale,
         showscale=False
-    )
-    return trace_1a, trace_1b, trace_2a, trace_2b
+    ))
+
+    if marker_spacing:
+        symbol_img = np.zeros_like(tau_img)
+        symbol_img[::marker_spacing, ::marker_spacing] = tau_img[::marker_spacing, ::marker_spacing]
+        symbol_img = symbol_img.T
+        mig_indexes = np.nonzero(symbol_img == 1)
+        div_indexes = np.nonzero(symbol_img == 2)
+        traces.append(go.Scatter(
+            x=foodparc_vals[mig_indexes[0]],
+            y=chem_vals[mig_indexes[1]],
+            mode="markers",
+            showlegend=False,
+            marker_color=mig_marker_color,
+            marker_line_color=mig_marker_color,
+            **marker_style
+        ))
+        traces.append(go.Scatter(
+            x=foodparc_vals[div_indexes[0]],
+            y=chem_vals[div_indexes[1]],
+            mode="markers",
+            showlegend=False,
+            marker_color=div_marker_color,
+            marker_line_color=div_marker_color,
+            **marker_style
+        ))
+    return traces
 
 
 def get_median_gamma(key_locks, Jmed, Ja, weights, n=None):
@@ -374,7 +485,7 @@ def bistring_from_dec(dec, width):
 
 def test():
     parser = get_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(["scripts/genome/data", "scripts/genome/plots.svg", "-s"])
     args.run(args)
 
 
