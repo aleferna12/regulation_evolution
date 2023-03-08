@@ -23,7 +23,7 @@ def get_parser():
         for filepath in Path(args.datadir).iterdir():
             celldfs.append(parse_cell_data(filepath))
             column_titles.append(filepath.name.replace(".csv", ""))
-        genomesdf, keylock_tups = sample_genomes_and_keylocks(celldfs)
+        genomesdf, keylock_tups = sample_genomes_and_keylocks(celldfs, args.seed)
         sweepdf = sweep_genomes(genomesdf,
                                 args.min_chem,
                                 args.max_chem,
@@ -144,6 +144,11 @@ def get_parser():
              "Setting this parameter to a very low value causes artifacts in the plots "
              "(less than 10 is kinda dangerous, less than 5 is unreliable)."
     )
+    parser.add_argument(
+        "--seed",
+        help="Seed used when sampling genomes from the dataframes",
+        type=int
+    )
     parser.add_argument("-s",
                         "--show",
                         action="store_true",
@@ -227,12 +232,12 @@ def sweep_genomes(genomesdf: pd.DataFrame,
         return pd.read_csv(outputfile)
 
 
-def sample_genomes_and_keylocks(celldfs: "list[pd.DataFrame]"):
+def sample_genomes_and_keylocks(celldfs: "list[pd.DataFrame]", seed=None):
     logger.info("Sampling information from cell dataframes")
     genomes = []
     keylock_tups = []
     for celldf in celldfs:
-        genomes.append(celldf.sample(1))
+        genomes.append(celldf.sample(1, random_state=seed))
         kldf = celldf.groupby("tau")[["jkey_dec", "jlock_dec"]].agg(pd.Series.mode)
         keylock_tups.append(tuple(kldf.values.flatten()))
     genomes = pd.concat(genomes)[["innr",
