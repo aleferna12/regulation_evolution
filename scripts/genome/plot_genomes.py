@@ -239,7 +239,8 @@ def sample_genomes_and_keylocks(celldfs: "list[pd.DataFrame]", seed=None):
     keylock_tups = []
     for celldf in celldfs:
         genomes.append(celldf.sample(1, random_state=seed))
-        kldf = celldf.groupby("tau")[["jkey_dec", "jlock_dec"]].agg(pd.Series.mode)
+        # If two values are found in the same freq, pick the first one
+        kldf = celldf.groupby("tau")[["jkey_dec", "jlock_dec"]].agg(lambda s: pd.Series.mode(s)[0])
         keylock_tups.append(tuple(kldf.values.flatten()))
     genomes = pd.concat(genomes)[["innr",
                                   "regnr",
