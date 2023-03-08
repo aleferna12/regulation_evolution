@@ -21,7 +21,7 @@ def get_parser():
         nargs="*",
         help="Palettes to add to the color table (in order). The palettes files "
              "must be located in 'scripts/colortable/palettes'. To generate palettes use the "
-             "'colorir' python package (default: %(default)s)"
+             "'colorir' python package (default: categ8 chemgrad_2 miggrad8 divgrad8)"
     )
     parser.add_argument("-p",
                         "--print",

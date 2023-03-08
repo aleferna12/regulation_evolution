@@ -95,7 +95,7 @@ def get_parser():
         nargs="+",
         default=list(range(1, 7)),
         type=float,
-        help="Weights applied to the keys and locks for gamma calculation (default: %(default)s)"
+        help="Weights applied to the keys and locks for gamma calculation (default: 1 2 3 4 5 6)"
     )
     parser.add_argument(
         "--min-chem",
