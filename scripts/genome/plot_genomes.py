@@ -99,38 +99,38 @@ def get_parser():
         help="Weights applied to the keys and locks for gamma calculation"
     )
     parser.add_argument(
-        "--min_chem",
+        "--min-chem",
         default=40,
         type=float,
         help="Minimum chemotactical signal used as input in the genome sweep"
     )
     parser.add_argument(
-        "--max_chem",
+        "--max-chem",
         default=90,
         type=float,
         help="Maximum chemotactical signal used as input in the genome sweep"
     )
     parser.add_argument(
-        "--step_chem",
+        "--step-chem",
         default=1,
         type=float,
         help="Step with which to increase the chem signal "
              "input for the genome weep"
     )
     parser.add_argument(
-        "--min_foodparc",
+        "--min-foodparc",
         default=0,
         type=float,
         help="Minimum number of food parcels used as input in the genome sweep"
     )
     parser.add_argument(
-        "--max_foodparc",
+        "--max-foodparc",
         default=25,
         type=float,
         help="Maximum number of food parcels used as input in the genome sweep"
     )
     parser.add_argument(
-        "--step_foodparc",
+        "--step-foodparc",
         default=0.5,
         type=float,
         help="Step with which to increase the number of food parcels "
