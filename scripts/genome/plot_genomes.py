@@ -173,7 +173,8 @@ def get_parser():
         "--marker-spacing",
         default=5,
         type=int,
-        help="How much to space the markers apart. Set to 0 to disable markers"
+        help="How much to space the markers apart (in terms of rows/columns in the graph, not space!)."
+             "Set to 0 to disable markers"
     )
     parser.add_argument(
         "--mig-marker-color",
