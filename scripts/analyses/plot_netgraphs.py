@@ -32,7 +32,6 @@ def get_parser():
         logger.info("Finished")
 
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Plot a cell GRN as a graph"
     )
     parser.add_argument("datafile",
@@ -40,7 +39,7 @@ def get_parser():
     parser.add_argument("outputdir", help="directory where to save the SVGs")
     parser.add_argument("-p",
                         "--prune-level",
-                        help="Prune level, the highest the less edges will be shown",
+                        help="Prune level, the highest the less edges will be shown (default: %(default)s)",
                         default=1,
                         type=int)
     parser.add_argument("-s",

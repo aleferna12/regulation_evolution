@@ -37,13 +37,12 @@ def get_parser():
                           min_cluster=args.min_cluster)
 
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Plot information about the evolution of the simulation over time"
     )
     parser.add_argument("datadir", help="Directory containing the cell CSV files")
     parser.add_argument("-t",
                         "--start-time",
-                        help="First time-step to plot",
+                        help="First time-step to plot (default: %(default)s)",
                         default=0,
                         type=int)
     parser.add_argument("-n",
@@ -59,11 +58,11 @@ def get_parser():
                         help="Output HTML or SVG file for adhesion plots (these are slow)")
     adhesion = parser.add_argument_group("adhesion plot arguments")
     adhesion.add_argument("--top-n",
-                          help="How many of the clusters with best fitness to plot",
+                          help="How many of the clusters with best fitness to plot (default: %(default)s)",
                           default=5,
                           type=int)
     adhesion.add_argument("--min-cluster",
-                          help="Minimum size of cluster to be considered for the plot",
+                          help="Minimum size of cluster to be considered for the plot (default: %(default)s)",
                           default=50,
                           type=int)
     parser.set_defaults(run=run)

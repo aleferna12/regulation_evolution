@@ -35,7 +35,6 @@ def get_parser():
         logger.info("Finished")
 
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Create tree files to be plotted with 'plot_tree'"
     )
     parser.add_argument("datadir", help="Directory containing the cell data as CSV files")
@@ -77,7 +76,7 @@ def get_parser():
                         "--format",
                         default=5,
                         type=int,
-                        help="Tree output format (following etetoolkit conventions)")
+                        help="Tree output format (following etetoolkit conventions) (default: %(default)s)")
     parser.add_argument("-t",
                         "--last-time",
                         default=-1,

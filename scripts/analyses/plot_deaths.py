@@ -19,14 +19,13 @@ def get_parser():
         logger.info("Finished")
 
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Plot information about cell death"
     )
     parser.add_argument("datadir", help="Directory containing the cell grave data frames")
     parser.add_argument("outputfile", help="SVG output file")
     parser.add_argument("-b",
                         "--bin-size",
-                        help="Determine the plot bin size in MCS",
+                        help="Determine the plot bin size in MCS (default: %(default)s)",
                         type=int,
                         default=50000)
     parser.set_defaults(run=run)

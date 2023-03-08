@@ -28,7 +28,6 @@ def get_parser():
         logger.info("Finished")
 
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Plot the phylogenetic relations of the simulation"
     )
     parser.add_argument("treepath", help="NEWICK file to be plotted")
@@ -41,7 +40,7 @@ def get_parser():
                         "--min-cluster",
                         default=2,
                         type=int,
-                        help="minimum number of cells in a cluster for it to be assigned a color")
+                        help="minimum number of cells in a cluster for it to be assigned a color (default: %(default)s)")
     parser.add_argument("-c",
                         "--no-color",
                         action="store_true",

@@ -58,7 +58,6 @@ def get_parser():
             fig.show("browser")
 
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Performs parameter sweeps in genomes sampled from simulations"
     )
     parser.add_argument(
@@ -82,13 +81,13 @@ def get_parser():
         "--Jmed",
         default=14,
         type=int,
-        help="J value against the medium used in the gamma calculations"
+        help="J value against the medium used in the gamma calculations (default: %(default)s)"
     )
     parser.add_argument(
         "--Jalpha",
         default=7,
         type=int,
-        help="J value which is summed to cell adhesion strengths in the gamma calculations"
+        help="J value which is summed to cell adhesion strengths in the gamma calculations (default: %(default)s)"
     )
     parser.add_argument(
         "-w",
@@ -96,45 +95,45 @@ def get_parser():
         nargs="+",
         default=list(range(1, 7)),
         type=float,
-        help="Weights applied to the keys and locks for gamma calculation"
+        help="Weights applied to the keys and locks for gamma calculation (default: %(default)s)"
     )
     parser.add_argument(
         "--min-chem",
         default=40,
         type=float,
-        help="Minimum chemotactical signal used as input in the genome sweep"
+        help="Minimum chemotactical signal used as input in the genome sweep (default: %(default)s)"
     )
     parser.add_argument(
         "--max-chem",
         default=90,
         type=float,
-        help="Maximum chemotactical signal used as input in the genome sweep"
+        help="Maximum chemotactical signal used as input in the genome sweep (default: %(default)s)"
     )
     parser.add_argument(
         "--step-chem",
         default=1,
         type=float,
         help="Step with which to increase the chem signal "
-             "input for the genome weep"
+             "input for the genome weep (default: %(default)s)"
     )
     parser.add_argument(
         "--min-foodparc",
         default=0,
         type=float,
-        help="Minimum number of food parcels used as input in the genome sweep"
+        help="Minimum number of food parcels used as input in the genome sweep (default: %(default)s)"
     )
     parser.add_argument(
         "--max-foodparc",
         default=25,
         type=float,
-        help="Maximum number of food parcels used as input in the genome sweep"
+        help="Maximum number of food parcels used as input in the genome sweep (default: %(default)s)"
     )
     parser.add_argument(
         "--step-foodparc",
         default=0.5,
         type=float,
         help="Step with which to increase the number of food parcels "
-             "input for the genome weep"
+             "input for the genome weep (default: %(default)s)"
     )
     parser.add_argument(
         "--mcss",
@@ -142,7 +141,7 @@ def get_parser():
         type=int,
         help="How many times update the genome with the same inputs. "
              "Setting this parameter to a very low value causes artifacts in the plots "
-             "(less than 10 is kinda dangerous, less than 5 is unreliable)."
+             "(less than 10 is kinda dangerous, less than 5 is unreliable) (default: %(default)s)"
     )
     parser.add_argument(
         "--cell-index",
@@ -162,30 +161,30 @@ def get_parser():
     parser.add_argument(
         "--colorscale",
         default="Viridis",
-        help="If not 'two-colorscales', then which colorscale to use. Any plotly colorscales are available"
+        help="If not 'two-colorscales', then which colorscale to use. Any plotly colorscales are available (default: %(default)s)"
     )
     parser.add_argument(
         "--sep",
         default=0,
         type=float,
-        help="Gap between cells in the heatmaps"
+        help="Gap between cells in the heatmaps (default: %(default)s)"
     )
     parser.add_argument(
         "--marker-spacing",
         default=5,
         type=int,
         help="How much to space the markers apart (in terms of rows/columns in the graph, not space!)."
-             "Set to 0 to disable markers"
+             "Set to 0 to disable markers (default: %(default)s)"
     )
     parser.add_argument(
         "--mig-marker-color",
         default="#dd4f33",
-        help="Color used for the migrating markers"
+        help="Color used for the migrating markers (default: %(default)s)"
     )
     parser.add_argument(
         "--div-marker-color",
         default="#4675f0",
-        help="Color used for the migrating markers"
+        help="Color used for the migrating markers (default: %(default)s)"
     )
     parser.add_argument(
         "--marker-style",

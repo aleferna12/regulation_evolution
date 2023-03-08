@@ -15,7 +15,6 @@ def get_parser():
         logger.info("Finished")
 
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Create cell templates used to generate competition files with "
                     "'make_competition'"
     )
@@ -26,13 +25,15 @@ def get_parser():
                         help="CSV output template file")
     parser.add_argument("-n",
                         "--number",
-                        help="Number of cells to sample from each CSV file")
+                        default=1,
+                        type=int,
+                        help="Number of cells to sample from each CSV file (default: %(default)s)")
     parser.add_argument("-f",
                         "--food",
                         default=200,
                         type=int,
                         help="The amount of food the will be reassigned to each cell in the "
-                             "final template. Use -1 to keep the food the cell had")
+                             "final template. Use -1 to keep the food the cell had (default: %(default)s)")
     parser.set_defaults(run=run)
     return parser
 
@@ -53,7 +54,3 @@ def sample_template(celldfs: List[pd.DataFrame], outputfile, n=10, food=200):
     if food != -1:
         tdf.food = food
     tdf.to_csv(outputfile, index=False)
-
-
-if __name__ == "__main__":
-    main()

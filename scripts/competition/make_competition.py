@@ -18,7 +18,6 @@ def get_parser():
         logger.info("Finished")
 
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Create cell and lattice CSV files to start competition experiments"
     )
     input_ = parser.add_argument_group("input")
@@ -43,7 +42,7 @@ def get_parser():
     parser.add_argument(
         "-l",
         "--cell_length",
-        help="diameter of the initialized cells",
+        help="Diameter of the initialized cells (default: %(default)s)",
         default=7,
         type=int
     )
