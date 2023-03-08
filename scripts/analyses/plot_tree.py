@@ -1,5 +1,5 @@
 import argparse
-import sys
+import warnings
 import logging
 import re
 from pathlib import Path
@@ -24,7 +24,7 @@ def get_parser():
 
         celldf = parse_cell_data(args.datafile)
         clusters = get_adhering_clusters(celldf)
-        plot_tree(tree, clusters, args.outpath, args.min_cluster, not args.no_color)
+        plot_tree(tree, clusters, args.outpath, args.min_cluster, not args.no_color, args.show_time)
         logger.info("Finished")
 
     parser = argparse.ArgumentParser(
@@ -40,23 +40,27 @@ def get_parser():
                         "--min-cluster",
                         default=2,
                         type=int,
-                        help="minimum number of cells in a cluster for it to be assigned a color (default: %(default)s)")
+                        help="Minimum number of cells in a cluster for it to be assigned a color (default: %(default)s)")
     parser.add_argument("-c",
                         "--no-color",
                         action="store_true",
-                        help="do not plot cluster colors, branches only")
+                        help="Do not plot cluster colors, branches only")
+    parser.add_argument("-t",
+                        "--show-time",
+                        action="store_true",
+                        help="Shows the time-point associated with each node")
     parser.add_argument("-r",
                         "--reroot",
                         action="store_true",
-                        help="reroot the tree on a mid-point before plotting (not recommended)")
+                        help="Reroot the tree on a mid-point before plotting (not recommended)")
     parser.set_defaults(run=run)
     return parser
 
 
-def plot_tree(tree: Tree, clusters: CellCluster, outpath, min_cluster=2, colored=True):
+def plot_tree(tree: Tree, clusters: CellCluster, outpath, min_cluster=2, colored=True, show_time=False):
     logger.info(f"Plotting tree to '{outpath}'")
 
-    colors = get_cluster_colors(clusters, min_cluster)
+    colors = [str(color.hex()) for color in get_cluster_colors(clusters, min_cluster)]
     leaf_color = {}
     for cluster, color in zip(clusters, colors):
         for leaf in cluster:
@@ -78,6 +82,12 @@ def plot_tree(tree: Tree, clusters: CellCluster, outpath, min_cluster=2, colored
                                      f"time point: {last_timepoint}")
                 node.img_style["bgcolor"] = leaf_color[node.name]
                 node.img_style["hz_line_color"] = leaf_color[node.name]
+        elif show_time:
+            if "time" not in node.features:
+                warnings.warn("'show_time' is True but tree does not have a 'time' feature")
+            else:
+                face = AttrFace("time")
+                node.add_face(face, column=0, position="branch-top")
 
     ts = TreeStyle()
     ts.root_opening_factor = 0.1
