@@ -32,7 +32,7 @@ vector<Genome> readGenomes(const string &inputfile) {
     string line;
     getline(file, line);
     if (line != genome_headers)
-        throw runtime_error("Inadequate file headers for genome input. Should be:\n" + genome_headers);
+        throw runtime_error("Inadequate file headers for genome input. Should be: " + genome_headers);
 
     vector<Genome> genomes {};
     while (getline(file, line)) {

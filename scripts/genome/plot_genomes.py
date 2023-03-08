@@ -23,7 +23,7 @@ def get_parser():
         for filepath in Path(args.datadir).iterdir():
             celldfs.append(parse_cell_data(filepath))
             column_titles.append(filepath.name.replace(".csv", ""))
-        genomesdf, keylock_tups = sample_genomes_and_keylocks(celldfs, args.seed)
+        genomesdf, keylock_tups = sample_genomes_and_keylocks(celldfs, args.cell_index)
         sweepdf = sweep_genomes(genomesdf,
                                 args.min_chem,
                                 args.max_chem,
@@ -145,8 +145,9 @@ def get_parser():
              "(less than 10 is kinda dangerous, less than 5 is unreliable)."
     )
     parser.add_argument(
-        "--seed",
-        help="Seed used when sampling genomes from the dataframes",
+        "--cell-index",
+        help="Can be used to chose which cell's genome to plot from each cel data frame (instead of picking one at random). "
+             "All data frames must have this index",
         type=int
     )
     parser.add_argument("-s",
@@ -233,12 +234,15 @@ def sweep_genomes(genomesdf: pd.DataFrame,
         return pd.read_csv(outputfile)
 
 
-def sample_genomes_and_keylocks(celldfs: "list[pd.DataFrame]", seed=None):
+def sample_genomes_and_keylocks(celldfs: "list[pd.DataFrame]", cell_index=None):
     logger.info("Sampling information from cell dataframes")
     genomes = []
     keylock_tups = []
     for celldf in celldfs:
-        genomes.append(celldf.sample(1, random_state=seed))
+        if cell_index is None:
+            genomes.append(celldf.sample(1))
+        else:
+            genomes.append(celldf.iloc[[cell_index]])
         # If two values are found in the same freq, pick the first one
         kldf = celldf.groupby("tau")[["jkey_dec", "jlock_dec"]].agg(lambda s: pd.Series.mode(s)[0])
         keylock_tups.append(tuple(kldf.values.flatten()))
