@@ -24,7 +24,7 @@ def get_parser():
 
         celldf = parse_cell_data(args.datafile)
         clusters = get_adhering_clusters(celldf)
-        plot_tree(tree, clusters, args.outpath, args.min_cluster, not args.no_color, args.show_time)
+        plot_tree(tree, clusters, args.outpath, args.min_cluster, not args.no_color, args.show_attrs)
         logger.info("Finished")
 
     parser = argparse.ArgumentParser(
@@ -45,10 +45,10 @@ def get_parser():
                         "--no-color",
                         action="store_true",
                         help="Do not plot cluster colors, branches only")
-    parser.add_argument("-t",
-                        "--show-time",
+    parser.add_argument("-a",
+                        "--show-attrs",
                         action="store_true",
-                        help="Shows the time-point associated with each node")
+                        help="Shows the name and NHX attributes associated with each node (such as 'time')")
     parser.add_argument("-r",
                         "--reroot",
                         action="store_true",
@@ -57,7 +57,7 @@ def get_parser():
     return parser
 
 
-def plot_tree(tree: Tree, clusters: CellCluster, outpath, min_cluster=2, colored=True, show_time=False):
+def plot_tree(tree: Tree, clusters: CellCluster, outpath, min_cluster=2, colored=True, show_attrs=False):
     logger.info(f"Plotting tree to '{outpath}'")
 
     colors = [str(color.hex()) for color in get_cluster_colors(clusters, min_cluster)]
@@ -70,10 +70,11 @@ def plot_tree(tree: Tree, clusters: CellCluster, outpath, min_cluster=2, colored
     for node in tree.traverse():
         node.img_style["size"] = 0
         if node.is_leaf():
-            # rapidnj adds these for no reason
-            node.name = node.name.strip("\'")
-            face = AttrFace("name")
-            node.add_face(face, column=0)
+            if show_attrs:
+                # rapidnj adds these for no reason
+                node.name = node.name.strip("\'")
+                face = AttrFace("name")
+                node.add_face(face, column=0)
             # Color unicellular nodes dark gray and doesn't color dead-end nodes
             if colored and getattr(node, "time", None) == last_timepoint:
                 if node.name not in leaf_color:
@@ -82,12 +83,9 @@ def plot_tree(tree: Tree, clusters: CellCluster, outpath, min_cluster=2, colored
                                      f"time point: {last_timepoint}")
                 node.img_style["bgcolor"] = leaf_color[node.name]
                 node.img_style["hz_line_color"] = leaf_color[node.name]
-        elif show_time:
-            if "time" not in node.features:
-                warnings.warn("'show_time' is True but tree does not have a 'time' feature")
-            else:
-                face = AttrFace("time")
-                node.add_face(face, column=0, position="branch-top")
+        elif show_attrs and "time" in node.features:
+            face = AttrFace("time")
+            node.add_face(face, column=0, position="branch-top")
 
     ts = TreeStyle()
     ts.root_opening_factor = 0.1

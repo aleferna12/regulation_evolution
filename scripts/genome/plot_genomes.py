@@ -120,7 +120,10 @@ def get_parser():
         "--min-foodparc",
         default=0,
         type=float,
-        help="Minimum number of food parcels used as input in the genome sweep (default: %(default)s)"
+        help="Minimum number of food parcels used as input in the genome sweep. "
+             "The conversion from food to food parcels is as follows: "
+             "food parcels = food / (scaling_cell_to_ca_time * (divtime + divdur) / metabperiod). "
+             "(default: %(default)s)"
     )
     parser.add_argument(
         "--max-foodparc",
