@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def get_parser():
     def run(args):
-        celldfs = [parse_cell_data(path) for path in args.cellfiles]
+        celldfs = [parse_cell_data(path) for path in args.inputfiles]
         sample_template(celldfs, args.outfile, args.number, args.food)
         logger.info("Finished")
 
@@ -18,11 +18,14 @@ def get_parser():
         description="Create cell templates used to generate competition files with "
                     "'make_competition'"
     )
-    parser.add_argument("cellfiles",
-                        nargs='+',
-                        help="CSV files containing cell data from simulations")
     parser.add_argument("outfile",
                         help="CSV output template file")
+    parser.add_argument("-i",
+                        "--inputfiles",
+                        nargs='+',
+                        required=True,
+                        help="Space-delimmited list of cell dataframe CSV files extracted from simulations. "
+                             "One or more cells from each of these files will be added to the output template file")
     parser.add_argument("-n",
                         "--number",
                         default=1,

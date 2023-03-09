@@ -20,7 +20,7 @@ def get_parser():
     def run(args):
         celldfs = []
         column_titles = []
-        for filepath in Path(args.datadir).iterdir():
+        for filepath in Path(args.datadir).glob("*.csv"):
             celldfs.append(parse_cell_data(filepath))
             column_titles.append(filepath.name.replace(".csv", ""))
         genomesdf, keylock_tups = sample_genomes_and_keylocks(celldfs, args.cell_index)

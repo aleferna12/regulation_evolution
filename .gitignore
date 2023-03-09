@@ -10,3 +10,4 @@ scripts/genome/data/2.csv
 scripts/genome/no-mul-uni.csv
 build
 scripts/genome/plots.svg
+scripts/competition/make_thinker.py

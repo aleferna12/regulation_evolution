@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def get_parser():
     def run(args):
-        celldf, latdf = make_competition(args.imgfile, args.cellfile, args.cell_length)
+        celldf, latdf = make_competition(args.imgfile, args.templatefile, args.cell_length)
         logger.info("Writing output competition files")
         celldf.to_csv(args.outcellfile, index=False)
         latdf.to_csv(args.latticefile, header=False, index=False)
@@ -22,16 +22,16 @@ def get_parser():
     )
     input_ = parser.add_argument_group("input")
     input_.add_argument(
-        "cellfile",
+        "templatefile",
         help="CSV file containing the template cells. The number of different groups must match "
              "the number of unique pixel colors in 'imgfile'. If more than one template has the "
              "same group attribute, they will be sampled sequentially when projected onto the "
-             "lattice"
+             "lattice. These files can be generated with the 'make_templates' script"
     )
     input_.add_argument(
         "imgfile",
         help="PNG file containing a drawing of the initial setting of the simulation."
-             "Colors represent entries on the 'cellfile' table (ordered in reverse by RGB value)."
+             "Colors represent entries on the 'templatefile' table (ordered in reverse by RGB value)."
              "The background must be white and will be ignored. Be careful not to have any fading "
              "colors, as these will be interpreted as additional cell templates. The image "
              "dimensions should match those of the simulation lattice"
@@ -50,7 +50,7 @@ def get_parser():
     return parser
 
 
-def make_competition(imgfile, cellfile, cell_length=7):
+def make_competition(imgfile, templatefile, cell_length=7):
     logger.info("Making competition file from image and templates")
 
     if imgfile[-3:].lower() != "png":
@@ -59,7 +59,7 @@ def make_competition(imgfile, cellfile, cell_length=7):
     if img.shape[0] != img.shape[1]:
         raise ValueError("image width and height must match")
 
-    attrdf = parse_cell_data(cellfile)
+    attrdf = parse_cell_data(templatefile)
     attrdf = attrdf.reset_index(drop=True)
     attrdf["time"] = 0
     gdf = attrdf.groupby("group")
@@ -67,7 +67,7 @@ def make_competition(imgfile, cellfile, cell_length=7):
     colors, indexes = np.unique(np.reshape(img, (-1, img.shape[2])), axis=0, return_inverse=True)
     if len(colors) - 1 != len(gdf):
         raise ValueError("number of non-white pixel colors in 'imgfile' and unique 'group' "
-                         f"attributes in 'cellfile' must match (got {len(colors - 1)} and "
+                         f"attributes in 'templatefile' must match (got {len(colors - 1)} and "
                          f"{len(gdf)} respectively)")
 
     # Reverse colors and indexes so they are ordered by reverse rgb when matching the cells
