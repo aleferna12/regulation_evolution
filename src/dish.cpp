@@ -724,10 +724,10 @@ int Dish::CountCells() const {
 bool Dish::groupExtinction() const {
     array<int, 2> groups {};
     for (auto &c : cell) {
-        if (c.AliveP()) {
+        if (c.AliveP() and c.sigma != 0) {
             if (c.group > 1)
                 throw runtime_error("inadequate number of cell groups detected");
-            groups.at(c.group)++;
+            groups[c.group]++;
         }
     }
     return not (groups[0] and groups[1]);
