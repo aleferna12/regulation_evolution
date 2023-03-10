@@ -304,8 +304,7 @@ def get_adhering_clusters(celldf: pd.DataFrame) -> List[CellCluster]:
 
 
 def get_cluster_colors(clusters: list[CellCluster], min_cluster=2, outcast_color="a9a9a9"):
-    palpath = Path(__file__).resolve().parent.parent / "colortable" / "palettes"
-    pal = StackPalette.load("carnival", palettes_dir=palpath)
+    pal = StackPalette.load("carnival")
     grad = PolarGrad(pal, color_sys=HCLuv)
     # Only allocate colors for clusters with at least min_cluster neighbours
     n_colors = len([c for c in clusters if len(c) >= min_cluster])

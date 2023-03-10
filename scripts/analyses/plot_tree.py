@@ -60,6 +60,9 @@ def get_parser():
 def plot_tree(tree: Tree, clusters: CellCluster, outpath, min_cluster=2, colored=True, show_attrs=False):
     logger.info(f"Plotting tree to '{outpath}'")
 
+    # If root dist is too short it causes problems displaying branch attributes
+    if tree.dist == 1:
+        tree.dist = tree.children[0].dist / 2
     colors = [str(color.hex()) for color in get_cluster_colors(clusters, min_cluster)]
     leaf_color = {}
     for cluster, color in zip(clusters, colors):
