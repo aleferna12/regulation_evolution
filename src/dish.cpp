@@ -591,91 +591,91 @@ void Dish::UpdateCellParameters(int Time) {
 
     //cout<<"Update Cell parameters "<<Time<<endl;
     for (c = cell.begin(), ++c; c != cell.end(); ++c) {
-        if (c->AliveP()) {
-            c->time_since_birth++;
-            int interval = Time + c->Gextiming();
-            //update the network withing each cell, if it is the right time
-            if (!(interval % par.scaling_cell_to_ca_time)) {
-                // Death checks
-                string death_reason;
-                if (c->Area() < par.min_area_for_life) {
-                    death_reason = "squeezed";
-                } else if (c->food <= 0) {
-                    death_reason = "starved";
-                }
-                // We divide by scaling_cell_to_time to ensure that cells dont live longer depending on this parameter
-                else if (RANDOM() < par.gompertz_alpha * pow(M_E, par.gompertz_beta * c->time_since_birth / par.scaling_cell_to_ca_time)) {
-                    death_reason = "old";
-                }
-                if (not death_reason.empty()) {
-                    // Mark cell to die
-                    // notice that this keeps the cell in the cell array, it only removes its sigma from the field
-                    to_kill.push_back(c->Sigma());
-                    CellGravestone cg = {
-                        c->Sigma(),
-                        c->getTau(),
-                        c->time_since_birth,
-                        Time,
-                        CPM->calculateGamma(c->Sigma(), c->Sigma()),
-                        death_reason
-                    };
-                    cell_graves.push_back(std::move(cg));
-                    continue;
-                }
-                //calculate inputs
-                inputs[0] = (double) c->grad_conc;
-                // Normalize food by how many divisions the cell could afford (not considering that food gets
-                // halfed after each division)
-                double division_cost =
-                    par.scaling_cell_to_ca_time * (par.divtime + par.divdur) / (double) par.metabperiod;
-                inputs[1] = c->food / division_cost;
-                c->UpdateGenes(inputs, true);
-                c->FinishGeneUpdate();
-                if (par.evolvable_adh)
-                    c->updateJDecs();
+        if (not c->AliveP())
+            continue;
+        c->time_since_birth++;
+        int interval = Time + c->Gextiming();
+        // Death checks
+        if (interval % 20 == 0) {
+            string death_reason;
+            if (c->Area() < par.min_area_for_life) {
+                death_reason = "squeezed";
+            } else if (c->food <= 0) {
+                death_reason = "starved";
+            }
+            else if (RANDOM() < par.gompertz_alpha * pow(M_E, par.gompertz_beta * c->time_since_birth)) {
+                death_reason = "old";
+            }
+            if (not death_reason.empty()) {
+                // Mark cell to die
+                // notice that this keeps the cell in the cell array, it only removes its sigma from the field
+                to_kill.push_back(c->Sigma());
+                CellGravestone cg = {
+                    c->Sigma(),
+                    c->getTau(),
+                    c->time_since_birth,
+                    Time,
+                    CPM->calculateGamma(c->Sigma(), c->Sigma()),
+                    death_reason
+                };
+                cell_graves.push_back(std::move(cg));
+                continue;
+            }
+        //update the network withing each cell, if it is the right time
+        if (!(interval % par.scaling_cell_to_ca_time)) {
+            //calculate inputs
+            inputs[0] = (double) c->grad_conc;
+            // Normalize food by how many divisions the cell could afford (not considering that food gets
+            // halfed after each division)
+            double division_cost =
+                par.scaling_cell_to_ca_time * (par.divtime + par.divdur) / (double) par.metabperiod;
+            inputs[1] = c->food / division_cost;
+            c->UpdateGenes(inputs, true);
+            c->FinishGeneUpdate();
+            if (par.evolvable_adh)
+                c->updateJDecs();
 
-                //cell decides to divide
-                if (c->genome.outputnodes[0].Boolstate == 1) {
-                    //cout<<"cell "<<c->Sigma()<<" wants to divide"<<endl;
-                    c->dividecounter++;
+            //cell decides to divide
+            if (c->genome.outputnodes[0].Boolstate == 1) {
+                //cout<<"cell "<<c->Sigma()<<" wants to divide"<<endl;
+                c->dividecounter++;
 
-                    if (c->dividecounter >= par.divtime + par.divdur) {
-                        //divide
-                        if (c->Area() > 30) {
-                            //cout<<"cell "<<c->Sigma()<<" will divide"<<endl;
-                            if (!par.nodivisions) {
-                                // Divide cell later
-                                to_divide.push_back(c->Sigma());
-                            } else {
-                                c->AddTimesDivided();
-                            }
+                if (c->dividecounter >= par.divtime + par.divdur) {
+                    //divide
+                    if (c->Area() > 30) {
+                        //cout<<"cell "<<c->Sigma()<<" will divide"<<endl;
+                        if (!par.nodivisions) {
+                            // Divide cell later
+                            to_divide.push_back(c->Sigma());
+                        } else {
+                            c->AddTimesDivided();
                         }
-                        //we already set the target area back to normal. We won't run any AmoebaeMove in between this and division
-                        //like this both daughter cells will inherit the normal size
-                        //and if the cell was too small, it needs to start all over anyway. (Hopefully a rare case)
-                        c->SetTargetArea(par.target_area);
-                        c->dividecounter = 0;
-                        c->ClearGenomeState(); //reset the GRN!
-                    } //not time to divide yet, but do stop migrating and start growing
-                    else if (c->dividecounter > par.divtime) {
-                        //cout<<"cell "<<c->Sigma()<<" starting to divide"<<endl;
-                        if (c->TargetArea() < par.target_area * 2)
-                            c->SetTargetArea(c->TargetArea() + 1);
-                        c->setMu(0.);
-                        c->setChemMu(0.0);
-                        c->setTau(2);
                     }
-                }
-                    //this is a migratory cell
-                else {
-                    //if (c->dividecounter) cout<<"cell "<<c->Sigma()<<" stopped division program"<<endl;
-                    c->dividecounter = 0;
-                    c->setMu(par.startmu);
-                    c->setChemMu(par.init_chemmu);
+                    //we already set the target area back to normal. We won't run any AmoebaeMove in between this and division
+                    //like this both daughter cells will inherit the normal size
+                    //and if the cell was too small, it needs to start all over anyway. (Hopefully a rare case)
                     c->SetTargetArea(par.target_area);
-                    c->setTau(1);
-                    //cout<<"cell "<<c->Sigma()<<" is a migratory cell"<<endl;
+                    c->dividecounter = 0;
+                    c->ClearGenomeState(); //reset the GRN!
+                } //not time to divide yet, but do stop migrating and start growing
+                else if (c->dividecounter > par.divtime) {
+                    //cout<<"cell "<<c->Sigma()<<" starting to divide"<<endl;
+                    if (c->TargetArea() < par.target_area * 2)
+                        c->SetTargetArea(c->TargetArea() + 1);
+                    c->setMu(0.);
+                    c->setChemMu(0.0);
+                    c->setTau(2);
                 }
+            }
+                //this is a migratory cell
+            else {
+                //if (c->dividecounter) cout<<"cell "<<c->Sigma()<<" stopped division program"<<endl;
+                c->dividecounter = 0;
+                c->setMu(par.startmu);
+                c->setChemMu(par.init_chemmu);
+                c->SetTargetArea(par.target_area);
+                c->setTau(1);
+                //cout<<"cell "<<c->Sigma()<<" is a migratory cell"<<endl;
             }
         }
     }
