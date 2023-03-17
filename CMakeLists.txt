@@ -49,7 +49,7 @@ target_compile_options(cell_evolution PRIVATE
         -Wno-misleading-indentation)
 
 add_executable(sweep_genomes
-        scripts/genome/sweep_genomes.cpp
+        src/sweep_genomes.cpp
         src/genome.cpp src/genome.h
         src/gene.cpp src/gene.h
         src/misc.cpp src/misc.h

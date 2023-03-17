@@ -602,8 +602,7 @@ void Dish::UpdateCellParameters(int Time) {
                 death_reason = "squeezed";
             } else if (c->food <= 0) {
                 death_reason = "starved";
-            }
-            else if (RANDOM() < par.gompertz_alpha * pow(M_E, par.gompertz_beta * c->time_since_birth)) {
+            } else if (RANDOM() < par.gompertz_alpha * pow(M_E, par.gompertz_beta * c->time_since_birth)) {
                 death_reason = "old";
             }
             if (not death_reason.empty()) {
@@ -621,6 +620,7 @@ void Dish::UpdateCellParameters(int Time) {
                 cell_graves.push_back(std::move(cg));
                 continue;
             }
+        }
         //update the network withing each cell, if it is the right time
         if (!(interval % par.scaling_cell_to_ca_time)) {
             //calculate inputs
